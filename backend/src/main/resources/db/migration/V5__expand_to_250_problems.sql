@@ -252,7 +252,7 @@ inserted AS (
          CASE difficulty WHEN 'EASY' THEN '1 <= n <= 10^4'
                          WHEN 'MEDIUM' THEN '1 <= n <= 10^5'
                          ELSE '1 <= n <= 2 * 10^5' END,
-         '[{"input":"See lesson examples","output":"See lesson examples"}]'::jsonb,
+         '[{"input":"See lesson examples","output":"See lesson examples"}]',
          true
   FROM new_data
   ON CONFLICT (slug) DO NOTHING
