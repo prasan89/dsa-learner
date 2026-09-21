@@ -1,0 +1,7 @@
+server:
+  port: 8081
+
+execution:
+  timeout-ms: ${MAX_EXECUTION_TIME_MS:5000}
+  memory-mb: ${MAX_MEMORY_MB:128}
+  work-dir: /tmp/sandbox

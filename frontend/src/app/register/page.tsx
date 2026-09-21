@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { toast } from "react-hot-toast";
+import Cookies from "js-cookie";
+import { authApi } from "@/lib/api/auth";
 
 const schema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -14,13 +18,21 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function RegisterPage() {
+  const router = useRouter();
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
   const onSubmit = async (data: FormData) => {
-    // TODO: call authApi.register → store tokens → redirect to /dashboard
-    console.log(data);
+    try {
+      const res = await authApi.register(data);
+      Cookies.set("accessToken", res.data.tokens.accessToken, { expires: 1 / 96 });
+      Cookies.set("refreshToken", res.data.tokens.refreshToken, { expires: 7 });
+      toast.success("Account created! Welcome aboard.");
+      router.push("/dashboard");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message ?? "Registration failed");
+    }
   };
 
   return (
@@ -36,6 +48,7 @@ export default function RegisterPage() {
             <label className="block text-sm text-gray-300 mb-1">Name</label>
             <input
               {...register("name")}
+              autoComplete="name"
               className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-brand-500"
               placeholder="John Doe"
             />
@@ -47,6 +60,7 @@ export default function RegisterPage() {
             <input
               {...register("email")}
               type="email"
+              autoComplete="email"
               className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-brand-500"
               placeholder="you@example.com"
             />
@@ -58,6 +72,7 @@ export default function RegisterPage() {
             <input
               {...register("password")}
               type="password"
+              autoComplete="new-password"
               className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-brand-500"
               placeholder="••••••••"
             />

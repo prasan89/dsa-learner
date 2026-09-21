@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { toast } from "react-hot-toast";
+import Cookies from "js-cookie";
+import { authApi } from "@/lib/api/auth";
 
 const schema = z.object({
   email: z.string().email("Invalid email"),
@@ -13,13 +17,20 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function LoginPage() {
+  const router = useRouter();
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
   const onSubmit = async (data: FormData) => {
-    // TODO: call authApi.login → store tokens → redirect to /dashboard
-    console.log(data);
+    try {
+      const res = await authApi.login(data);
+      Cookies.set("accessToken", res.data.accessToken, { expires: 1 / 96 }); // 15 min
+      Cookies.set("refreshToken", res.data.refreshToken, { expires: 7 });
+      router.push("/dashboard");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message ?? "Invalid email or password");
+    }
   };
 
   return (
@@ -36,6 +47,7 @@ export default function LoginPage() {
             <input
               {...register("email")}
               type="email"
+              autoComplete="email"
               className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-brand-500"
               placeholder="you@example.com"
             />
@@ -47,6 +59,7 @@ export default function LoginPage() {
             <input
               {...register("password")}
               type="password"
+              autoComplete="current-password"
               className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-brand-500"
               placeholder="••••••••"
             />

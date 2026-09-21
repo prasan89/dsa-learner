@@ -1,41 +1,114 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { problemsApi } from "@/lib/api/problems";
+import { patternsApi } from "@/lib/api/patterns";
+import type { Pattern } from "@/types";
+import { difficultyBadge } from "@/lib/utils";
+
+const DIFFICULTIES = ["All", "Easy", "Medium", "Hard"];
 
 export default function ProblemsPage() {
+  const [problems, setProblems] = useState<any[]>([]);
+  const [patterns, setPatterns] = useState<Pattern[]>([]);
+  const [difficulty, setDifficulty] = useState("");
+  const [patternId, setPatternId] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    patternsApi.list().then((r) => setPatterns(r.data));
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    problemsApi
+      .list({
+        difficulty: difficulty || undefined,
+        patternId: patternId || undefined,
+      })
+      .then((r) => setProblems(r.data.problems))
+      .finally(() => setLoading(false));
+  }, [difficulty, patternId]);
+
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6">
       <div className="max-w-5xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Problems</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-bold mr-4">Problems</h1>
+
+          {/* Difficulty filter */}
           <div className="flex gap-2">
-            {["All", "Easy", "Medium", "Hard"].map((d) => (
+            {DIFFICULTIES.map((d) => (
               <button
                 key={d}
-                className="px-3 py-1 rounded-full text-sm border border-gray-700 hover:border-brand-500 text-gray-300 hover:text-white transition-colors"
+                onClick={() => setDifficulty(d === "All" ? "" : d.toUpperCase())}
+                className={`px-3 py-1 rounded-full text-sm border transition-colors ${
+                  (d === "All" && !difficulty) || difficulty === d.toUpperCase()
+                    ? "border-brand-500 text-brand-400 bg-brand-500/10"
+                    : "border-gray-700 text-gray-400 hover:border-gray-500"
+                }`}
               >
                 {d}
               </button>
             ))}
           </div>
+
+          {/* Pattern filter */}
+          <select
+            value={patternId}
+            onChange={(e) => setPatternId(e.target.value)}
+            className="bg-gray-900 border border-gray-700 text-gray-300 text-sm rounded-lg px-3 py-1 focus:outline-none focus:border-brand-500"
+          >
+            <option value="">All Patterns</option>
+            {patterns.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
         </div>
 
-        {/* Problem table */}
         <div className="bg-gray-900 rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-800 text-gray-400">
-                <th className="text-left px-4 py-3">#</th>
-                <th className="text-left px-4 py-3">Title</th>
-                <th className="text-left px-4 py-3">Pattern</th>
-                <th className="text-left px-4 py-3">Difficulty</th>
-                <th className="text-left px-4 py-3">Acceptance</th>
+              <tr className="border-b border-gray-800 text-gray-400 text-left">
+                <th className="px-4 py-3">#</th>
+                <th className="px-4 py-3">Title</th>
+                <th className="px-4 py-3">Pattern</th>
+                <th className="px-4 py-3">Difficulty</th>
+                <th className="px-4 py-3">Tags</th>
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-gray-800 text-gray-500">
-                <td colSpan={5} className="px-4 py-8 text-center">
-                  Problems will load here once the API is connected.
-                </td>
-              </tr>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center text-gray-500">Loading...</td>
+                </tr>
+              ) : problems.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center text-gray-500">No problems found.</td>
+                </tr>
+              ) : (
+                problems.map((p, i) => (
+                  <tr key={p.id} className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
+                    <td className="px-4 py-3 text-gray-500">{i + 1}</td>
+                    <td className="px-4 py-3">
+                      <Link href={`/problems/${p.slug}`} className="text-white hover:text-brand-400 font-medium transition-colors">
+                        {p.solved && <span className="text-green-400 mr-2">✓</span>}
+                        {p.title}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-gray-400 text-xs">
+                      {p.patterns?.map((pat: any) => pat.name).join(", ")}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={difficultyBadge(p.difficulty)}>{p.difficulty}</span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">
+                      {p.tags?.slice(0, 2).join(", ")}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
