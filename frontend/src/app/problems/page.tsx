@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { problemsApi } from "@/lib/api/problems";
 import { patternsApi } from "@/lib/api/patterns";
@@ -8,30 +8,65 @@ import type { Pattern } from "@/types";
 import { difficultyBadge } from "@/lib/utils";
 
 const DIFFICULTIES = ["All", "Easy", "Medium", "Hard"];
+const PAGE_SIZE = 30;
 
 export default function ProblemsPage() {
   const [problems, setProblems] = useState<any[]>([]);
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [difficulty, setDifficulty] = useState("");
   const [patternId, setPatternId] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const filtersRef = useRef({ difficulty: "", patternId: "" });
 
   useEffect(() => {
     patternsApi.list().then((r) => setPatterns((r.data as any) ?? []));
   }, []);
 
-  useEffect(() => {
+  const fetchPage = useCallback((pg: number, diff: string, pat: string) => {
     setLoading(true);
     problemsApi
-      .list({
-        difficulty: difficulty || undefined,
-        patternId: patternId || undefined,
-        page: 0,
-        size: 250,
+      .list({ difficulty: diff || undefined, patternId: pat || undefined, page: pg, size: PAGE_SIZE })
+      .then((r) => {
+        const data = r.data as any;
+        const items = data.content ?? data.problems ?? [];
+        const total = data.totalElements ?? data.total ?? 0;
+        setProblems((prev) => (pg === 0 ? items : [...prev, ...items]));
+        setHasMore((pg + 1) * PAGE_SIZE < total);
       })
-      .then((r) => setProblems((r.data as any).content ?? []))
       .finally(() => setLoading(false));
-  }, [difficulty, patternId]);
+  }, []);
+
+  // Reset on filter change
+  useEffect(() => {
+    filtersRef.current = { difficulty, patternId };
+    setPage(0);
+    setProblems([]);
+    setHasMore(true);
+    fetchPage(0, difficulty, patternId);
+  }, [difficulty, patternId, fetchPage]);
+
+  // Infinite scroll via IntersectionObserver
+  useEffect(() => {
+    if (!hasMore || loading) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setPage((prev) => {
+            const next = prev + 1;
+            fetchPage(next, filtersRef.current.difficulty, filtersRef.current.patternId);
+            return next;
+          });
+        }
+      },
+      { threshold: 0.1 }
+    );
+    const el = sentinelRef.current;
+    if (el) observer.observe(el);
+    return () => { if (el) observer.unobserve(el); };
+  }, [hasMore, loading, fetchPage]);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6">
@@ -81,7 +116,7 @@ export default function ProblemsPage() {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
+              {loading && problems.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-10 text-center text-gray-500">Loading...</td>
                 </tr>
@@ -113,6 +148,12 @@ export default function ProblemsPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Sentinel for infinite scroll */}
+        <div ref={sentinelRef} className="py-4 text-center text-gray-500 text-sm">
+          {loading && problems.length > 0 && "Loading more..."}
+          {!hasMore && problems.length > 0 && `All ${problems.length} problems loaded`}
         </div>
       </div>
     </div>
