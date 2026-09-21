@@ -42,7 +42,8 @@ app:
     timeout-ms: 10000
 
   ai:
-    api-key: ${ANTHROPIC_API_KEY:}
+    api-key: ${ANTHROPIC_API_KEY:f753ba5e-1014-4c17-b469-fe1eb19c2e0a}
+    base-url: ${ANTHROPIC_BASE_URL:http://localhost:6655}
     hint-model: claude-haiku-4-5-20251001
     review-model: claude-sonnet-4-6
     max-tokens: 2048

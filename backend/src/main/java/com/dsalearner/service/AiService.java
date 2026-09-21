@@ -19,6 +19,9 @@ public class AiService {
     @Value("${app.ai.api-key}")
     private String apiKey;
 
+    @Value("${app.ai.base-url}")
+    private String baseUrl;
+
     @Value("${app.ai.hint-model}")
     private String haikuModel;
 
@@ -32,7 +35,7 @@ public class AiService {
 
     private String callClaude(String model, String systemPrompt, String userMessage) {
         WebClient client = webClientBuilder
-                .baseUrl("https://api.anthropic.com")
+                .baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .defaultHeader("x-api-key", apiKey)
                 .defaultHeader("anthropic-version", "2023-06-01")
