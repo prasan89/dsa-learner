@@ -2,7 +2,7 @@ import api from "./client";
 import type { Problem, RunResult, Submission } from "@/types";
 
 export const problemsApi = {
-  list: (params?: { patternId?: string; difficulty?: string; page?: number }) =>
+  list: (params?: { patternId?: string; difficulty?: string; page?: number; size?: number }) =>
     api.get<{ problems: any[]; total: number; totalPages: number }>("/problems", { params }),
 
   get: (slug: string) => api.get<Problem>(`/problems/${slug}`),
