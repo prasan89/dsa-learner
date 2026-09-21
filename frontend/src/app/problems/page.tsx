@@ -26,6 +26,8 @@ export default function ProblemsPage() {
       .list({
         difficulty: difficulty || undefined,
         patternId: patternId || undefined,
+        page: 0,
+        size: 250,
       })
       .then((r) => setProblems((r.data as any).content ?? []))
       .finally(() => setLoading(false));
