@@ -15,17 +15,21 @@ export default function ProblemsPage() {
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [difficulty, setDifficulty] = useState("");
   const [patternId, setPatternId] = useState("");
-  const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const filtersRef = useRef({ difficulty: "", patternId: "" });
+  const pageRef = useRef(0);
+  const loadingRef = useRef(false);
+  const hasMoreRef = useRef(true);
 
   useEffect(() => {
     patternsApi.list().then((r) => setPatterns((r.data as any) ?? []));
   }, []);
 
   const fetchPage = useCallback((pg: number, diff: string, pat: string) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
     problemsApi
       .list({ difficulty: diff || undefined, patternId: pat || undefined, page: pg, size: PAGE_SIZE })
@@ -33,16 +37,24 @@ export default function ProblemsPage() {
         const data = r.data as any;
         const items = data.content ?? data.problems ?? [];
         const total = data.totalElements ?? data.total ?? 0;
+        const more = (pg + 1) * PAGE_SIZE < total;
         setProblems((prev) => (pg === 0 ? items : [...prev, ...items]));
-        setHasMore((pg + 1) * PAGE_SIZE < total);
+        setHasMore(more);
+        hasMoreRef.current = more;
+        pageRef.current = pg;
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        loadingRef.current = false;
+        setLoading(false);
+      });
   }, []);
 
   // Reset on filter change
   useEffect(() => {
     filtersRef.current = { difficulty, patternId };
-    setPage(0);
+    pageRef.current = 0;
+    hasMoreRef.current = true;
+    loadingRef.current = false;
     setProblems([]);
     setHasMore(true);
     fetchPage(0, difficulty, patternId);
@@ -50,23 +62,20 @@ export default function ProblemsPage() {
 
   // Infinite scroll via IntersectionObserver
   useEffect(() => {
-    if (!hasMore || loading) return;
+    const el = sentinelRef.current;
+    if (!el) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          setPage((prev) => {
-            const next = prev + 1;
-            fetchPage(next, filtersRef.current.difficulty, filtersRef.current.patternId);
-            return next;
-          });
+        if (entries[0].isIntersecting && !loadingRef.current && hasMoreRef.current) {
+          const next = pageRef.current + 1;
+          fetchPage(next, filtersRef.current.difficulty, filtersRef.current.patternId);
         }
       },
       { threshold: 0.1 }
     );
-    const el = sentinelRef.current;
-    if (el) observer.observe(el);
-    return () => { if (el) observer.unobserve(el); };
-  }, [hasMore, loading, fetchPage]);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [fetchPage]);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6">
