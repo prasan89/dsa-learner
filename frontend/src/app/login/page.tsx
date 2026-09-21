@@ -25,7 +25,7 @@ export default function LoginPage() {
   const onSubmit = async (data: FormData) => {
     try {
       const res = await authApi.login(data);
-      Cookies.set("accessToken", res.data.accessToken, { expires: 1 / 96 }); // 15 min
+      Cookies.set("accessToken", res.data.accessToken, { expires: 1 });
       Cookies.set("refreshToken", res.data.refreshToken, { expires: 7 });
       router.push("/dashboard");
     } catch (err: any) {

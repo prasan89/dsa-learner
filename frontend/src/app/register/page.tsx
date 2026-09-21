@@ -27,7 +27,7 @@ export default function RegisterPage() {
     try {
       const res = await authApi.register(data);
       const { accessToken, refreshToken } = res.data as any;
-      Cookies.set("accessToken", accessToken, { expires: 1 / 96 });
+      Cookies.set("accessToken", accessToken, { expires: 1 });
       Cookies.set("refreshToken", refreshToken, { expires: 7 });
       toast.success("Account created! Welcome aboard.");
       router.push("/dashboard");
