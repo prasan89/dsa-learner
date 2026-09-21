@@ -50,3 +50,7 @@ app:
 
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+
+razorpay:
+  key-id: ${RAZORPAY_KEY_ID:rzp_test_placeholder}
+  key-secret: ${RAZORPAY_KEY_SECRET:placeholder_secret}

@@ -56,6 +56,15 @@ public class CreditService {
         return deduct(userId, FREE_DETECT_COST, CreditTransaction.TxType.AI_DETECT, "Pattern detection");
     }
 
+    @Transactional
+    public void addPaidCredits(UUID userId, int amount, String desc) {
+        AiCreditWallet wallet = getOrCreateWallet(userId);
+        wallet.setPaidCredits(wallet.getPaidCredits() + amount);
+        wallet.setUpdatedAt(Instant.now());
+        walletRepository.save(wallet);
+        recordTransaction(wallet.getUser(), amount, CreditTransaction.TxType.PURCHASE, desc);
+    }
+
     private boolean deduct(UUID userId, int cost, CreditTransaction.TxType type, String desc) {
         AiCreditWallet wallet = getOrCreateWallet(userId);
         if (wallet.totalCredits() < cost) return false;

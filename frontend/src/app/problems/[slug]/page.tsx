@@ -39,7 +39,7 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hints, setHints] = useState<Hint[]>([]);
-  const [remainingReviews, setRemainingReviews] = useState(5);
+  const [credits, setCredits] = useState<number | null>(null);
 
   useEffect(() => {
     problemsApi.get(params.slug)
@@ -50,8 +50,8 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
       .then((r) => setHints(r.data))
       .catch(() => {});
 
-    aiApi.remaining()
-      .then((r) => setRemainingReviews(r.data.remaining))
+    aiApi.wallet()
+      .then((r) => setCredits(r.data.totalCredits))
       .catch(() => {});
   }, [params.slug]);
 
@@ -198,7 +198,7 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
               <AiReviewPanel
                 problemSlug={params.slug}
                 code={code}
-                remainingReviews={remainingReviews}
+                remainingReviews={credits ?? 0}
                 onReviewComplete={setRemainingReviews}
               />
             )}

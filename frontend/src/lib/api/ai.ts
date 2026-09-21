@@ -6,5 +6,5 @@ export const aiApi = {
     api.post<AiReview>("/ai/review", { problemSlug, code }),
   detectPattern: (code: string) =>
     api.post<PatternDetection>("/ai/detect-pattern", { code }),
-  remaining: () => api.get<{ remaining: number }>("/ai/review/remaining"),
+  wallet: () => api.get<{ freeCredits: number; paidCredits: number; totalCredits: number }>("/ai/wallet"),
 };

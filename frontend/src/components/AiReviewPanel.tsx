@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Sparkles, Clock, Database, TrendingUp, Zap, Code2, AlertCircle } from "lucide-react";
 import { aiApi } from "@/lib/api/ai";
 import type { AiReview } from "@/types";
@@ -9,7 +10,7 @@ interface AiReviewPanelProps {
   problemSlug: string;
   code: string;
   remainingReviews: number;
-  onReviewComplete: (remaining: number) => void;
+  onReviewComplete: (credits: number) => void;
 }
 
 export default function AiReviewPanel({
@@ -32,11 +33,11 @@ export default function AiReviewPanel({
     try {
       const res = await aiApi.review(problemSlug, code);
       setReview(res.data);
-      const remaining = await aiApi.remaining();
-      onReviewComplete(remaining.data.remaining);
+      // Refresh credit balance
+      aiApi.wallet().then((r) => onReviewComplete(r.data.totalCredits)).catch(() => {});
     } catch (e: any) {
-      if (e?.response?.status === 429) {
-        setError("Daily limit reached (5 reviews/day). Try again tomorrow.");
+      if (e?.response?.status === 402) {
+        setError("Insufficient credits. Purchase more on the wallet page.");
       } else {
         setError("AI review failed. Try again.");
       }
@@ -50,7 +51,10 @@ export default function AiReviewPanel({
       <div className="flex items-center gap-2">
         <Sparkles size={16} className="text-purple-400" />
         <span className="text-sm font-semibold text-purple-400">AI Code Review</span>
-        <span className="ml-auto text-xs text-gray-500">{remainingReviews}/5 remaining today</span>
+        <span className="ml-auto text-xs text-gray-500">
+          {remainingReviews} credit{remainingReviews !== 1 ? 's' : ''} available ·{" "}
+          <Link href="/wallet" className="text-indigo-400 hover:underline">top up</Link>
+        </span>
       </div>
 
       {error && (
@@ -66,7 +70,9 @@ export default function AiReviewPanel({
           disabled={remainingReviews === 0}
           className="w-full py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium transition-colors"
         >
-          {remainingReviews === 0 ? "Limit reached" : "Review my code"}
+          {remainingReviews === 0
+            ? <><Link href="/wallet" className="underline">Add credits</Link> to review</>
+            : "Review my code (1 credit)"}
         </button>
       )}
 

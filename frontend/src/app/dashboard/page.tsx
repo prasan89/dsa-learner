@@ -5,6 +5,7 @@ import Link from "next/link";
 import { userApi } from "@/lib/api/user";
 import { authApi } from "@/lib/api/auth";
 import { patternsApi } from "@/lib/api/patterns";
+import api from "@/lib/api/client";
 import type { MasteryStatus } from "@/types";
 
 const MASTERY_COLOR: Record<MasteryStatus, string> = {
@@ -14,18 +15,22 @@ const MASTERY_COLOR: Record<MasteryStatus, string> = {
   MASTERED: "bg-green-500",
 };
 
-const MASTERY_LABEL: Record<MasteryStatus, string> = {
-  NOT_STARTED: "—",
-  LEARNING: "L",
-  PRACTICED: "P",
-  MASTERED: "M",
-};
+interface ReviewItem {
+  problemId: string;
+  slug: string;
+  title: string;
+  difficulty: string;
+  dueDate: string;
+  repetition: number;
+}
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [progress, setProgress] = useState<any>(null);
   const [recentSubmissions, setRecentSubmissions] = useState<any[]>([]);
   const [masteryData, setMasteryData] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [wallet, setWallet] = useState<{ totalCredits: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,11 +39,15 @@ export default function DashboardPage() {
       userApi.progress(),
       userApi.recentSubmissions(),
       patternsApi.getMastery(),
-    ]).then(([u, p, s, m]) => {
+      api.get<ReviewItem[]>("/api/users/me/reviews/today").catch(() => ({ data: [] })),
+      api.get<any>("/api/ai/wallet").catch(() => ({ data: null })),
+    ]).then(([u, p, s, m, r, w]) => {
       setUser(u.data);
       setProgress(p.data);
       setRecentSubmissions(s.data.slice(0, 5));
       setMasteryData(m.data);
+      setReviews((r as any).data ?? []);
+      setWallet((w as any).data);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -58,13 +67,28 @@ export default function DashboardPage() {
   const masteredCount = masteryData.filter((m) => m.status === "MASTERED").length;
   const practicedCount = masteryData.filter((m) => m.status === "PRACTICED").length;
 
+  const DIFF_COLOR: Record<string, string> = {
+    EASY: "text-green-400",
+    MEDIUM: "text-yellow-400",
+    HARD: "text-red-400",
+  };
+
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Welcome */}
-        <div>
-          <h1 className="text-2xl font-bold">Welcome back, {user?.name?.split(" ")[0]} 👋</h1>
-          <p className="text-gray-400 mt-1">Keep going. Patterns build mastery.</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Welcome back, {user?.name?.split(" ")[0]} 👋</h1>
+            <p className="text-gray-400 mt-1">Keep going. Patterns build mastery.</p>
+          </div>
+          {wallet !== null && (
+            <Link href="/wallet"
+              className="flex items-center gap-2 bg-gray-900 border border-gray-800 hover:border-indigo-500 rounded-lg px-4 py-2 text-sm transition-colors">
+              <span className="text-indigo-400 font-bold">{wallet.totalCredits}</span>
+              <span className="text-gray-400">credits</span>
+            </Link>
+          )}
         </div>
 
         {/* Stats */}
@@ -77,12 +101,42 @@ export default function DashboardPage() {
           ))}
         </div>
 
+        {/* Today's Revision */}
+        {reviews.length > 0 && (
+          <div className="bg-gray-900 rounded-xl p-5 border border-indigo-800">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-indigo-300">Today's Revision</h2>
+              <span className="text-xs bg-indigo-900 text-indigo-300 px-2 py-0.5 rounded-full">
+                {reviews.length} due
+              </span>
+            </div>
+            <div className="space-y-2">
+              {reviews.map((r) => (
+                <Link
+                  key={r.problemId}
+                  href={`/problems/${r.slug}`}
+                  className="flex items-center justify-between bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-3 transition-colors group"
+                >
+                  <span className="text-sm font-medium group-hover:text-white">{r.title}</span>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs ${DIFF_COLOR[r.difficulty] ?? "text-gray-400"}`}>
+                      {r.difficulty}
+                    </span>
+                    <span className="text-xs text-gray-500">Rep {r.repetition}</span>
+                    <span className="text-xs bg-indigo-700 text-indigo-200 px-2 py-0.5 rounded">Review</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Quick actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link href="/problems"
             className="bg-gray-900 border border-gray-800 hover:border-brand-500/50 rounded-xl p-5 transition-all group">
             <h3 className="font-semibold group-hover:text-brand-400 transition-colors">Practice Problems</h3>
-            <p className="text-gray-400 text-sm mt-1">Browse all 10 problems across 10 patterns.</p>
+            <p className="text-gray-400 text-sm mt-1">Browse all problems across patterns.</p>
           </Link>
           <Link href="/patterns"
             className="bg-gray-900 border border-gray-800 hover:border-brand-500/50 rounded-xl p-5 transition-all group">
@@ -105,20 +159,27 @@ export default function DashboardPage() {
                 {masteredCount} mastered · {practicedCount} practiced · {masteryData.length - masteredCount - practicedCount} remaining
               </span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
               {masteryData.map((m) => {
                 const status = (m.status ?? "NOT_STARTED") as MasteryStatus;
+                const score: number = m.masteryScore ?? 0;
                 return (
                   <Link
                     key={m.patternId}
                     href={`/patterns/${m.patternSlug}`}
-                    className="group rounded-lg p-2 bg-gray-800 hover:bg-gray-700 transition-colors"
+                    className="group rounded-lg p-3 bg-gray-800 hover:bg-gray-700 transition-colors"
                   >
-                    <div className={`w-2 h-2 rounded-full mb-1 ${MASTERY_COLOR[status]}`} />
-                    <p className="text-xs text-gray-300 group-hover:text-white leading-tight truncate">
+                    <p className="text-xs text-gray-300 group-hover:text-white leading-tight truncate mb-2">
                       {m.patternName}
                     </p>
-                    <p className="text-xs text-gray-600 mt-0.5">{MASTERY_LABEL[status]}</p>
+                    {/* Score bar */}
+                    <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${MASTERY_COLOR[status]}`}
+                        style={{ width: `${Math.round(score)}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">{Math.round(score)}%</p>
                   </Link>
                 );
               })}
