@@ -1,0 +1,49 @@
+# ─── Frontend ───────────────────────────────────────────────
+frontend/.next/
+frontend/out/
+frontend/node_modules/
+frontend/.env.local
+frontend/.env.*.local
+
+# ─── Backend ────────────────────────────────────────────────
+backend/target/
+backend/.mvn/
+backend/*.jar
+backend/*.war
+backend/.env
+
+# ─── Execution Service ──────────────────────────────────────
+execution-service/target/
+execution-service/*.jar
+
+# ─── IntelliJ ───────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# ─── VS Code ────────────────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
+
+# ─── macOS ──────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ─── Docker ─────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ─── Environment files ──────────────────────────────────────
+.env
+.env.local
+.env.production
+
+# ─── Logs ───────────────────────────────────────────────────
+*.log
+logs/
+
+# ─── Misc ───────────────────────────────────────────────────
+*.class
+*.swp
+*.swo
