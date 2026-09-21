@@ -15,6 +15,8 @@ public interface ProblemRepository extends JpaRepository<Problem, UUID> {
 
     Optional<Problem> findBySlugAndActiveTrue(String slug);
 
+    Optional<Problem> findBySlug(String slug);
+
     Page<Problem> findAllByActiveTrue(Pageable pageable);
 
     Page<Problem> findAllByActiveTrueAndDifficulty(Difficulty difficulty, Pageable pageable);

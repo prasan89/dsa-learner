@@ -10,5 +10,9 @@ public record PatternResponse(
         String summary,
         List<String> recognitionClues,
         String templateCode,
-        int order
+        int order,
+        String lessonMarkdown,
+        String timeComplexity,
+        String spaceComplexity,
+        String masteryStatus
 ) {}

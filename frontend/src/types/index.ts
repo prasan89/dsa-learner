@@ -42,6 +42,8 @@ export interface TestCase {
 }
 
 // ─── Pattern ─────────────────────────────────────────────────
+export type MasteryStatus = "NOT_STARTED" | "LEARNING" | "PRACTICED" | "MASTERED";
+
 export interface Pattern {
   id: string;
   slug: string;
@@ -50,6 +52,35 @@ export interface Pattern {
   recognitionClues: string[];
   templateCode: string;
   order: number;
+  lessonMarkdown?: string;
+  timeComplexity?: string;
+  spaceComplexity?: string;
+  masteryStatus?: MasteryStatus;
+}
+
+// ─── Hints ───────────────────────────────────────────────────
+export interface Hint {
+  id: string;
+  level: 1 | 2 | 3;
+  content: string;
+  unlocked: boolean;
+}
+
+// ─── AI ──────────────────────────────────────────────────────
+export interface AiReview {
+  timeComplexity: string;
+  spaceComplexity: string;
+  strengths: string;
+  improvements: string;
+  patternUsed: string;
+  optimizedApproach: string;
+}
+
+export interface PatternDetection {
+  patternName: string;
+  patternSlug: string;
+  explanation: string;
+  confidence: "HIGH" | "MEDIUM" | "LOW";
 }
 
 // ─── Submission ──────────────────────────────────────────────

@@ -4,11 +4,28 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { userApi } from "@/lib/api/user";
 import { authApi } from "@/lib/api/auth";
+import { patternsApi } from "@/lib/api/patterns";
+import type { MasteryStatus } from "@/types";
+
+const MASTERY_COLOR: Record<MasteryStatus, string> = {
+  NOT_STARTED: "bg-gray-700",
+  LEARNING: "bg-blue-500",
+  PRACTICED: "bg-yellow-500",
+  MASTERED: "bg-green-500",
+};
+
+const MASTERY_LABEL: Record<MasteryStatus, string> = {
+  NOT_STARTED: "—",
+  LEARNING: "L",
+  PRACTICED: "P",
+  MASTERED: "M",
+};
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [progress, setProgress] = useState<any>(null);
   const [recentSubmissions, setRecentSubmissions] = useState<any[]>([]);
+  const [masteryData, setMasteryData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,10 +33,12 @@ export default function DashboardPage() {
       authApi.me(),
       userApi.progress(),
       userApi.recentSubmissions(),
-    ]).then(([u, p, s]) => {
+      patternsApi.getMastery(),
+    ]).then(([u, p, s, m]) => {
       setUser(u.data);
       setProgress(p.data);
       setRecentSubmissions(s.data.slice(0, 5));
+      setMasteryData(m.data);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -35,6 +54,9 @@ export default function DashboardPage() {
     { label: "Medium", value: progress?.mediumSolved ?? 0, color: "text-yellow-400" },
     { label: "Hard",   value: progress?.hardSolved   ?? 0, color: "text-red-400" },
   ];
+
+  const masteredCount = masteryData.filter((m) => m.status === "MASTERED").length;
+  const practicedCount = masteryData.filter((m) => m.status === "PRACTICED").length;
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6">
@@ -56,7 +78,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link href="/problems"
             className="bg-gray-900 border border-gray-800 hover:border-brand-500/50 rounded-xl p-5 transition-all group">
             <h3 className="font-semibold group-hover:text-brand-400 transition-colors">Practice Problems</h3>
@@ -67,7 +89,48 @@ export default function DashboardPage() {
             <h3 className="font-semibold group-hover:text-brand-400 transition-colors">Study Patterns</h3>
             <p className="text-gray-400 text-sm mt-1">Learn recognition clues and templates.</p>
           </Link>
+          <Link href="/detect-pattern"
+            className="bg-gray-900 border border-gray-800 hover:border-purple-500/50 rounded-xl p-5 transition-all group">
+            <h3 className="font-semibold group-hover:text-purple-400 transition-colors">Pattern Detector</h3>
+            <p className="text-gray-400 text-sm mt-1">AI-powered: paste code to identify its pattern.</p>
+          </Link>
         </div>
+
+        {/* Pattern mastery grid */}
+        {masteryData.length > 0 && (
+          <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold">Pattern Mastery</h2>
+              <span className="text-xs text-gray-500">
+                {masteredCount} mastered · {practicedCount} practiced · {masteryData.length - masteredCount - practicedCount} remaining
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {masteryData.map((m) => {
+                const status = (m.status ?? "NOT_STARTED") as MasteryStatus;
+                return (
+                  <Link
+                    key={m.patternId}
+                    href={`/patterns/${m.patternSlug}`}
+                    className="group rounded-lg p-2 bg-gray-800 hover:bg-gray-700 transition-colors"
+                  >
+                    <div className={`w-2 h-2 rounded-full mb-1 ${MASTERY_COLOR[status]}`} />
+                    <p className="text-xs text-gray-300 group-hover:text-white leading-tight truncate">
+                      {m.patternName}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-0.5">{MASTERY_LABEL[status]}</p>
+                  </Link>
+                );
+              })}
+            </div>
+            <div className="flex gap-4 mt-3 text-xs text-gray-500">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Mastered</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500 inline-block" /> Practiced</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> Learning</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-700 inline-block" /> Not Started</span>
+            </div>
+          </div>
+        )}
 
         {/* Recent submissions */}
         <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">

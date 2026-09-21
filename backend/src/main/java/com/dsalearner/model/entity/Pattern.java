@@ -2,7 +2,6 @@ package com.dsalearner.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.util.UUID;
 
 @Entity
@@ -31,4 +30,11 @@ public class Pattern {
 
     @Column(nullable = false)
     private int displayOrder;
+
+    @Column(columnDefinition = "TEXT")
+    private String lessonMarkdown;
+
+    private String timeComplexity;
+
+    private String spaceComplexity;
 }

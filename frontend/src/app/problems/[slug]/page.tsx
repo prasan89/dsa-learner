@@ -1,14 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { toast } from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { problemsApi } from "@/lib/api/problems";
+import { hintsApi } from "@/lib/api/hints";
+import { aiApi } from "@/lib/api/ai";
 import { difficultyBadge } from "@/lib/utils";
-import type { RunResult, Submission } from "@/types";
+import HintPanel from "@/components/HintPanel";
+import AiReviewPanel from "@/components/AiReviewPanel";
+import type { RunResult, Submission, Hint } from "@/types";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
@@ -23,7 +27,7 @@ public class Solution {
     }
 }`;
 
-type Tab = "description" | "submissions";
+type Tab = "description" | "hints" | "ai-review" | "submissions";
 
 export default function ProblemPage({ params }: { params: { slug: string } }) {
   const [problem, setProblem] = useState<any>(null);
@@ -34,11 +38,21 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
   const [running, setRunning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [hints, setHints] = useState<Hint[]>([]);
+  const [remainingReviews, setRemainingReviews] = useState(5);
 
   useEffect(() => {
     problemsApi.get(params.slug)
       .then((r) => setProblem(r.data))
       .finally(() => setLoading(false));
+
+    hintsApi.list(params.slug)
+      .then((r) => setHints(r.data))
+      .catch(() => {});
+
+    aiApi.remaining()
+      .then((r) => setRemainingReviews(r.data.remaining))
+      .catch(() => {});
   }, [params.slug]);
 
   const loadSubmissions = async () => {
@@ -68,11 +82,11 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
       const status = r.data.status;
       if (status === "ACCEPTED") {
         toast.success("Accepted! Great job.");
+        setActiveTab("ai-review");
       } else {
         toast.error(`${status.replace(/_/g, " ")}`);
       }
       await loadSubmissions();
-      setActiveTab("submissions");
     } catch (err: any) {
       toast.error(err.response?.data?.message ?? "Submission failed");
     } finally {
@@ -87,6 +101,13 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
       </div>
     );
   }
+
+  const TABS: { id: Tab; label: string }[] = [
+    { id: "description", label: "Description" },
+    { id: "hints", label: `Hints${hints.length > 0 ? ` (${hints.filter(h => h.unlocked).length}/${hints.length})` : ""}` },
+    { id: "ai-review", label: "AI Review" },
+    { id: "submissions", label: "Submissions" },
+  ];
 
   return (
     <div className="flex flex-col bg-gray-950 text-white h-full overflow-hidden">
@@ -112,25 +133,25 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel */}
         <div className="w-[46%] flex flex-col border-r border-gray-800 min-w-0">
-          <div className="flex border-b border-gray-800 shrink-0">
-            {(["description", "submissions"] as Tab[]).map((tab) => (
+          <div className="flex border-b border-gray-800 shrink-0 overflow-x-auto">
+            {TABS.map((tab) => (
               <button
-                key={tab}
-                onClick={() => { setActiveTab(tab); if (tab === "submissions") loadSubmissions(); }}
-                className={`px-4 py-2 text-sm capitalize transition-colors ${
-                  activeTab === tab
+                key={tab.id}
+                onClick={() => { setActiveTab(tab.id); if (tab.id === "submissions") loadSubmissions(); }}
+                className={`px-3 py-2 text-xs whitespace-nowrap capitalize transition-colors ${
+                  activeTab === tab.id
                     ? "text-white border-b-2 border-brand-500"
                     : "text-gray-400 hover:text-white"
                 }`}
               >
-                {tab}
+                {tab.label}
               </button>
             ))}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto">
             {activeTab === "description" && problem && (
-              <div className="space-y-4">
+              <div className="p-4 space-y-4">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}
                   className="prose prose-invert prose-sm max-w-none">
                   {problem.description}
@@ -165,8 +186,25 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
               </div>
             )}
 
+            {activeTab === "hints" && (
+              <HintPanel
+                problemSlug={params.slug}
+                hints={hints}
+                onHintsUpdate={setHints}
+              />
+            )}
+
+            {activeTab === "ai-review" && (
+              <AiReviewPanel
+                problemSlug={params.slug}
+                code={code}
+                remainingReviews={remainingReviews}
+                onReviewComplete={setRemainingReviews}
+              />
+            )}
+
             {activeTab === "submissions" && (
-              <div className="space-y-3">
+              <div className="p-4 space-y-3">
                 {submissions.length === 0 ? (
                   <p className="text-gray-500 text-sm">No submissions yet.</p>
                 ) : (
@@ -183,7 +221,7 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
                           {new Date(s.submittedAt).toLocaleDateString()}
                         </span>
                       </div>
-                      {s.runtimeMs && <p className="text-gray-500 text-xs mt-1">Runtime: {s.runtimeMs}ms</p>}
+                      {(s as any).runtimeMs && <p className="text-gray-500 text-xs mt-1">Runtime: {(s as any).runtimeMs}ms</p>}
                     </div>
                   ))
                 )}
@@ -194,7 +232,6 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
 
         {/* Right panel */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Monaco Editor */}
           <div className="flex-1 overflow-hidden">
             <MonacoEditor
               height="100%"
@@ -216,7 +253,6 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
             />
           </div>
 
-          {/* Test results */}
           {runResult && (
             <div className="border-t border-gray-800 bg-gray-900 p-3 max-h-48 overflow-y-auto shrink-0">
               <div className="flex items-center gap-2 mb-2">
@@ -226,7 +262,7 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
                 }`}>
                   {runResult.status?.replace(/_/g, " ")}
                 </span>
-                {runResult.runtimeMs && <span className="text-gray-500 text-xs">{runResult.runtimeMs}ms</span>}
+                {(runResult as any).runtimeMs && <span className="text-gray-500 text-xs">{(runResult as any).runtimeMs}ms</span>}
               </div>
 
               {runResult.errorMessage && (
@@ -248,7 +284,6 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
             </div>
           )}
 
-          {/* Action bar */}
           <div className="flex items-center gap-2 px-4 py-2 bg-gray-900 border-t border-gray-800 shrink-0">
             <span className="text-xs text-gray-500 mr-auto">Java 21</span>
             <button
