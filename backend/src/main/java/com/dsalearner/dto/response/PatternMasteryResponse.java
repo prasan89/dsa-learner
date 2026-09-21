@@ -6,5 +6,7 @@ public record PatternMasteryResponse(
         UUID patternId,
         String patternSlug,
         String patternName,
-        String status
+        String status,
+        double masteryScore,
+        int problemsSolved
 ) {}

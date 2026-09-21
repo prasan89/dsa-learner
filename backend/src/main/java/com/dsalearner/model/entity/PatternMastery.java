@@ -29,5 +29,17 @@ public class PatternMastery {
     @Builder.Default
     private Instant updatedAt = Instant.now();
 
+    @Column(name = "mastery_score", nullable = false)
+    @Builder.Default
+    private java.math.BigDecimal masteryScore = java.math.BigDecimal.ZERO;
+
+    @Column(name = "problems_solved", nullable = false)
+    @Builder.Default
+    private int problemsSolved = 0;
+
+    @Column(name = "problems_attempted", nullable = false)
+    @Builder.Default
+    private int problemsAttempted = 0;
+
     public enum MasteryStatus { NOT_STARTED, LEARNING, PRACTICED, MASTERED }
 }

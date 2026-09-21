@@ -27,6 +27,8 @@ public class SubmissionService {
     private final TestCaseRepository testCaseRepository;
     private final UserRepository userRepository;
     private final UserProgressRepository userProgressRepository;
+    private final SpacedRepetitionService spacedRepetitionService;
+    private final PatternMasteryService patternMasteryService;
     private final WebClient.Builder webClientBuilder;
 
     @Value("${app.execution-service.url}")
@@ -71,6 +73,8 @@ public class SubmissionService {
 
         if (status == SubmissionStatus.ACCEPTED) {
             updateProgress(user, problem);
+            spacedRepetitionService.scheduleAfterSolve(userId, problem.getId());
+            patternMasteryService.recalculateMasteryForUser(userId);
         }
 
         return toResponse(submission);

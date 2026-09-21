@@ -36,4 +36,18 @@ public interface UserProgressRepository extends JpaRepository<UserProgress, UUID
         """)
     long countSolvedByUserIdAndDifficulty(@Param("userId") UUID userId,
                                           @Param("difficulty") com.dsalearner.model.enums.Difficulty difficulty);
+
+    @Query("""
+        SELECT up FROM UserProgress up
+        JOIN FETCH up.problem p
+        JOIN p.patterns pat
+        WHERE up.user.id = :userId AND pat.id = :patternId
+        """)
+    List<UserProgress> findByUserIdAndPatternId(@Param("userId") UUID userId,
+                                                @Param("patternId") UUID patternId);
+
+    @Query("""
+        SELECT COUNT(p) FROM Problem p JOIN p.patterns pat WHERE pat.id = :patternId AND p.active = true
+        """)
+    long countProblemsByPatternId(@Param("patternId") UUID patternId);
 }

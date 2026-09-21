@@ -8,7 +8,7 @@ import com.dsalearner.exception.NotFoundException;
 import com.dsalearner.model.entity.Problem;
 import com.dsalearner.repository.ProblemRepository;
 import com.dsalearner.service.AiService;
-import com.dsalearner.service.RateLimitService;
+import com.dsalearner.service.CreditService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +17,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -26,7 +25,7 @@ import java.util.UUID;
 public class AiController {
 
     private final AiService aiService;
-    private final RateLimitService rateLimitService;
+    private final CreditService creditService;
     private final ProblemRepository problemRepository;
 
     @PostMapping("/review")
@@ -35,9 +34,9 @@ public class AiController {
             @AuthenticationPrincipal UserDetails userDetails) {
         UUID userId = UUID.fromString(userDetails.getUsername());
 
-        if (!rateLimitService.allowAiReview(userId)) {
-            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
-                    "Daily AI review limit (5) reached. Try again tomorrow.");
+        if (!creditService.deductForReview(userId)) {
+            throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
+                    "Insufficient AI credits. Please purchase more credits.");
         }
 
         Problem problem = problemRepository.findBySlug(request.problemSlug())
@@ -52,13 +51,15 @@ public class AiController {
     public ResponseEntity<PatternDetectResponse> detectPattern(
             @RequestBody PatternDetectRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
+        UUID userId = UUID.fromString(userDetails.getUsername());
+        creditService.deductForDetect(userId);
         return ResponseEntity.ok(aiService.detectPattern(request.code()));
     }
 
-    @GetMapping("/review/remaining")
-    public ResponseEntity<Map<String, Integer>> remaining(
+    @GetMapping("/wallet")
+    public ResponseEntity<CreditService.WalletResponse> wallet(
             @AuthenticationPrincipal UserDetails userDetails) {
         UUID userId = UUID.fromString(userDetails.getUsername());
-        return ResponseEntity.ok(Map.of("remaining", rateLimitService.remainingAiReviews(userId)));
+        return ResponseEntity.ok(creditService.getWallet(userId));
     }
 }

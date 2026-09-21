@@ -24,6 +24,8 @@ public class JavaExecutionService {
     @Value("${execution.work-dir:/tmp/sandbox}")
     private String workDir;
 
+    private static final int MAX_OUTPUT_BYTES = 64 * 1024; // 64 KB output cap
+
     public ExecutionResult execute(ExecutionRequest request) {
         String runId = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
         Path dir = Path.of(workDir, runId);
@@ -86,7 +88,8 @@ public class JavaExecutionService {
                 .redirectErrorStream(true);
 
         Process p = pb.start();
-        String output = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        byte[] rawOutput = readCapped(p.getInputStream());
+        String output = new String(rawOutput, StandardCharsets.UTF_8);
         boolean finished = p.waitFor(30, TimeUnit.SECONDS);
 
         if (!finished || p.exitValue() != 0) {
@@ -100,7 +103,14 @@ public class JavaExecutionService {
                                                         int timeLimitMs) {
         long start = System.currentTimeMillis();
         try {
-            ProcessBuilder pb = new ProcessBuilder("java", "-cp", dir.toString(), "Solution")
+            // -Xmx limits heap; -Xss limits stack depth (fork bomb via recursion); -Djava.security.manager blocks Runtime.exec
+            ProcessBuilder pb = new ProcessBuilder(
+                    "java",
+                    "-Xmx64m",
+                    "-Xss512k",
+                    "-Djava.security.manager=default",
+                    "-cp", dir.toString(),
+                    "Solution")
                     .directory(dir.toFile());
             pb.redirectErrorStream(false);
 
@@ -126,8 +136,8 @@ public class JavaExecutionService {
                         .build();
             }
 
-            String stdout = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
-            String stderr = new String(p.getErrorStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+            String stdout = new String(readCapped(p.getInputStream()), StandardCharsets.UTF_8).trim();
+            String stderr = new String(readCapped(p.getErrorStream()), StandardCharsets.UTF_8).trim();
 
             if (p.exitValue() != 0) {
                 return ExecutionResult.TestCaseResult.builder()
@@ -160,6 +170,15 @@ public class JavaExecutionService {
                     .executionTimeMs((int) (System.currentTimeMillis() - start))
                     .build();
         }
+    }
+
+    private byte[] readCapped(InputStream stream) throws IOException {
+        byte[] buf = new byte[MAX_OUTPUT_BYTES + 1];
+        int total = 0, read;
+        while (total < buf.length && (read = stream.read(buf, total, buf.length - total)) != -1) {
+            total += read;
+        }
+        return java.util.Arrays.copyOf(buf, Math.min(total, MAX_OUTPUT_BYTES));
     }
 
     private void deleteDirectory(Path dir) {

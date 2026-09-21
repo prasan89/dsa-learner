@@ -66,6 +66,19 @@ services:
     environment:
       MAX_EXECUTION_TIME_MS: 5000
       MAX_MEMORY_MB: 128
+    network_mode: bridge
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   frontend:
     build:
