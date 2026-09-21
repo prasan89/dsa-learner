@@ -89,7 +89,7 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
   }
 
   return (
-    <div className="h-screen bg-gray-950 text-white flex flex-col">
+    <div className="flex flex-col bg-gray-950 text-white h-full overflow-hidden">
       {/* Top bar */}
       <header className="flex items-center gap-3 px-4 py-2 bg-gray-900 border-b border-gray-800 shrink-0">
         <Link href="/problems" className="text-gray-400 hover:text-white text-sm transition-colors">

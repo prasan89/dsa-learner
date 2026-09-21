@@ -26,8 +26,9 @@ export default function RegisterPage() {
   const onSubmit = async (data: FormData) => {
     try {
       const res = await authApi.register(data);
-      Cookies.set("accessToken", res.data.tokens.accessToken, { expires: 1 / 96 });
-      Cookies.set("refreshToken", res.data.tokens.refreshToken, { expires: 7 });
+      const { accessToken, refreshToken } = res.data as any;
+      Cookies.set("accessToken", accessToken, { expires: 1 / 96 });
+      Cookies.set("refreshToken", refreshToken, { expires: 7 });
       toast.success("Account created! Welcome aboard.");
       router.push("/dashboard");
     } catch (err: any) {

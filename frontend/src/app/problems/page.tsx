@@ -17,7 +17,7 @@ export default function ProblemsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    patternsApi.list().then((r) => setPatterns(r.data));
+    patternsApi.list().then((r) => setPatterns((r.data as any) ?? []));
   }, []);
 
   useEffect(() => {
@@ -27,7 +27,7 @@ export default function ProblemsPage() {
         difficulty: difficulty || undefined,
         patternId: patternId || undefined,
       })
-      .then((r) => setProblems(r.data.problems))
+      .then((r) => setProblems((r.data as any).content ?? []))
       .finally(() => setLoading(false));
   }, [difficulty, patternId]);
 
