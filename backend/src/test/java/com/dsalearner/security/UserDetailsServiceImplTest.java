@@ -26,13 +26,12 @@ class UserDetailsServiceImplTest {
   @Test void fallsBackToEmail() {
     UUID id=UUID.randomUUID(); User u=mock(User.class);
     when(u.getId()).thenReturn(id); when(u.getPasswordHash()).thenReturn("hash");
-    when(repo.findById(any())).thenReturn(Optional.empty());
     when(repo.findByEmail("u@test.com")).thenReturn(Optional.of(u));
     assertEquals(id.toString(),new UserDetailsServiceImpl(repo).loadUserByUsername("u@test.com").getUsername());
   }
 
   @Test void unknownUserThrows() {
-    when(repo.findById(any())).thenReturn(Optional.empty()); when(repo.findByEmail(any())).thenReturn(Optional.empty());
+    when(repo.findByEmail(any())).thenReturn(Optional.empty());
     assertThrows(org.springframework.security.core.userdetails.UsernameNotFoundException.class,
       ()->new UserDetailsServiceImpl(repo).loadUserByUsername("missing"));
   }
