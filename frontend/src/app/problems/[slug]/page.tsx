@@ -199,7 +199,7 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
                 problemSlug={params.slug}
                 code={code}
                 remainingReviews={credits ?? 0}
-                onReviewComplete={setRemainingReviews}
+                onReviewComplete={setCredits}
               />
             )}
 
