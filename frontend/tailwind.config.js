@@ -8,14 +8,21 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Wireframe style guide primary
         brand: {
-          50:  "#f0f9ff",
-          100: "#e0f2fe",
-          500: "#0ea5e9",
-          600: "#0284c7",
-          700: "#0369a1",
-          900: "#0c4a6e",
+          50:  "#eef2ff",
+          100: "#e0e7ff",
+          200: "#c7d2fe",
+          400: "#818cf8",
+          500: "#6366f1",
+          600: "#4f46e5",
+          700: "#4338ca",
+          900: "#312e81",
         },
+        success: "#10B501",
+        warning: "#F5B80B",
+        error:   "#EF4444",
+        surface: "#FFFFFF",
         difficulty: {
           easy:   "#22c55e",
           medium: "#f59e0b",
@@ -23,6 +30,7 @@ module.exports = {
         },
       },
       fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
         mono: ["JetBrains Mono", "Fira Code", "monospace"],
       },
     },

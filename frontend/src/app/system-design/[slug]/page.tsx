@@ -4,207 +4,218 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { toast } from "react-hot-toast";
+import { ChevronRight, CheckCircle2, BookOpen, MessageSquare } from "lucide-react";
 import { patternsApi } from "@/lib/api/patterns";
 import { problemsApi } from "@/lib/api/problems";
-import { difficultyBadge } from "@/lib/utils";
 import type { Pattern, MasteryStatus } from "@/types";
+import { toast } from "react-hot-toast";
 
-const MASTERY_OPTIONS: { value: MasteryStatus; label: string; color: string }[] = [
-  { value: "NOT_STARTED", label: "Not Started", color: "text-gray-500 bg-gray-800 border-gray-700" },
-  { value: "LEARNING",    label: "Learning",    color: "text-blue-400 bg-blue-500/10 border-blue-500/30" },
-  { value: "PRACTICED",   label: "Practiced",   color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/30" },
-  { value: "MASTERED",    label: "Mastered",    color: "text-green-400 bg-green-500/10 border-green-500/30" },
-];
-
-const TOPIC_ICONS: Record<string, string> = {
-  "url-shortener": "🔗", "rate-limiter": "🚦", "news-feed": "📰",
-  "consistent-hashing": "🔄", "distributed-cache": "⚡",
-  "search-autocomplete": "🔍", "notification-system": "🔔", "message-queue": "📨",
+const MASTERY_STYLE: Record<MasteryStatus, string> = {
+  NOT_STARTED: "bg-gray-100 text-gray-600 border-gray-200",
+  LEARNING:    "bg-blue-50 text-blue-700 border-blue-200",
+  PRACTICED:   "bg-yellow-50 text-yellow-700 border-yellow-200",
+  MASTERED:    "bg-green-50 text-green-700 border-green-200",
 };
 
-type ActiveTab = "lesson" | "questions";
+const MASTERY_OPTIONS: { value: MasteryStatus; label: string }[] = [
+  { value: "NOT_STARTED", label: "Not Started" },
+  { value: "LEARNING",    label: "Learning" },
+  { value: "PRACTICED",   label: "Practiced" },
+  { value: "MASTERED",    label: "Mastered" },
+];
+
+type TabId = "overview" | "architecture" | "deep-dive" | "trade-offs" | "interview-qa" | "practice";
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: "overview",      label: "Overview" },
+  { id: "architecture",  label: "Architecture" },
+  { id: "deep-dive",     label: "Deep Dive" },
+  { id: "trade-offs",    label: "Trade-offs" },
+  { id: "interview-qa",  label: "Interview Q&A" },
+  { id: "practice",      label: "Practice" },
+];
 
 export default function SystemDesignTopicPage({ params }: { params: { slug: string } }) {
-  const [topic, setTopic]       = useState<Pattern | null>(null);
-  const [problems, setProblems] = useState<any[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [activeTab, setActiveTab] = useState<ActiveTab>("lesson");
-  const [saving, setSaving]     = useState(false);
+  const [pattern, setPattern]     = useState<Pattern | null>(null);
+  const [problems, setProblems]   = useState<any[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [saving, setSaving]       = useState(false);
+  const [activeTab, setActiveTab] = useState<TabId>("overview");
 
   useEffect(() => {
     patternsApi.get(params.slug).then((r) => {
-      setTopic(r.data);
+      setPattern(r.data);
       return problemsApi.list({ patternId: r.data.id });
     }).then((r) => {
       setProblems((r.data as any).content ?? []);
     }).finally(() => setLoading(false));
   }, [params.slug]);
 
-  async function handleMasteryChange(status: MasteryStatus) {
-    if (!topic) return;
+  async function handleMastery(status: MasteryStatus) {
+    if (!pattern) return;
     setSaving(true);
     try {
-      await patternsApi.updateMastery(topic.slug, status);
-      setTopic((t) => t ? { ...t, masteryStatus: status } : t);
-      toast.success(`Marked as ${status.replace(/_/g, " ").toLowerCase()}`);
-    } catch {
-      toast.error("Failed to update mastery");
-    } finally {
-      setSaving(false);
-    }
+      await patternsApi.updateMastery(pattern.slug, status);
+      setPattern((p) => p ? { ...p, masteryStatus: status } : p);
+      toast.success(`Mastery updated`);
+    } catch { toast.error("Failed to update"); }
+    finally { setSaving(false); }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center text-gray-400">
-        Loading…
-      </div>
-    );
-  }
-  if (!topic) return null;
+  if (loading) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <p className="text-gray-400 text-sm">Loading…</p>
+    </div>
+  );
+  if (!pattern) return null;
 
-  const currentMastery = (topic.masteryStatus ?? "NOT_STARTED") as MasteryStatus;
-  const masteryOption  = MASTERY_OPTIONS.find((o) => o.value === currentMastery) ?? MASTERY_OPTIONS[0];
-  const icon = TOPIC_ICONS[topic.slug] ?? "🏗️";
+  const mastery = (pattern.masteryStatus ?? "NOT_STARTED") as MasteryStatus;
+  const qaProblems = problems.filter(p => p.slug?.startsWith("sd-"));
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="border-b border-gray-800 bg-gray-900 px-6 py-6">
+      <div className="bg-white border-b border-gray-200 px-6 py-5">
         <div className="max-w-5xl mx-auto">
-          <Link href="/system-design" className="text-gray-500 text-sm hover:text-white transition-colors">
-            ← System Design
-          </Link>
+          <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-3">
+            <Link href="/dashboard" className="hover:text-gray-600">DSA</Link>
+            <ChevronRight size={12} />
+            <Link href="/system-design" className="hover:text-gray-600">System Design</Link>
+            <ChevronRight size={12} />
+            <span className="text-gray-600 font-medium">{pattern.name}</span>
+          </div>
 
-          <div className="flex items-start justify-between mt-4 gap-6">
-            <div className="flex items-start gap-4">
-              <span className="text-5xl">{icon}</span>
-              <div>
-                <h1 className="text-3xl font-bold">{topic.name}</h1>
-                <p className="text-gray-400 mt-1 max-w-2xl">{topic.summary}</p>
-                {(topic.timeComplexity || topic.spaceComplexity) && (
-                  <div className="flex gap-3 mt-3">
-                    {topic.timeComplexity && (
-                      <span className="text-xs font-mono bg-gray-800 border border-gray-700 rounded px-2 py-1 text-green-400">
-                        Time: {topic.timeComplexity}
-                      </span>
-                    )}
-                    {topic.spaceComplexity && (
-                      <span className="text-xs font-mono bg-gray-800 border border-gray-700 rounded px-2 py-1 text-blue-400">
-                        Space: {topic.spaceComplexity}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
+          <div className="flex items-start justify-between gap-6">
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-gray-900">{pattern.name}</h1>
+              <p className="text-gray-500 text-sm mt-1 max-w-2xl leading-relaxed">{pattern.summary}</p>
             </div>
-
-            {/* Mastery */}
-            <div className="shrink-0">
-              <p className="text-xs text-gray-500 mb-2 text-right">Your progress</p>
-              <div className="flex flex-col gap-1">
-                {MASTERY_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => handleMasteryChange(opt.value)}
-                    disabled={saving || opt.value === currentMastery}
-                    className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
-                      opt.value === currentMastery
-                        ? opt.color + " cursor-default"
-                        : "text-gray-500 bg-gray-900 border-gray-800 hover:border-gray-600 hover:text-gray-300"
-                    }`}
-                  >
-                    {opt.value === currentMastery ? "● " : "○ "}{opt.label}
-                  </button>
+            <div className="shrink-0 flex items-center gap-3">
+              <select value={mastery} disabled={saving}
+                onChange={(e) => handleMastery(e.target.value as MasteryStatus)}
+                className={`text-sm font-medium px-3 py-2 rounded-lg border cursor-pointer outline-none transition-colors ${MASTERY_STYLE[mastery]}`}>
+                {MASTERY_OPTIONS.map(o => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
-              </div>
+              </select>
+              {mastery === "MASTERED" && (
+                <button className="btn-secondary text-green-700 border-green-200 bg-green-50 hover:bg-green-100">
+                  ✓ Mark as Complete
+                </button>
+              )}
             </div>
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 mt-6">
-            {([
-              { id: "lesson" as const,    label: "📖 Lesson" },
-              { id: "questions" as const, label: `💬 Interview Questions (${problems.length})` },
-            ] as const).map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === tab.id
-                    ? "bg-brand-600 text-white"
-                    : "text-gray-400 hover:text-white hover:bg-gray-800"
-                }`}
-              >
-                {tab.label}
+          <div className="flex gap-0 mt-5 border-b border-gray-100 -mb-5 overflow-x-auto">
+            {TABS.map((t) => (
+              <button key={t.id} onClick={() => setActiveTab(t.id)}
+                className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${
+                  activeTab === t.id
+                    ? "text-brand-600 border-brand-600"
+                    : "text-gray-500 hover:text-gray-700 border-transparent"
+                }`}>
+                {t.label}
+                {t.id === "interview-qa" && qaProblems.length > 0 && (
+                  <span className="ml-1.5 text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
+                    {qaProblems.length}
+                  </span>
+                )}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      {/* Body */}
+      <div className="max-w-5xl mx-auto px-6 py-6">
 
-        {activeTab === "lesson" && topic.lessonMarkdown && (
-          <div className="prose prose-invert prose-sm max-w-none
-            prose-headings:text-white prose-headings:font-bold
-            prose-h2:text-xl prose-h2:border-b prose-h2:border-gray-800 prose-h2:pb-2
-            prose-h3:text-brand-400 prose-h3:text-base
-            prose-p:text-gray-300 prose-p:leading-relaxed
-            prose-code:text-green-300 prose-code:bg-gray-800 prose-code:px-1 prose-code:rounded prose-code:text-sm
-            prose-pre:bg-gray-900 prose-pre:border prose-pre:border-gray-700 prose-pre:rounded-xl
-            prose-table:text-sm prose-th:text-gray-400 prose-td:text-gray-300
-            prose-strong:text-white
-            prose-li:text-gray-300">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {topic.lessonMarkdown}
-            </ReactMarkdown>
+        {/* Overview / Lesson */}
+        {(activeTab === "overview" || activeTab === "deep-dive") && (
+          pattern.lessonMarkdown ? (
+            <div className="card p-6 prose prose-sm max-w-none
+              prose-headings:text-gray-900 prose-headings:font-bold
+              prose-h2:text-lg prose-h2:border-b prose-h2:border-gray-100 prose-h2:pb-2 prose-h2:mt-8
+              prose-h3:text-brand-700 prose-h3:text-base
+              prose-p:text-gray-600 prose-p:leading-relaxed
+              prose-code:text-green-700 prose-code:bg-green-50 prose-code:px-1.5 prose-code:rounded prose-code:text-xs
+              prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:rounded-xl
+              prose-table:text-sm prose-th:bg-gray-50 prose-th:text-gray-600 prose-td:text-gray-700
+              prose-strong:text-gray-900 prose-li:text-gray-600
+              prose-blockquote:border-brand-300 prose-blockquote:text-gray-500">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {pattern.lessonMarkdown}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <div className="card p-12 text-center">
+              <BookOpen size={32} className="text-gray-300 mx-auto mb-2" />
+              <p className="text-gray-400 text-sm">Lesson content coming soon.</p>
+            </div>
+          )
+        )}
+
+        {/* Architecture */}
+        {activeTab === "architecture" && (
+          <div className="card p-12 text-center">
+            <p className="text-4xl mb-3">🏗️</p>
+            <p className="text-gray-400 text-sm">Architecture diagrams coming soon.</p>
           </div>
         )}
 
-        {activeTab === "lesson" && !topic.lessonMarkdown && (
-          <div className="text-center py-16 text-gray-500">
-            <span className="text-4xl">📝</span>
-            <p className="mt-3">Lesson content coming soon.</p>
+        {/* Trade-offs */}
+        {activeTab === "trade-offs" && (
+          <div className="card p-12 text-center">
+            <p className="text-4xl mb-3">⚖️</p>
+            <p className="text-gray-400 text-sm">Trade-off tables coming soon.</p>
           </div>
         )}
 
-        {activeTab === "questions" && (
-          <div className="space-y-4">
-            {problems.length === 0 ? (
-              <div className="text-center py-16 text-gray-500">
-                <span className="text-4xl">💬</span>
-                <p className="mt-3">No questions yet.</p>
+        {/* Interview Q&A */}
+        {activeTab === "interview-qa" && (
+          <div>
+            {qaProblems.length === 0 ? (
+              <div className="card p-12 text-center">
+                <MessageSquare size={32} className="text-gray-300 mx-auto mb-2" />
+                <p className="text-gray-400 text-sm">No interview questions linked yet.</p>
               </div>
             ) : (
-              problems.map((p, i) => (
-                <Link
-                  key={p.id}
-                  href={`/system-design/question/${p.slug}`}
-                  className="block bg-gray-900 hover:bg-gray-800 border border-gray-800 hover:border-brand-500/50 rounded-xl p-5 transition-all group"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <span className="text-gray-600 text-sm font-mono mt-0.5 w-6 shrink-0">{i + 1}.</span>
-                      <div>
-                        <h3 className="font-semibold text-white group-hover:text-brand-400 transition-colors">
-                          {p.title}
-                        </h3>
-                        <p className="text-gray-500 text-sm mt-1 line-clamp-2">
-                          {p.description?.split("\n").find((l: string) => l.trim() && !l.startsWith("#"))?.replace(/[*#]/g, "").trim()}
-                        </p>
-                      </div>
+              <div className="space-y-3">
+                {qaProblems.map((p) => (
+                  <Link key={p.id} href={`/system-design/question/${p.slug}`}
+                    className="card hover:border-brand-200 hover:shadow-sm p-5 flex items-center gap-4 transition-all group">
+                    <div className="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center shrink-0">
+                      <MessageSquare size={14} className="text-brand-600" />
                     </div>
-                    <div className="shrink-0 flex flex-col items-end gap-2">
-                      <span className={difficultyBadge(p.difficulty)}>{p.difficulty}</span>
-                      {p.solved && <span className="text-xs text-green-400">✓ Solved</span>}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-800 group-hover:text-brand-600 transition-colors">
+                        {p.title}
+                      </p>
+                      {p.constraints && (
+                        <p className="text-xs text-gray-400 mt-0.5 truncate">{p.constraints}</p>
+                      )}
                     </div>
-                  </div>
-                </Link>
-              ))
+                    <div className="flex items-center gap-2 shrink-0">
+                      {p.solved && <CheckCircle2 size={14} className="text-green-500" />}
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        p.difficulty === "EASY"   ? "text-green-700 bg-green-100" :
+                        p.difficulty === "MEDIUM" ? "text-yellow-700 bg-yellow-100" :
+                                                    "text-red-700 bg-red-100"
+                      }`}>{p.difficulty}</span>
+                      <ChevronRight size={14} className="text-gray-300 group-hover:text-brand-400" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
             )}
+          </div>
+        )}
+
+        {/* Practice */}
+        {activeTab === "practice" && (
+          <div className="card p-12 text-center">
+            <p className="text-4xl mb-3">💪</p>
+            <p className="text-gray-400 text-sm">Practice problems coming soon.</p>
           </div>
         )}
       </div>
