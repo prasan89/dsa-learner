@@ -1,5 +1,4 @@
 import AppShell from "@/components/layout/AppShell";
-
-export default function PatternsLayout({ children }: { children: React.ReactNode }) {
+export default function RevisionLayout({ children }: { children: React.ReactNode }) {
   return <AppShell>{children}</AppShell>;
 }
