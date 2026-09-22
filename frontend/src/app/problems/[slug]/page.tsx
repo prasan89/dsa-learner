@@ -233,49 +233,96 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
 
             {/* Learn */}
             {leftTab === "learn" && (
-              <div className="p-5 space-y-6">
+              <div className="p-5 space-y-7">
                 {!problem?.content ? (
                   <div className="text-center py-12 text-gray-400">
                     <p className="text-sm">Learning content coming soon for this problem.</p>
                   </div>
                 ) : (<>
-                  {/* Recognition Note */}
-                  {problem.content.recognitionNote && (
-                    <div className="bg-brand-50 border border-brand-200 rounded-xl p-4">
-                      <p className="text-xs font-semibold text-brand-700 mb-1.5">Pattern Recognition</p>
-                      <p className="text-sm text-brand-800">{problem.content.recognitionNote}</p>
-                    </div>
+
+                  {/* ── Pattern Recognition ── */}
+                  {(problem.content.recognitionNote || problem.content.patternRecognitionClues
+                    || problem.content.whenToUse || problem.content.whenNotToUse) && (
+                    <section className="bg-brand-50 border border-brand-100 rounded-2xl p-5 space-y-4">
+                      <h3 className="text-sm font-bold text-brand-800 uppercase tracking-wide">Pattern Recognition</h3>
+
+                      {problem.content.recognitionNote && (
+                        <p className="text-sm text-brand-800">{problem.content.recognitionNote}</p>
+                      )}
+
+                      {problem.content.patternRecognitionClues && (
+                        <div>
+                          <p className="text-xs font-semibold text-brand-700 mb-1.5">Recognition Clues</p>
+                          <div className="prose prose-sm max-w-none prose-p:text-brand-800 prose-li:text-brand-800 prose-code:text-brand-700 prose-code:bg-brand-100 prose-code:px-1 prose-code:rounded">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{problem.content.patternRecognitionClues}</ReactMarkdown>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-3">
+                        {problem.content.whenToUse && (
+                          <div className="bg-green-50 border border-green-100 rounded-xl p-3">
+                            <p className="text-xs font-semibold text-green-700 mb-1">✓ When to use</p>
+                            <div className="prose prose-sm max-w-none prose-p:text-green-800 prose-li:text-green-800 prose-p:leading-relaxed">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{problem.content.whenToUse}</ReactMarkdown>
+                            </div>
+                          </div>
+                        )}
+                        {problem.content.whenNotToUse && (
+                          <div className="bg-red-50 border border-red-100 rounded-xl p-3">
+                            <p className="text-xs font-semibold text-red-700 mb-1">✗ When NOT to use</p>
+                            <div className="prose prose-sm max-w-none prose-p:text-red-800 prose-li:text-red-800 prose-p:leading-relaxed">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{problem.content.whenNotToUse}</ReactMarkdown>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </section>
                   )}
 
-                  {/* Intuition */}
+                  {/* ── Level 1: Intuition ── */}
                   {problem.content.intuition && (
                     <section>
-                      <h3 className="text-sm font-semibold text-gray-800 mb-2">Intuition</h3>
-                      <div className="prose prose-sm max-w-none prose-p:text-gray-700 prose-p:leading-relaxed">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Level 1</span>
+                        <h3 className="text-sm font-semibold text-gray-800">Intuition</h3>
+                      </div>
+                      <div className="prose prose-sm max-w-none prose-p:text-gray-700 prose-p:leading-relaxed prose-strong:text-gray-900">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{problem.content.intuition}</ReactMarkdown>
                       </div>
                     </section>
                   )}
 
-                  {/* Brute Force */}
+                  {/* ── Level 2: Guided Reasoning ── */}
+                  {problem.content.guidedReasoning && (
+                    <section>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-bold text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full">Level 2</span>
+                        <h3 className="text-sm font-semibold text-gray-800">Guided Reasoning</h3>
+                      </div>
+                      <div className="prose prose-sm max-w-none prose-p:text-gray-700 prose-p:leading-relaxed prose-strong:text-gray-900 prose-blockquote:border-brand-400 prose-blockquote:text-gray-600">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{problem.content.guidedReasoning}</ReactMarkdown>
+                      </div>
+                    </section>
+                  )}
+
+                  {/* ── Brute Force ── */}
                   {problem.content.bruteForce && (
                     <section>
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-sm font-semibold text-gray-800">Brute Force</h3>
-                        {(problem.content.bruteTime || problem.content.bruteSpace) && (
-                          <div className="flex gap-2 text-xs">
-                            {problem.content.bruteTime && (
-                              <span className="bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full font-mono">
-                                Time: {problem.content.bruteTime}
-                              </span>
-                            )}
-                            {problem.content.bruteSpace && (
-                              <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-mono">
-                                Space: {problem.content.bruteSpace}
-                              </span>
-                            )}
-                          </div>
-                        )}
+                        <div className="flex gap-2 text-xs">
+                          {problem.content.bruteTime && (
+                            <span className="bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full font-mono">
+                              Time: {problem.content.bruteTime}
+                            </span>
+                          )}
+                          {problem.content.bruteSpace && (
+                            <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-mono">
+                              Space: {problem.content.bruteSpace}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="prose prose-sm max-w-none prose-p:text-gray-700 prose-p:leading-relaxed">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{problem.content.bruteForce}</ReactMarkdown>
@@ -283,25 +330,23 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
                     </section>
                   )}
 
-                  {/* Optimal Approach */}
+                  {/* ── Optimal Approach ── */}
                   {problem.content.optimalApproach && (
                     <section>
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-sm font-semibold text-gray-800">Optimal Approach</h3>
-                        {(problem.content.optimalTime || problem.content.optimalSpace) && (
-                          <div className="flex gap-2 text-xs">
-                            {problem.content.optimalTime && (
-                              <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-mono">
-                                Time: {problem.content.optimalTime}
-                              </span>
-                            )}
-                            {problem.content.optimalSpace && (
-                              <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-mono">
-                                Space: {problem.content.optimalSpace}
-                              </span>
-                            )}
-                          </div>
-                        )}
+                        <div className="flex gap-2 text-xs">
+                          {problem.content.optimalTime && (
+                            <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-mono">
+                              Time: {problem.content.optimalTime}
+                            </span>
+                          )}
+                          {problem.content.optimalSpace && (
+                            <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-mono">
+                              Space: {problem.content.optimalSpace}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="prose prose-sm max-w-none prose-p:text-gray-700 prose-p:leading-relaxed">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{problem.content.optimalApproach}</ReactMarkdown>
@@ -309,27 +354,48 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
                     </section>
                   )}
 
-                  {/* Pseudocode */}
+                  {/* ── Why This Works + Invariant ── */}
+                  {(problem.content.whyThisWorks || problem.content.invariant) && (
+                    <section className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 space-y-3">
+                      <h3 className="text-sm font-bold text-indigo-800">Why This Works</h3>
+                      {problem.content.whyThisWorks && (
+                        <div className="prose prose-sm max-w-none prose-p:text-indigo-900 prose-p:leading-relaxed">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{problem.content.whyThisWorks}</ReactMarkdown>
+                        </div>
+                      )}
+                      {problem.content.invariant && (
+                        <div className="bg-indigo-100 rounded-xl px-4 py-3">
+                          <p className="text-xs font-semibold text-indigo-600 mb-1">Invariant</p>
+                          <p className="text-sm text-indigo-900 font-mono">{problem.content.invariant}</p>
+                        </div>
+                      )}
+                    </section>
+                  )}
+
+                  {/* ── Level 3: Solution ── */}
+                  {problem.content.solution && (
+                    <section>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">Level 3</span>
+                        <h3 className="text-sm font-semibold text-gray-800">Solution</h3>
+                      </div>
+                      <pre className="bg-gray-900 text-green-300 rounded-xl p-4 text-xs overflow-x-auto whitespace-pre-wrap font-mono leading-relaxed">
+                        {problem.content.solution}
+                      </pre>
+                    </section>
+                  )}
+
+                  {/* ── Pseudocode ── */}
                   {problem.content.pseudocode && (
                     <section>
                       <h3 className="text-sm font-semibold text-gray-800 mb-2">Pseudocode</h3>
-                      <pre className="bg-gray-50 border border-gray-100 rounded-xl p-4 text-xs text-gray-700 overflow-x-auto whitespace-pre-wrap font-mono">
+                      <pre className="bg-gray-50 border border-gray-100 rounded-xl p-4 text-xs text-gray-700 overflow-x-auto whitespace-pre-wrap font-mono leading-relaxed">
                         {problem.content.pseudocode}
                       </pre>
                     </section>
                   )}
 
-                  {/* Java Solution */}
-                  {problem.content.javaSolution && (
-                    <section>
-                      <h3 className="text-sm font-semibold text-gray-800 mb-2">Java Solution</h3>
-                      <pre className="bg-gray-900 text-green-300 rounded-xl p-4 text-xs overflow-x-auto whitespace-pre-wrap font-mono">
-                        {problem.content.javaSolution}
-                      </pre>
-                    </section>
-                  )}
-
-                  {/* Common Mistakes */}
+                  {/* ── Common Mistakes ── */}
                   {problem.content.commonMistakes && (
                     <section>
                       <h3 className="text-sm font-semibold text-red-700 mb-2">Common Mistakes</h3>
@@ -339,7 +405,17 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
                     </section>
                   )}
 
-                  {/* Follow-up Questions */}
+                  {/* ── Senior Variations ── */}
+                  {problem.content.seniorVariations && (
+                    <section>
+                      <h3 className="text-sm font-semibold text-purple-800 mb-2">Senior Variations</h3>
+                      <div className="bg-purple-50 border border-purple-100 rounded-xl p-4 prose prose-sm max-w-none prose-p:text-purple-900 prose-li:text-purple-900 prose-p:leading-relaxed">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{problem.content.seniorVariations}</ReactMarkdown>
+                      </div>
+                    </section>
+                  )}
+
+                  {/* ── Follow-ups ── */}
                   {problem.followups?.length > 0 && (
                     <section>
                       <h3 className="text-sm font-semibold text-gray-800 mb-3">Interview Follow-ups</h3>
@@ -348,12 +424,16 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
                           <div key={i} className={`rounded-xl border px-4 py-3 text-sm ${
                             f.type === "SENIOR"
                               ? "border-purple-100 bg-purple-50 text-purple-800"
+                              : f.type === "VARIATION"
+                              ? "border-yellow-100 bg-yellow-50 text-yellow-800"
                               : "border-gray-100 bg-gray-50 text-gray-700"
                           }`}>
                             <span className={`text-xs font-semibold mr-2 ${
-                              f.type === "SENIOR" ? "text-purple-500" : "text-gray-400"
+                              f.type === "SENIOR" ? "text-purple-500"
+                              : f.type === "VARIATION" ? "text-yellow-600"
+                              : "text-gray-400"
                             }`}>
-                              {f.type === "SENIOR" ? "Senior" : "Follow-up"}
+                              {f.type === "SENIOR" ? "Senior" : f.type === "VARIATION" ? "Variation" : "Follow-up"}
                             </span>
                             {f.question}
                           </div>

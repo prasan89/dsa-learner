@@ -63,6 +63,7 @@ export interface Pattern {
 export interface Hint {
   id: string;
   level: 1 | 2 | 3;
+  label?: string;
   content: string;
   unlocked: boolean;
 }

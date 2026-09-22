@@ -5,7 +5,7 @@ import { Lightbulb, Lock, Unlock, ChevronDown, ChevronRight } from "lucide-react
 import { hintsApi } from "@/lib/api/hints";
 import type { Hint } from "@/types";
 
-const HINT_LABELS = ["Direction", "Approach", "Pseudocode"];
+const HINT_LABELS = ["Concept", "Direction", "Algorithm"];
 const HINT_COLORS = [
   "border-yellow-500/50 bg-yellow-500/5",
   "border-orange-500/50 bg-orange-500/5",
@@ -67,7 +67,7 @@ export default function HintPanel({ problemSlug, hints, onHintsUpdate }: HintPan
                 <Lock size={13} className="text-gray-500 shrink-0" />
               )}
               <span className={hint.unlocked ? "text-gray-200" : "text-gray-500"}>
-                Hint {hint.level}: {HINT_LABELS[idx]}
+                Hint {hint.level}: {hint.label ?? HINT_LABELS[idx]}
               </span>
               {hint.unlocked && (
                 <span className="ml-auto text-gray-500">

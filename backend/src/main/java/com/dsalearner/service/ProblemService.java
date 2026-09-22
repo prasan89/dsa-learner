@@ -97,8 +97,23 @@ public class ProblemService {
 
     private ProblemResponse.ContentDto toContentDto(ProblemContent c) {
         return new ProblemResponse.ContentDto(
-                c.getIntuition(), c.getBruteForce(), c.getBruteTime(), c.getBruteSpace(),
-                c.getOptimalApproach(), c.getOptimalTime(), c.getOptimalSpace(),
-                c.getPseudocode(), c.getJavaSolution(), c.getCommonMistakes(), c.getRecognitionNote());
+                c.getIntuition(),
+                c.getGuidedReasoning(),
+                c.getSolution(),
+                c.getRecognitionNote(),
+                c.getPatternRecognitionClues(),
+                c.getWhenToUse(),
+                c.getWhenNotToUse(),
+                c.getBruteForce(),
+                c.getBruteTime(),
+                c.getBruteSpace(),
+                c.getOptimalApproach(),
+                c.getOptimalTime(),
+                c.getOptimalSpace(),
+                c.getPseudocode(),
+                c.getWhyThisWorks(),
+                c.getInvariant(),
+                c.getCommonMistakes(),
+                c.getSeniorVariations());
     }
 }

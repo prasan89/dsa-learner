@@ -20,4 +20,7 @@ public class Hint {
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
+
+    @Column(length = 60)
+    private String label;
 }

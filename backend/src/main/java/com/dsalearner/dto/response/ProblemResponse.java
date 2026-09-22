@@ -23,7 +23,16 @@ public record ProblemResponse(
     public record PatternSummary(UUID id, String slug, String name) {}
 
     public record ContentDto(
+            // 3-level explanation
             String intuition,
+            String guidedReasoning,
+            String solution,
+            // Pattern recognition
+            String recognitionNote,
+            String patternRecognitionClues,
+            String whenToUse,
+            String whenNotToUse,
+            // Approach
             String bruteForce,
             String bruteTime,
             String bruteSpace,
@@ -31,10 +40,15 @@ public record ProblemResponse(
             String optimalTime,
             String optimalSpace,
             String pseudocode,
-            String javaSolution,
+            // Why this works
+            String whyThisWorks,
+            String invariant,
+            // Mistakes & senior
             String commonMistakes,
-            String recognitionNote
+            String seniorVariations
     ) {}
 
     public record FollowupDto(String question, String type) {}
+
+    public record HintDto(int level, String label, String content) {}
 }
