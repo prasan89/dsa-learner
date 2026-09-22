@@ -8,7 +8,7 @@ INSERT INTO hints(problem_id,level,content,label) VALUES
 ((SELECT id FROM problems WHERE slug='maximum-subarray'),3,$$Use Kadane: current = max(value, current + value), and best = max(best, current). Initialize from the first element so all-negative input works.$$,'Algorithm')
 ON CONFLICT(problem_id,level) DO UPDATE SET content=EXCLUDED.content,label=EXCLUDED.label;
 
-INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,content_status)
+INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,java_solution,content_status)
 VALUES
 ((SELECT id FROM problems WHERE slug='maximum-subarray'),
 $$Maximum Subarray is the canonical contiguous-range optimization problem. A negative running prefix can never improve a future sum, so it can be discarded.$$,
@@ -32,7 +32,15 @@ $$FUNCTION maxSubArray(nums)
 $$Every non-empty subarray ending at i either starts at i or extends a subarray ending at i-1. Therefore the recurrence considers every possible optimum without enumerating all ranges.$$,
 $$After processing i, current is the maximum sum of a non-empty contiguous subarray whose right endpoint is i.$$,
 $$Initialize best to zero instead of nums[0]; confuse subarray with subsequence; return current instead of global best; mishandle all-negative arrays.$$,
-$$Track start/end indices to return the actual range. For a circular array combine maximum-subarray and minimum-subarray reasoning. The O(1)-state scan can also process an unbounded stream when only the best sum is needed.$$,
+$$Track start/end indices to return the actual range. For a circular array combine maximum-subarray and minimum-subarray reasoning. The O(1)-state scan can also process an unbounded stream when only the best sum is needed.$$,,
+$$public int maxSubArray(int[] nums) {
+    int current = nums[0], best = nums[0];
+    for (int i = 1; i < nums.length; i++) {
+        current = Math.max(nums[i], current + nums[i]);
+        best = Math.max(best, current);
+    }
+    return best;
+}$$
 'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
@@ -89,7 +97,21 @@ $$FUNCTION productExceptSelf(nums)
 $$Before the reverse pass processes i, output[i] contains exactly all products left of i and suffix contains exactly all products right of i. Their product excludes nums[i].$$,
 $$During the reverse pass, suffix equals the product of nums[i+1..n-1]. During the forward pass, output[i] equals the product of nums[0..i-1].$$,
 $$Using division; including nums[i] in a prefix or suffix; claiming the required output array is not part of the space discussion; ignoring zero and numeric overflow.$$,
-$$Handle zero counts explicitly when division is permitted. For streaming input, exact per-position results generally require retaining enough information to revisit one side. For very large products consider long or BigInteger according to the contract.$$,
+$$Handle zero counts explicitly when division is permitted. For streaming input, exact per-position results generally require retaining enough information to revisit one side. For very large products consider long or BigInteger according to the contract.$$,,
+$$public int[] productExceptSelf(int[] nums) {
+    int[] result = new int[nums.length];
+    int prefix = 1;
+    for (int i = 0; i < nums.length; i++) {
+        result[i] = prefix;
+        prefix *= nums[i];
+    }
+    int suffix = 1;
+    for (int i = nums.length - 1; i >= 0; i--) {
+        result[i] *= suffix;
+        suffix *= nums[i];
+    }
+    return result;
+}$$
 'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
@@ -142,7 +164,18 @@ $$FUNCTION groupAnagrams(words)
 $$Two strings are anagrams exactly when every character count is equal. Therefore equal signatures are exactly the equivalence classes required by the problem.$$,
 $$After processing any prefix of the input, every processed word is in exactly one group identified by its complete frequency signature.$$,
 $$Using the raw word as the key; forgetting repeated letters; using a mutable array directly as a HashMap key; confusing sorting complexity with counting complexity; assuming lowercase input when the contract does not guarantee it.$$,
-$$For Unicode, use code-point frequency maps. For distributed processing, partition by the canonical signature so equal groups reach the same worker. If only counts are needed, avoid retaining all original strings.$$,
+$$For Unicode, use code-point frequency maps. For distributed processing, partition by the canonical signature so equal groups reach the same worker. If only counts are needed, avoid retaining all original strings.$$,,
+$$public List<List<String>> groupAnagrams(String[] strs) {
+    Map<String, List<String>> groups = new HashMap<>();
+    for (String word : strs) {
+        int[] count = new int[26];
+        for (char c : word.toCharArray()) count[c - 'a']++;
+        StringBuilder key = new StringBuilder();
+        for (int value : count) key.append('#').append(value);
+        groups.computeIfAbsent(key.toString(), k -> new ArrayList<>()).add(word);
+    }
+    return new ArrayList<>(groups.values());
+}$$
 'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
@@ -203,7 +236,26 @@ $$FUNCTION threeSum(nums)
 $$For a fixed anchor, sorted order means a smaller sum can only be increased by moving left rightward, while a larger sum can only be decreased by moving right leftward. Thus an entire set of pairs can be eliminated at each move.$$,
 $$For each anchor, every pair outside the current pointer interval has already been proven unable to create a new valid triplet for that anchor.$$,
 $$Forgetting to sort; returning duplicate triplets; skipping the wrong side after a match; confusing unique values with unique indices; overlooking integer overflow for extreme numeric constraints.$$,
-$$Generalize to arbitrary target. 4Sum fixes two anchors and then uses two pointers. If output can be quadratic, output size itself is a lower bound. Independent anchor ranges can be parallelized with deterministic merge/deduplication.$$,
+$$Generalize to arbitrary target. 4Sum fixes two anchors and then uses two pointers. If output can be quadratic, output size itself is a lower bound. Independent anchor ranges can be parallelized with deterministic merge/deduplication.$$,,
+$$public List<List<Integer>> threeSum(int[] nums) {
+    Arrays.sort(nums);
+    List<List<Integer>> result = new ArrayList<>();
+    for (int i = 0; i < nums.length - 2; i++) {
+        if (i > 0 && nums[i] == nums[i - 1]) continue;
+        int left = i + 1, right = nums.length - 1;
+        while (left < right) {
+            long sum = (long) nums[i] + nums[left] + nums[right];
+            if (sum == 0) {
+                result.add(List.of(nums[i], nums[left], nums[right]));
+                int lv = nums[left], rv = nums[right];
+                while (left < right && nums[left] == lv) left++;
+                while (left < right && nums[right] == rv) right--;
+            } else if (sum < 0) left++;
+            else right--;
+        }
+    }
+    return result;
+}$$
 'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
@@ -263,7 +315,22 @@ $$FUNCTION search(nums,target)
 $$If the left half is sorted, range comparison tells whether target can be there; if not, the target must be in the other half. The right-sorted case is symmetric. Thus the target remains inside the interval until found or the interval becomes empty.$$,
 $$If target exists, it remains inside [left,right] after every iteration.$$,
 $$Using ordinary binary search; incorrect inclusive boundaries; forgetting the distinct-value assumption; mixing the left-sorted and right-sorted conditions.$$,
-$$With duplicates, if nums[left]==nums[mid]==nums[right], shrinking both boundaries may be necessary and worst-case time can become O(n). The same structure can also find the rotation minimum.$$,
+$$With duplicates, if nums[left]==nums[mid]==nums[right], shrinking both boundaries may be necessary and worst-case time can become O(n). The same structure can also find the rotation minimum.$$,,
+$$public int search(int[] nums, int target) {
+    int left = 0, right = nums.length - 1;
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        if (nums[mid] == target) return mid;
+        if (nums[left] <= nums[mid]) {
+            if (nums[left] <= target && target < nums[mid]) right = mid - 1;
+            else left = mid + 1;
+        } else {
+            if (nums[mid] < target && target <= nums[right]) left = mid + 1;
+            else right = mid - 1;
+        }
+    }
+    return -1;
+}$$
 'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
@@ -276,16 +343,16 @@ INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
 ON CONFLICT DO NOTHING;
 
 INSERT INTO test_cases(id,problem_id,input,expected_output,is_hidden,display_order) VALUES
-(gen_random_uuid(),(SELECT id FROM problems WHERE slug='search-in-rotated-array'),'7
+(gen_random_uuid(),(SELECT id FROM problems WHERE slug='search-rotated-array'),'7
 4 5 6 7 0 1 2
 0','4',false,1),
-(gen_random_uuid(),(SELECT id FROM problems WHERE slug='search-in-rotated-array'),'7
+(gen_random_uuid(),(SELECT id FROM problems WHERE slug='search-rotated-array'),'7
 4 5 6 7 0 1 2
 3','-1',false,2),
-(gen_random_uuid(),(SELECT id FROM problems WHERE slug='search-in-rotated-array'),'5
+(gen_random_uuid(),(SELECT id FROM problems WHERE slug='search-rotated-array'),'5
 1 3 5 7 9
 7','3',true,3),
-(gen_random_uuid(),(SELECT id FROM problems WHERE slug='search-in-rotated-array'),'6
+(gen_random_uuid(),(SELECT id FROM problems WHERE slug='search-rotated-array'),'6
 6 7 0 1 2 4
 4','5',true,4);
 
@@ -322,7 +389,19 @@ $$FUNCTION dailyTemperatures(t)
 $$When index j is popped at i, no earlier index between j and i had a warmer temperature, otherwise j would already have been popped. Therefore i is its first warmer day.$$,
 $$The stack contains unresolved indices in increasing index order and non-increasing temperature order.$$,
 $$Storing values instead of indices; using >= when equal temperature is not warmer; forgetting unresolved answers stay zero; assuming the while loop makes the algorithm quadratic.$$,
-$$Reverse scanning is an equivalent formulation. The same abstraction supports next smaller and previous greater/smaller. Streaming output is possible for resolved indices, while unresolved state must be retained.$$,
+$$Reverse scanning is an equivalent formulation. The same abstraction supports next smaller and previous greater/smaller. Streaming output is possible for resolved indices, while unresolved state must be retained.$$,,
+$$public int[] dailyTemperatures(int[] temperatures) {
+    int[] answer = new int[temperatures.length];
+    Deque<Integer> stack = new ArrayDeque<>();
+    for (int i = 0; i < temperatures.length; i++) {
+        while (!stack.isEmpty() && temperatures[i] > temperatures[stack.peek()]) {
+            int previous = stack.pop();
+            answer[previous] = i - previous;
+        }
+        stack.push(i);
+    }
+    return answer;
+}$$
 'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
@@ -379,7 +458,20 @@ $$FUNCTION merge(a,b)
 $$Because each list is sorted, its head is the smallest remaining element in that list. Therefore the smaller of the two heads is globally safe to append.$$,
 $$The list after dummy contains exactly the smallest nodes removed from the two inputs so far and remains sorted.$$,
 $$Losing dummy.next; forgetting to advance a pointer; forgetting the remaining suffix; unnecessary node allocation; missing null-list cases.$$,
-$$Merge k lists with a min-heap in O(N log k). Recursive two-list merge is elegant but consumes call-stack space. Preserve immutability by copying nodes when ownership requires it.$$,
+$$Merge k lists with a min-heap in O(N log k). Recursive two-list merge is elegant but consumes call-stack space. Preserve immutability by copying nodes when ownership requires it.$$,,
+$$public ListNode mergeTwoLists(ListNode list1, ListNode list2) {
+    ListNode dummy = new ListNode(0), tail = dummy;
+    while (list1 != null && list2 != null) {
+        if (list1.val <= list2.val) {
+            tail.next = list1; list1 = list1.next;
+        } else {
+            tail.next = list2; list2 = list2.next;
+        }
+        tail = tail.next;
+    }
+    tail.next = list1 != null ? list1 : list2;
+    return dummy.next;
+}$$
 'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
@@ -443,7 +535,25 @@ $$FUNCTION levelOrder(root)
 $$At the beginning of each outer iteration, the queue contains exactly the unprocessed nodes at one depth. Children are added only for the next iteration, so the output is correctly partitioned by depth.$$,
 $$At the beginning of each level iteration, every node in the queue has the same depth.$$,
 $$Processing dynamically changing queue.size(); forgetting null root; using a recursive implementation without considering deep-tree stack depth; using a queue structure with unnecessary synchronization.$$,
-$$DFS can use O(h) call stack. Zigzag order can reverse alternating level lists. Very wide trees can require O(n) BFS memory, and very deep trees may favor iterative traversal to avoid JVM stack overflow.$$,
+$$DFS can use O(h) call stack. Zigzag order can reverse alternating level lists. Very wide trees can require O(n) BFS memory, and very deep trees may favor iterative traversal to avoid JVM stack overflow.$$,,
+$$public List<List<Integer>> levelOrder(TreeNode root) {
+    List<List<Integer>> result = new ArrayList<>();
+    if (root == null) return result;
+    Deque<TreeNode> queue = new ArrayDeque<>();
+    queue.offer(root);
+    while (!queue.isEmpty()) {
+        int levelSize = queue.size();
+        List<Integer> level = new ArrayList<>(levelSize);
+        for (int i = 0; i < levelSize; i++) {
+            TreeNode node = queue.poll();
+            level.add(node.val);
+            if (node.left != null) queue.offer(node.left);
+            if (node.right != null) queue.offer(node.right);
+        }
+        result.add(level);
+    }
+    return result;
+}$$
 'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
@@ -492,7 +602,15 @@ $$FUNCTION kthLargest(nums,k)
 $$After every processed prefix, the heap contains exactly the k largest values from that prefix, or all values if fewer than k have been processed. Therefore its minimum is the kth largest after the full scan.$$,
 $$After processing any prefix, the heap contains the k largest processed values, bounded by the number processed when it is less than k.$$,
 $$Using a max-heap and removing the maximum; forgetting duplicates count; claiming O(log n) rather than O(log k); not validating k range.$$,
-$$Quickselect has expected O(n) time and O(1) auxiliary space but different worst-case behavior. The heap is naturally streaming. For distributed data, compute local top-k and merge those candidates into a global top-k.$$,
+$$Quickselect has expected O(n) time and O(1) auxiliary space but different worst-case behavior. The heap is naturally streaming. For distributed data, compute local top-k and merge those candidates into a global top-k.$$,,
+$$public int findKthLargest(int[] nums, int k) {
+    PriorityQueue<Integer> minHeap = new PriorityQueue<>();
+    for (int num : nums) {
+        minHeap.offer(num);
+        if (minHeap.size() > k) minHeap.poll();
+    }
+    return minHeap.peek();
+}$$
 'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
@@ -556,7 +674,31 @@ $$FUNCTION numIslands(grid)
 $$A traversal never crosses water, so it stays inside one component. Marking immediately prevents repeated discovery. Therefore each island contributes exactly one count and every land cell is processed once.$$,
 $$Every cell already marked visited belongs to a discovered component, and no unvisited land cell in the active component can be reached without being discovered by the traversal.$$,
 $$Counting diagonal cells as connected when only four directions are allowed; marking after enqueue rather than before; recursive DFS stack overflow on huge grids; mutating input without permission.$$,
-$$If land is added dynamically, Union-Find can maintain component counts. For huge distributed grids, partitioning needs boundary reconciliation because components can cross partition edges. Use a visited matrix when input mutation is forbidden.$$,
+$$If land is added dynamically, Union-Find can maintain component counts. For huge distributed grids, partitioning needs boundary reconciliation because components can cross partition edges. Use a visited matrix when input mutation is forbidden.$$,,
+$$public int numIslands(char[][] grid) {
+    int rows = grid.length, cols = grid[0].length, islands = 0;
+    int[][] directions = {{1,0},{-1,0},{0,1},{0,-1}};
+    for (int r = 0; r < rows; r++) {
+        for (int c = 0; c < cols; c++) {
+            if (grid[r][c] != '1') continue;
+            islands++;
+            Deque<int[]> queue = new ArrayDeque<>();
+            queue.offer(new int[]{r,c});
+            grid[r][c] = '0';
+            while (!queue.isEmpty()) {
+                int[] cell = queue.poll();
+                for (int[] d : directions) {
+                    int nr = cell[0] + d[0], nc = cell[1] + d[1];
+                    if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && grid[nr][nc] == '1') {
+                        grid[nr][nc] = '0';
+                        queue.offer(new int[]{nr,nc});
+                    }
+                }
+            }
+        }
+    }
+    return islands;
+}$$
 'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
