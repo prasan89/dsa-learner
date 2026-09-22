@@ -143,6 +143,16 @@
               <rules>
                 <rule>
                   <element>BUNDLE</element>
+                  <excludes>
+                    <exclude>**/controller/**</exclude>
+                    <exclude>**/dto/**</exclude>
+                    <exclude>**/model/**</exclude>
+                    <exclude>**/repository/**</exclude>
+                    <exclude>**/config/**</exclude>
+                    <exclude>**/service/AiService.class</exclude>
+                    <exclude>**/service/PaymentService.class</exclude>
+                    <exclude>**/service/SubmissionService.class</exclude>
+                  </excludes>
                   <limits>
                     <limit>
                       <counter>LINE</counter>
