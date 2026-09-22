@@ -6,10 +6,11 @@ import Cookies from "js-cookie";
 import { authApi } from "@/lib/api/auth";
 
 const NAV_LINKS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/problems", label: "Problems" },
-  { href: "/patterns", label: "Patterns" },
-  { href: "/wallet", label: "Wallet" },
+  { href: "/dashboard",     label: "Dashboard" },
+  { href: "/problems",      label: "Problems" },
+  { href: "/patterns",      label: "Patterns" },
+  { href: "/system-design", label: "System Design" },
+  { href: "/wallet",        label: "Wallet" },
 ];
 
 export default function Navbar() {

@@ -14,5 +14,6 @@ public record PatternResponse(
         String lessonMarkdown,
         String timeComplexity,
         String spaceComplexity,
-        String masteryStatus
+        String masteryStatus,
+        String category
 ) {}

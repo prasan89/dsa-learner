@@ -37,4 +37,7 @@ public class Pattern {
     private String timeComplexity;
 
     private String spaceComplexity;
+
+    @Column(nullable = false)
+    private String category = "DSA";
 }

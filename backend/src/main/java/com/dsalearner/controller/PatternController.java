@@ -24,10 +24,17 @@ public class PatternController {
 
     @GetMapping
     public ResponseEntity<List<PatternResponse>> list(
+            @RequestParam(required = false) String category,
             @AuthenticationPrincipal UserDetails userDetails) {
         if (userDetails != null) {
             UUID userId = UUID.fromString(userDetails.getUsername());
+            if (category != null && !category.isBlank()) {
+                return ResponseEntity.ok(patternService.findAllByCategoryForUser(category.toUpperCase(), userId));
+            }
             return ResponseEntity.ok(patternService.findAllForUser(userId));
+        }
+        if (category != null && !category.isBlank()) {
+            return ResponseEntity.ok(patternService.findAllByCategory(category.toUpperCase()));
         }
         return ResponseEntity.ok(patternService.findAll());
     }

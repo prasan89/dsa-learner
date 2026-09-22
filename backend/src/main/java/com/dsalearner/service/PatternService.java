@@ -28,8 +28,23 @@ public class PatternService {
                 .stream().map(p -> toResponse(p, null)).toList();
     }
 
+    public List<PatternResponse> findAllByCategory(String category) {
+        return patternRepository.findByCategoryOrderByDisplayOrder(category)
+                .stream().map(p -> toResponse(p, null)).toList();
+    }
+
     public List<PatternResponse> findAllForUser(UUID userId) {
         List<Pattern> patterns = patternRepository.findAll(Sort.by("displayOrder"));
+        List<PatternMastery> masteries = masteryRepository.findByUserId(userId);
+        Map<UUID, String> masteryMap = masteries.stream()
+                .collect(Collectors.toMap(m -> m.getPattern().getId(), m -> m.getStatus().name()));
+        return patterns.stream()
+                .map(p -> toResponse(p, masteryMap.getOrDefault(p.getId(), "NOT_STARTED")))
+                .toList();
+    }
+
+    public List<PatternResponse> findAllByCategoryForUser(String category, UUID userId) {
+        List<Pattern> patterns = patternRepository.findByCategoryOrderByDisplayOrder(category);
         List<PatternMastery> masteries = masteryRepository.findByUserId(userId);
         Map<UUID, String> masteryMap = masteries.stream()
                 .collect(Collectors.toMap(m -> m.getPattern().getId(), m -> m.getStatus().name()));
@@ -59,6 +74,6 @@ public class PatternService {
         return new PatternResponse(p.getId(), p.getSlug(), p.getName(), p.getSummary(),
                 clues, p.getTemplateCode(), p.getDisplayOrder(),
                 p.getLessonMarkdown(), p.getTimeComplexity(), p.getSpaceComplexity(),
-                masteryStatus);
+                masteryStatus, p.getCategory());
     }
 }

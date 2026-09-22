@@ -56,6 +56,7 @@ export interface Pattern {
   timeComplexity?: string;
   spaceComplexity?: string;
   masteryStatus?: MasteryStatus;
+  category?: string;
 }
 
 // ─── Hints ───────────────────────────────────────────────────
