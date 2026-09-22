@@ -169,9 +169,9 @@ export default function SystemDesignPage() {
               })}
             </div>
 
-            {/* Coming soon teaser */}
-            <div className="mt-8 p-6 rounded-2xl border border-dashed border-gray-700 text-center">
-              <p className="text-gray-600 text-sm">More topics coming: Database Sharding, API Gateway, Service Mesh, CDN, Load Balancer internals…</p>
+            <div className="mt-8 p-6 rounded-2xl border border-gray-800 bg-gray-900/40 text-center">
+              <p className="text-gray-400 text-sm">System Design curriculum expanded with distributed-systems fundamentals, production architecture and senior case studies.</p>
+              <p className="text-gray-600 text-xs mt-1">Use the topic cards above to build fundamentals before tackling the case studies.</p>
             </div>
           </>
         )}
