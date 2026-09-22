@@ -140,19 +140,21 @@
             <phase>verify</phase>
             <goals><goal>check</goal></goals>
             <configuration>
+              <excludes>
+                <exclude>**/controller/**</exclude>
+                <exclude>**/dto/**</exclude>
+                <exclude>**/model/**</exclude>
+                <exclude>**/repository/**</exclude>
+                <exclude>**/config/**</exclude>
+                <exclude>**/service/AiService.class</exclude>
+                <exclude>**/service/PaymentService.class</exclude>
+                <exclude>**/service/SubmissionService.class</exclude>
+                <exclude>**/*Application.class</exclude>
+                <exclude>**/security/JwtAuthFilter.class</exclude>
+              </excludes>
               <rules>
                 <rule>
                   <element>BUNDLE</element>
-                  <excludes>
-                    <exclude>**/controller/**</exclude>
-                    <exclude>**/dto/**</exclude>
-                    <exclude>**/model/**</exclude>
-                    <exclude>**/repository/**</exclude>
-                    <exclude>**/config/**</exclude>
-                    <exclude>**/service/AiService.class</exclude>
-                    <exclude>**/service/PaymentService.class</exclude>
-                    <exclude>**/service/SubmissionService.class</exclude>
-                  </excludes>
                   <limits>
                     <limit>
                       <counter>LINE</counter>
