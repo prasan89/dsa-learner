@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Home, Code2, Coffee, Layout, Bot, Dumbbell,
-  RotateCcw, BarChart2, Users, CreditCard, ChevronRight, Zap
+  RotateCcw, BarChart2, Users, CreditCard, ChevronRight, Zap, LogOut
 } from "lucide-react";
+import { authApi } from "@/lib/api/auth";
+import Cookies from "js-cookie";
 
 const NAV = [
   { href: "/dashboard",     label: "Home",          icon: Home },
@@ -21,7 +23,15 @@ const NAV = [
 ];
 
 export default function Sidebar() {
-  const path = usePathname();
+  const path   = usePathname();
+  const router = useRouter();
+
+  async function handleSignOut() {
+    try { await authApi.logout(); } catch {}
+    Cookies.remove("accessToken");
+    Cookies.remove("refreshToken");
+    router.push("/login");
+  }
 
   return (
     <aside className="fixed top-0 left-0 h-screen bg-white border-r border-gray-200 flex flex-col z-40"
@@ -53,6 +63,15 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Sign out */}
+      <div className="px-3 mb-1">
+        <button onClick={handleSignOut}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors">
+          <LogOut size={16} />
+          <span>Sign Out</span>
+        </button>
+      </div>
 
       {/* Pro upsell */}
       <div className="mx-3 mb-3 p-3 rounded-xl bg-gradient-to-br from-brand-50 to-purple-50 border border-brand-100">
