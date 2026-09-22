@@ -1,0 +1,4 @@
+import { defineConfig, devices } from '@playwright/test';
+import dotenv from 'dotenv';
+dotenv.config({ path: process.env.E2E_ENV_FILE || '.env.e2e' });
+export default defineConfig({testDir:'.',timeout:45000,expect:{timeout:10000},fullyParallel:false,forbidOnly:!!process.env.CI,retries:process.env.CI?1:0,workers:process.env.CI?2:1,reporter:[['list'],['html',{outputFolder:'playwright-report',open:'never'}]],outputDir:'test-results',use:{baseURL:process.env.E2E_BASE_URL||'http://localhost:3000',trace:'retain-on-failure',screenshot:'only-on-failure',video:'retain-on-failure',actionTimeout:10000,navigationTimeout:30000,...devices['Desktop Chrome']},projects:[{name:'smoke',testMatch:/.*\\.spec\\.ts/,grep:/@smoke/},{name:'regression',testMatch:/.*\\.spec\\.ts/,grep:/@regression|@security|@payments/}]});
