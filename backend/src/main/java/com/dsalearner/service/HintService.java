@@ -31,7 +31,7 @@ public class HintService {
         Set<UUID> unlockedIds = Set.copyOf(userHintRepository.findUnlockedHintIdsByUserId(userId));
 
         return hints.stream()
-                .map(h -> new HintResponse(h.getId(), h.getLevel(), h.getContent(), unlockedIds.contains(h.getId())))
+                .map(h -> new HintResponse(h.getId(), h.getLevel(), h.getLabel(), h.getContent(), unlockedIds.contains(h.getId())))
                 .toList();
     }
 
@@ -56,6 +56,6 @@ public class HintService {
                     });
         }
 
-        return new HintResponse(hint.getId(), hint.getLevel(), hint.getContent(), true);
+        return new HintResponse(hint.getId(), hint.getLevel(), hint.getLabel(), hint.getContent(), true);
     }
 }
