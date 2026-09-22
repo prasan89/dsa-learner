@@ -8,7 +8,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   ChevronRight, ChevronDown, RotateCcw, Maximize2,
-  Play, Send, Bot, CheckCircle2, XCircle, AlertTriangle
+  Play, Send, Bot, CheckCircle2, XCircle, AlertTriangle, Lock
 } from "lucide-react";
 import { problemsApi } from "@/lib/api/problems";
 import { hintsApi } from "@/lib/api/hints";
@@ -42,6 +42,7 @@ function StatusIcon({ status }: { status: string }) {
 
 export default function ProblemPage({ params }: { params: { slug: string } }) {
   const [problem, setProblem]         = useState<any>(null);
+  const [locked, setLocked]           = useState(false);
   const [code, setCode]               = useState(DEFAULT_CODE);
   const [leftTab, setLeftTab]         = useState<LeftTab>("description");
   const [runResult, setRunResult]     = useState<RunResult | null>(null);
@@ -57,6 +58,9 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
   useEffect(() => {
     problemsApi.get(params.slug)
       .then((r) => setProblem(r.data))
+      .catch((err: any) => {
+        if (err.response?.status === 402) setLocked(true);
+      })
       .finally(() => setLoading(false));
     hintsApi.list(params.slug).then((r) => setHints(r.data)).catch(() => {});
     aiApi.wallet().then((r) => setCredits(r.data.totalCredits)).catch(() => {});
@@ -104,6 +108,28 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
   if (loading) return (
     <div className="h-screen bg-gray-50 flex items-center justify-center">
       <p className="text-gray-400 text-sm">Loading…</p>
+    </div>
+  );
+
+  if (locked) return (
+    <div className="h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="max-w-md w-full text-center bg-white rounded-2xl shadow-sm border border-gray-200 p-10">
+        <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-5">
+          <Lock size={26} className="text-amber-600" />
+        </div>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Pro Problem</h2>
+        <p className="text-gray-500 text-sm mb-6">
+          This problem is part of the Pro plan. Upgrade to unlock all 250+ problems, gold-standard
+          hints, and senior follow-ups.
+        </p>
+        <Link href="/pricing"
+          className="inline-block w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm transition-colors">
+          Upgrade to Pro — ₹999/month
+        </Link>
+        <Link href="/problems" className="block mt-4 text-xs text-gray-400 hover:text-gray-600">
+          ← Back to problems
+        </Link>
+      </div>
     </div>
   );
 

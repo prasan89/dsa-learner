@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import { CheckCircle2, ChevronRight } from "lucide-react";
+import { CheckCircle2, ChevronRight, Lock } from "lucide-react";
 import { problemsApi } from "@/lib/api/problems";
 import { patternsApi } from "@/lib/api/patterns";
+import { useSubscription } from "@/lib/useSubscription";
 import type { Pattern } from "@/types";
 import { difficultyBadge } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ export default function ProblemsPage() {
   const pageRef                   = useRef(0);
   const loadingRef                = useRef(false);
   const hasMoreRef                = useRef(true);
+  const { pro } = useSubscription();
 
   useEffect(() => {
     patternsApi.list({ category: "DSA" }).then((r) => setPatterns((r.data as any) ?? []));
@@ -115,10 +117,34 @@ export default function ProblemsPage() {
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
+              {/* Upgrade CTA for free users */}
+              {pro === false && (
+                <Link href="/pricing"
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-white transition-colors flex items-center gap-1.5">
+                  <Lock size={11} />
+                  Upgrade to Pro
+                </Link>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Free-tier banner */}
+      {pro === false && (
+        <div className="max-w-5xl mx-auto px-6 pt-4">
+          <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 flex items-center justify-between gap-4">
+            <p className="text-sm text-amber-800">
+              <span className="font-semibold">Free plan</span> — you have access to {problems.length} problems.
+              Upgrade to Pro to unlock all 250+ problems.
+            </p>
+            <Link href="/pricing"
+              className="shrink-0 text-xs font-semibold text-amber-700 hover:text-amber-900 underline underline-offset-2">
+              See plans →
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-5xl mx-auto px-6 py-5">
         <div className="card overflow-hidden">

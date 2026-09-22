@@ -3,6 +3,8 @@ package com.dsalearner.controller;
 import com.dsalearner.dto.response.DashboardResponse;
 import com.dsalearner.dto.response.SubmissionResponse;
 import com.dsalearner.dto.response.UserProgressResponse;
+import com.dsalearner.model.entity.UserSubscription;
+import com.dsalearner.repository.UserSubscriptionRepository;
 import com.dsalearner.service.DashboardService;
 import com.dsalearner.service.SpacedRepetitionService;
 import com.dsalearner.service.SubmissionService;
@@ -14,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -25,12 +28,23 @@ public class UserController {
     private final SubmissionService          submissionService;
     private final SpacedRepetitionService    spacedRepetitionService;
     private final DashboardService           dashboardService;
+    private final UserSubscriptionRepository userSubscriptionRepository;
 
     @GetMapping("/dashboard")
     public ResponseEntity<DashboardResponse> dashboard(
             @AuthenticationPrincipal UserDetails userDetails) {
         UUID userId = UUID.fromString(userDetails.getUsername());
         return ResponseEntity.ok(dashboardService.getDashboard(userId));
+    }
+
+    @GetMapping("/subscription")
+    public ResponseEntity<Map<String, Object>> subscription(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        UUID userId = UUID.fromString(userDetails.getUsername());
+        UserSubscription sub = userSubscriptionRepository.findByUserId(userId).orElse(null);
+        String plan = sub != null ? sub.getPlan().name() : "FREE";
+        boolean pro  = sub != null && sub.isPro();
+        return ResponseEntity.ok(Map.of("plan", plan, "pro", pro));
     }
 
     @GetMapping("/progress")

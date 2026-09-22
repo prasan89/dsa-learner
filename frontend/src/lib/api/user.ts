@@ -8,6 +8,11 @@ export interface DashboardData {
   nextAction: { slug: string; title: string; patternName: string; difficulty: string } | null;
 }
 
+export interface SubscriptionData {
+  plan: "FREE" | "PRO";
+  pro: boolean;
+}
+
 export const userApi = {
   progress: () => api.get<{
     totalSolved: number;
@@ -19,5 +24,7 @@ export const userApi = {
   dashboard: () => api.get<DashboardData>("/users/me/dashboard"),
 
   recentSubmissions: () => api.get<any[]>("/users/me/submissions"),
+
+  subscription: () => api.get<SubscriptionData>("/users/me/subscription"),
 };
 

@@ -13,5 +13,6 @@ public record ProblemSummaryResponse(
         List<String> tags,
         List<ProblemResponse.PatternSummary> patterns,
         double acceptanceRate,
-        boolean solved
+        boolean solved,
+        boolean locked
 ) {}

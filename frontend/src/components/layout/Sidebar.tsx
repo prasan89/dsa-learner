@@ -4,9 +4,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Home, Code2, Coffee, Layout, Bot, Dumbbell,
-  RotateCcw, BarChart2, Users, CreditCard, ChevronRight, Zap, LogOut
+  RotateCcw, BarChart2, Users, CreditCard, ChevronRight, Zap, LogOut, Lock
 } from "lucide-react";
 import { authApi } from "@/lib/api/auth";
+import { useSubscription } from "@/lib/useSubscription";
 
 const NAV = [
   { href: "/dashboard",     label: "Home",          icon: Home },
@@ -24,6 +25,7 @@ const NAV = [
 export default function Sidebar() {
   const path   = usePathname();
   const router = useRouter();
+  const { pro } = useSubscription();
 
   async function handleSignOut() {
     try { await authApi.logout(); } catch {}
@@ -70,14 +72,20 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* Pro upsell */}
-      <div className="mx-3 mb-3 p-3 rounded-xl bg-gradient-to-br from-brand-50 to-purple-50 border border-brand-100">
-        <p className="text-xs font-semibold text-brand-700 mb-0.5">Upgrade to Pro</p>
-        <p className="text-xs text-gray-500 leading-tight">Get more AI credits and advanced features</p>
-        <button className="mt-2 w-full text-xs font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1">
-          Learn more <ChevronRight size={12} />
-        </button>
-      </div>
+      {/* Pro upsell — only shown for free users */}
+      {pro === false && (
+        <div className="mx-3 mb-3 p-3 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <Lock size={11} className="text-amber-600" />
+            <p className="text-xs font-semibold text-amber-700">Free plan</p>
+          </div>
+          <p className="text-xs text-gray-500 leading-tight">20 problems unlocked. Upgrade for all 250+.</p>
+          <Link href="/pricing"
+            className="mt-2 w-full text-xs font-semibold text-amber-600 hover:text-amber-800 flex items-center gap-1">
+            Upgrade to Pro ₹999/mo <ChevronRight size={12} />
+          </Link>
+        </div>
+      )}
     </aside>
   );
 }

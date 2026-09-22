@@ -51,4 +51,8 @@ public class Problem {
     @Column(nullable = false)
     @Builder.Default
     private boolean active = true;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean freeAccess = false;
 }
