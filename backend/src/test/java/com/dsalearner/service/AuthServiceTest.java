@@ -22,7 +22,7 @@ class AuthServiceTest {
    AuthService s=new AuthService(users,tokens,jwt,encoder); UUID id=UUID.randomUUID(); User u=mock(User.class);
    when(users.existsByEmail("a@b.com")).thenReturn(false); when(encoder.encode("Pass1")).thenReturn("hash");
    when(users.save(any(User.class))).thenReturn(u); when(u.getId()).thenReturn(id); when(u.getEmail()).thenReturn("a@b.com"); when(u.getName()).thenReturn("A");
-   when(jwt.generateAccessToken(any(),eq("a@b.com"))).thenReturn("access"); when(jwt.generateRefreshToken(any(UUID.class))).thenReturn("refresh"); when(jwt.getRefreshTokenExpiryMs()).thenReturn(1000L);
+   when(jwt.generateAccessToken(isNull(),eq("a@b.com"))).thenReturn("access"); when(jwt.generateRefreshToken(isNull())).thenReturn("refresh"); when(jwt.getRefreshTokenExpiryMs()).thenReturn(1000L);
    assertEquals("access",s.register(new RegisterRequest("A","a@b.com","Pass1")).accessToken());
    verify(tokens).save(any(RefreshToken.class));
    when(users.existsByEmail("a@b.com")).thenReturn(true);
