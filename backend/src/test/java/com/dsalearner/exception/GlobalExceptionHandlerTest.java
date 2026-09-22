@@ -3,6 +3,7 @@ package com.dsalearner.exception;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.*;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
