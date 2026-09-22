@@ -2,6 +2,8 @@ package com.dsalearner.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -79,6 +81,14 @@ public class ProblemContent {
 
     @Column(name = "senior_variations", columnDefinition = "TEXT")
     private String seniorVariations;
+
+    @Column(name = "content_status", length = 30, nullable = false)
+    @Builder.Default
+    private String contentStatus = "DRAFT";
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "quality_flags", columnDefinition = "jsonb")
+    private java.util.Map<String, Boolean> qualityFlags;
 
     @Builder.Default
     @Column(name = "created_at", nullable = false)

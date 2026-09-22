@@ -3,6 +3,7 @@ package com.dsalearner.controller;
 import com.dsalearner.dto.response.PageResponse;
 import com.dsalearner.dto.response.ProblemResponse;
 import com.dsalearner.dto.response.ProblemSummaryResponse;
+import com.dsalearner.dto.response.QualityCheckResponse;
 import com.dsalearner.security.JwtService;
 import com.dsalearner.service.ProblemService;
 import lombok.RequiredArgsConstructor;
@@ -39,5 +40,10 @@ public class ProblemController {
 
         UUID userId = userDetails != null ? UUID.fromString(userDetails.getUsername()) : null;
         return ResponseEntity.ok(problemService.findBySlug(slug, userId));
+    }
+
+    @GetMapping("/{slug}/quality-check")
+    public ResponseEntity<QualityCheckResponse> qualityCheck(@PathVariable String slug) {
+        return ResponseEntity.ok(problemService.getQualityCheck(slug));
     }
 }

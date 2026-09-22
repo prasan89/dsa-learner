@@ -34,7 +34,8 @@ public class AiController {
             @AuthenticationPrincipal UserDetails userDetails) {
         UUID userId = UUID.fromString(userDetails.getUsername());
 
-        if (!creditService.deductForReview(userId)) {
+        // Check credit balance without deducting yet
+        if (creditService.getWallet(userId).totalCredits() < 1) {
             throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
                     "Insufficient AI credits. Please purchase more credits.");
         }
@@ -42,8 +43,19 @@ public class AiController {
         Problem problem = problemRepository.findBySlug(request.problemSlug())
                 .orElseThrow(() -> new NotFoundException("Problem not found: " + request.problemSlug()));
 
-        AiReviewResponse response = aiService.reviewCode(
-                problem.getTitle(), problem.getDescription(), request.code());
+        // Call AI — only deduct credit after a successful response
+        AiReviewResponse response;
+        try {
+            response = aiService.reviewCode(
+                    problem.getTitle(), problem.getDescription(), request.code());
+        } catch (Exception e) {
+            // AI call failed — no credit consumed
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "AI review service is temporarily unavailable. Please try again shortly.");
+        }
+
+        // Deduct now that we have a valid response
+        creditService.deductForReview(userId);
         return ResponseEntity.ok(response);
     }
 

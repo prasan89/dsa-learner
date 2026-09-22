@@ -47,6 +47,16 @@ public class CreditService {
     }
 
     @Transactional
+    public void refundForReview(UUID userId) {
+        AiCreditWallet wallet = getOrCreateWallet(userId);
+        wallet.setFreeCredits(wallet.getFreeCredits() + FREE_REVIEW_COST);
+        wallet.setLifetimeUsed(Math.max(0, wallet.getLifetimeUsed() - FREE_REVIEW_COST));
+        wallet.setUpdatedAt(Instant.now());
+        walletRepository.save(wallet);
+        recordTransaction(wallet.getUser(), FREE_REVIEW_COST, CreditTransaction.TxType.FREE_GRANT, "AI review refund — service error");
+    }
+
+    @Transactional
     public boolean deductForHint(UUID userId) {
         return deduct(userId, FREE_HINT_COST, CreditTransaction.TxType.AI_HINT, "AI hint unlock");
     }

@@ -38,8 +38,10 @@ export default function AiReviewPanel({
     } catch (e: any) {
       if (e?.response?.status === 402) {
         setError("Insufficient credits. Purchase more on the wallet page.");
+      } else if (e?.response?.status === 503) {
+        setError("AI service temporarily unavailable. No credit was used — please try again.");
       } else {
-        setError("AI review failed. Try again.");
+        setError("AI review failed. No credit was used — please try again.");
       }
     } finally {
       setLoading(false);

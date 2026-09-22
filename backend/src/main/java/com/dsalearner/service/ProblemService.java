@@ -3,6 +3,7 @@ package com.dsalearner.service;
 import com.dsalearner.dto.response.PageResponse;
 import com.dsalearner.dto.response.ProblemResponse;
 import com.dsalearner.dto.response.ProblemSummaryResponse;
+import com.dsalearner.dto.response.QualityCheckResponse;
 import com.dsalearner.exception.NotFoundException;
 import com.dsalearner.model.entity.Problem;
 import com.dsalearner.model.entity.ProblemContent;
@@ -93,6 +94,15 @@ public class ProblemService {
                 p.getId(), p.getSlug(), p.getTitle(), p.getDifficulty(),
                 p.getDescription(), p.getConstraints(), p.getExamples(),
                 p.getTags(), patterns, solved, hintsCount, content, followups);
+    }
+
+    public QualityCheckResponse getQualityCheck(String slug) {
+        Problem p = problemRepository.findBySlugAndActiveTrue(slug)
+                .orElseThrow(() -> new NotFoundException("Problem not found: " + slug));
+
+        return problemContentRepository.findByProblemId(p.getId())
+                .map(c -> QualityCheckResponse.from(slug, c.getContentStatus(), c.getQualityFlags()))
+                .orElse(QualityCheckResponse.from(slug, "DRAFT", null));
     }
 
     private ProblemResponse.ContentDto toContentDto(ProblemContent c) {
