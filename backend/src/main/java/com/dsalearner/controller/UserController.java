@@ -1,7 +1,9 @@
 package com.dsalearner.controller;
 
+import com.dsalearner.dto.response.DashboardResponse;
 import com.dsalearner.dto.response.SubmissionResponse;
 import com.dsalearner.dto.response.UserProgressResponse;
+import com.dsalearner.service.DashboardService;
 import com.dsalearner.service.SpacedRepetitionService;
 import com.dsalearner.service.SubmissionService;
 import com.dsalearner.service.UserProgressService;
@@ -19,9 +21,17 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserProgressService userProgressService;
-    private final SubmissionService submissionService;
-    private final SpacedRepetitionService spacedRepetitionService;
+    private final UserProgressService        userProgressService;
+    private final SubmissionService          submissionService;
+    private final SpacedRepetitionService    spacedRepetitionService;
+    private final DashboardService           dashboardService;
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<DashboardResponse> dashboard(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        UUID userId = UUID.fromString(userDetails.getUsername());
+        return ResponseEntity.ok(dashboardService.getDashboard(userId));
+    }
 
     @GetMapping("/progress")
     public ResponseEntity<UserProgressResponse> progress(
@@ -51,6 +61,7 @@ public class UserController {
             @AuthenticationPrincipal UserDetails userDetails) {
         UUID userId = UUID.fromString(userDetails.getUsername());
         spacedRepetitionService.completeReview(userId, problemId, quality);
+        dashboardService.recordActivity(userId);
         return ResponseEntity.ok().build();
     }
 }

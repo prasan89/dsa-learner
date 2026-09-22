@@ -24,7 +24,7 @@ const DEFAULT_CODE = `class Solution {
 
 }`;
 
-type LeftTab = "description" | "hints" | "submissions" | "solution";
+type LeftTab = "description" | "learn" | "hints" | "submissions" | "solution";
 type Lang = "Java 17" | "Java 21";
 
 const DIFF_CHIP: Record<string, string> = {
@@ -111,6 +111,7 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
 
   const LEFT_TABS: { id: LeftTab; label: string }[] = [
     { id: "description", label: "Description" },
+    { id: "learn",       label: "Learn" },
     { id: "hints",       label: `Hints${hints.length > 0 ? ` (${hints.filter(h => h.unlocked).length}/${hints.length})` : ""}` },
     { id: "submissions", label: "Submissions" },
     { id: "solution",    label: "Solution" },
@@ -227,6 +228,140 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Learn */}
+            {leftTab === "learn" && (
+              <div className="p-5 space-y-6">
+                {!problem?.content ? (
+                  <div className="text-center py-12 text-gray-400">
+                    <p className="text-sm">Learning content coming soon for this problem.</p>
+                  </div>
+                ) : (<>
+                  {/* Recognition Note */}
+                  {problem.content.recognitionNote && (
+                    <div className="bg-brand-50 border border-brand-200 rounded-xl p-4">
+                      <p className="text-xs font-semibold text-brand-700 mb-1.5">Pattern Recognition</p>
+                      <p className="text-sm text-brand-800">{problem.content.recognitionNote}</p>
+                    </div>
+                  )}
+
+                  {/* Intuition */}
+                  {problem.content.intuition && (
+                    <section>
+                      <h3 className="text-sm font-semibold text-gray-800 mb-2">Intuition</h3>
+                      <div className="prose prose-sm max-w-none prose-p:text-gray-700 prose-p:leading-relaxed">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{problem.content.intuition}</ReactMarkdown>
+                      </div>
+                    </section>
+                  )}
+
+                  {/* Brute Force */}
+                  {problem.content.bruteForce && (
+                    <section>
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-sm font-semibold text-gray-800">Brute Force</h3>
+                        {(problem.content.bruteTime || problem.content.bruteSpace) && (
+                          <div className="flex gap-2 text-xs">
+                            {problem.content.bruteTime && (
+                              <span className="bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full font-mono">
+                                Time: {problem.content.bruteTime}
+                              </span>
+                            )}
+                            {problem.content.bruteSpace && (
+                              <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-mono">
+                                Space: {problem.content.bruteSpace}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="prose prose-sm max-w-none prose-p:text-gray-700 prose-p:leading-relaxed">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{problem.content.bruteForce}</ReactMarkdown>
+                      </div>
+                    </section>
+                  )}
+
+                  {/* Optimal Approach */}
+                  {problem.content.optimalApproach && (
+                    <section>
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-sm font-semibold text-gray-800">Optimal Approach</h3>
+                        {(problem.content.optimalTime || problem.content.optimalSpace) && (
+                          <div className="flex gap-2 text-xs">
+                            {problem.content.optimalTime && (
+                              <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-mono">
+                                Time: {problem.content.optimalTime}
+                              </span>
+                            )}
+                            {problem.content.optimalSpace && (
+                              <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-mono">
+                                Space: {problem.content.optimalSpace}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="prose prose-sm max-w-none prose-p:text-gray-700 prose-p:leading-relaxed">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{problem.content.optimalApproach}</ReactMarkdown>
+                      </div>
+                    </section>
+                  )}
+
+                  {/* Pseudocode */}
+                  {problem.content.pseudocode && (
+                    <section>
+                      <h3 className="text-sm font-semibold text-gray-800 mb-2">Pseudocode</h3>
+                      <pre className="bg-gray-50 border border-gray-100 rounded-xl p-4 text-xs text-gray-700 overflow-x-auto whitespace-pre-wrap font-mono">
+                        {problem.content.pseudocode}
+                      </pre>
+                    </section>
+                  )}
+
+                  {/* Java Solution */}
+                  {problem.content.javaSolution && (
+                    <section>
+                      <h3 className="text-sm font-semibold text-gray-800 mb-2">Java Solution</h3>
+                      <pre className="bg-gray-900 text-green-300 rounded-xl p-4 text-xs overflow-x-auto whitespace-pre-wrap font-mono">
+                        {problem.content.javaSolution}
+                      </pre>
+                    </section>
+                  )}
+
+                  {/* Common Mistakes */}
+                  {problem.content.commonMistakes && (
+                    <section>
+                      <h3 className="text-sm font-semibold text-red-700 mb-2">Common Mistakes</h3>
+                      <div className="bg-red-50 border border-red-100 rounded-xl p-4 prose prose-sm max-w-none prose-p:text-red-800 prose-li:text-red-800 prose-p:leading-relaxed">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{problem.content.commonMistakes}</ReactMarkdown>
+                      </div>
+                    </section>
+                  )}
+
+                  {/* Follow-up Questions */}
+                  {problem.followups?.length > 0 && (
+                    <section>
+                      <h3 className="text-sm font-semibold text-gray-800 mb-3">Interview Follow-ups</h3>
+                      <div className="space-y-2">
+                        {problem.followups.map((f: { question: string; type: string }, i: number) => (
+                          <div key={i} className={`rounded-xl border px-4 py-3 text-sm ${
+                            f.type === "SENIOR"
+                              ? "border-purple-100 bg-purple-50 text-purple-800"
+                              : "border-gray-100 bg-gray-50 text-gray-700"
+                          }`}>
+                            <span className={`text-xs font-semibold mr-2 ${
+                              f.type === "SENIOR" ? "text-purple-500" : "text-gray-400"
+                            }`}>
+                              {f.type === "SENIOR" ? "Senior" : "Follow-up"}
+                            </span>
+                            {f.question}
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                </>)}
               </div>
             )}
 

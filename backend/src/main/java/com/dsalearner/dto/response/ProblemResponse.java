@@ -15,7 +15,26 @@ public record ProblemResponse(
         String examples,
         List<String> tags,
         List<PatternSummary> patterns,
-        boolean solved
+        boolean solved,
+        int hintsCount,
+        ContentDto content,
+        List<FollowupDto> followups
 ) {
     public record PatternSummary(UUID id, String slug, String name) {}
+
+    public record ContentDto(
+            String intuition,
+            String bruteForce,
+            String bruteTime,
+            String bruteSpace,
+            String optimalApproach,
+            String optimalTime,
+            String optimalSpace,
+            String pseudocode,
+            String javaSolution,
+            String commonMistakes,
+            String recognitionNote
+    ) {}
+
+    public record FollowupDto(String question, String type) {}
 }

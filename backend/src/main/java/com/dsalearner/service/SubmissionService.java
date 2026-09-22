@@ -6,6 +6,8 @@ import com.dsalearner.dto.response.SubmissionResponse;
 import com.dsalearner.exception.NotFoundException;
 import com.dsalearner.model.entity.*;
 import com.dsalearner.model.enums.SubmissionStatus;
+import com.dsalearner.repository.UserActivityRepository;
+import com.dsalearner.model.entity.UserActivity;
 import com.dsalearner.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,7 @@ public class SubmissionService {
     private final UserProgressRepository userProgressRepository;
     private final SpacedRepetitionService spacedRepetitionService;
     private final PatternMasteryService patternMasteryService;
+    private final UserActivityRepository userActivityRepository;
     private final WebClient.Builder webClientBuilder;
 
     @Value("${app.execution-service.url}")
@@ -75,6 +78,7 @@ public class SubmissionService {
             updateProgress(user, problem);
             spacedRepetitionService.scheduleAfterSolve(userId, problem.getId());
             patternMasteryService.recalculateMasteryForUser(userId);
+            recordActivity(userId);
         }
 
         return toResponse(submission);
@@ -145,6 +149,16 @@ public class SubmissionService {
         } catch (Exception e) {
             log.error("Execution service call failed", e);
             return new RunResultResponse("RUNTIME_ERROR", "Execution service unavailable: " + e.getMessage(), null, List.of());
+        }
+    }
+
+    private void recordActivity(UUID userId) {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        if (!userActivityRepository.existsByUserIdAndActivityDate(userId, today)) {
+            userActivityRepository.save(UserActivity.builder()
+                    .userId(userId)
+                    .activityDate(today)
+                    .build());
         }
     }
 

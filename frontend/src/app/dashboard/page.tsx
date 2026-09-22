@@ -6,7 +6,7 @@ import {
   Flame, CheckCircle2, Circle, ArrowRight, TrendingUp,
   Bell, Search, ChevronRight, Clock, BookOpen, Cpu, Target
 } from "lucide-react";
-import { userApi } from "@/lib/api/user";
+import { userApi, type DashboardData } from "@/lib/api/user";
 import { authApi } from "@/lib/api/auth";
 import { patternsApi } from "@/lib/api/patterns";
 import api from "@/lib/api/client";
@@ -34,67 +34,81 @@ const MASTERY_BG: Record<MasteryStatus, string> = {
   MASTERED:    "bg-green-500",
 };
 
+function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
+  const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
+  return (
+    <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
+function SkeletonCard() {
+  return <div className="card p-5 animate-pulse h-32 bg-gray-100" />;
+}
+
 export default function DashboardPage() {
   const [user, setUser]               = useState<any>(null);
-  const [progress, setProgress]       = useState<any>(null);
+  const [dash, setDash]               = useState<DashboardData | null>(null);
   const [masteryData, setMasteryData] = useState<any[]>([]);
   const [reviews, setReviews]         = useState<ReviewItem[]>([]);
-  const [wallet, setWallet]           = useState<{ totalCredits: number } | null>(null);
   const [loading, setLoading]         = useState(true);
-  const [streak] = useState(12); // TODO: wire from backend
+  const [error, setError]             = useState(false);
 
   useEffect(() => {
     Promise.all([
       authApi.me(),
-      userApi.progress(),
+      userApi.dashboard(),
       patternsApi.getMastery(),
-      api.get<ReviewItem[]>("/api/users/me/reviews/today").catch(() => ({ data: [] })),
-      api.get<any>("/api/ai/wallet").catch(() => ({ data: null })),
-    ]).then(([u, p, m, r, w]) => {
+      api.get<ReviewItem[]>("/users/me/reviews/today").catch(() => ({ data: [] })),
+    ]).then(([u, d, m, r]) => {
       setUser(u.data);
-      setProgress(p.data);
+      setDash(d.data);
       setMasteryData(m.data);
       setReviews((r as any).data ?? []);
-      setWallet((w as any).data);
-    }).finally(() => setLoading(false));
+    }).catch(() => setError(true))
+      .finally(() => setLoading(false));
   }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-400 text-sm">Loading…</div>
-      </div>
-    );
-  }
 
   const firstName = user?.name?.split(" ")[0] ?? "there";
   const hour      = new Date().getHours();
   const greeting  = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
-  const dsaSolved  = progress?.totalSolved ?? 0;
-  const dsaTotal   = 25;
-  const javaTopics = 8;
-  const javaTotalT = 15;
-  const sdTopics   = 8;
-  const sdTotalT   = 20;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white border-b border-gray-200 px-6 py-3 h-14" />
+        <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
+          <div className="h-10 bg-gray-100 rounded-xl animate-pulse w-64" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <SkeletonCard /> <SkeletonCard />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div className="lg:col-span-2"><SkeletonCard /></div>
+            <SkeletonCard />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const nextAction = {
-    breadcrumb: "DSA › Sliding Window",
-    title: "Longest Substring Without Repeating Characters",
-    difficulty: "Medium",
-    minutes: 15,
-    href: "/problems/longest-substring-without-repeating-characters",
-  };
+  if (error || !dash) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-2xl mb-2">⚠️</p>
+          <p className="text-gray-600 font-medium">Could not load dashboard</p>
+          <p className="text-gray-400 text-sm mt-1">Check your connection or sign out and back in.</p>
+          <button onClick={() => window.location.reload()}
+            className="mt-4 btn-primary">Retry</button>
+        </div>
+      </div>
+    );
+  }
 
-  const todayPlan = [
-    { label: "Solve 2 DSA problems",      done: false },
-    { label: "Review 3 due problems",     done: false },
-    { label: "Learn HashMap internals (Java)", done: false },
-    { label: "System Design: Caching",    done: false },
-  ];
-
-  const completedPlan = todayPlan.filter(t => t.done).length;
-  const planPct       = Math.round((completedPlan / todayPlan.length) * 100);
+  const { streak, dsa, systemDesign, plan, nextAction } = dash;
+  const dsaPct = dsa.total > 0 ? Math.round((dsa.solved / dsa.total) * 100) : 0;
+  const sdPct  = systemDesign.total > 0 ? Math.round((systemDesign.mastered / systemDesign.total) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -112,11 +126,11 @@ export default function DashboardPage() {
         </button>
         <div className="flex items-center gap-2 ml-1">
           <div className="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-white text-xs font-bold">
-            {firstName[0]}
+            {firstName[0]?.toUpperCase()}
           </div>
           <div className="text-sm leading-tight">
             <p className="font-semibold text-gray-900">{user?.name}</p>
-            <p className="text-gray-400 text-xs">Pro Plan</p>
+            <p className="text-gray-400 text-xs">{plan === "PRO" ? "Pro Plan" : "Free Plan"}</p>
           </div>
         </div>
       </header>
@@ -127,68 +141,96 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {greeting}, {firstName}! 👋
+              {greeting}, {firstName}!
             </h1>
             <p className="text-gray-500 text-sm mt-0.5">Small steps. Big progress. Keep going!</p>
           </div>
-          <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-xl px-4 py-2">
-            <Flame size={20} className="text-orange-500" />
-            <div>
-              <p className="text-sm font-bold text-orange-700">{streak} day streak</p>
-              <p className="text-xs text-orange-500">You&apos;re doing great!</p>
+          {streak > 0 && (
+            <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-xl px-4 py-2">
+              <Flame size={20} className="text-orange-500" />
+              <div>
+                <p className="text-sm font-bold text-orange-700">{streak} day streak</p>
+                <p className="text-xs text-orange-500">You&apos;re doing great!</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Main grid: next action + today's plan */}
+        {/* Next best action + due revision */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-          {/* Next best action */}
+          {/* Next action */}
           <div className="card p-5">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Your next best action</p>
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
-                <Target size={22} className="text-brand-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-gray-400 mb-1">{nextAction.breadcrumb}</p>
-                <h3 className="font-semibold text-gray-900 leading-snug">{nextAction.title}</h3>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="badge-medium">{nextAction.difficulty}</span>
-                  <span className="flex items-center gap-1 text-xs text-gray-500">
-                    <Clock size={11} /> {nextAction.minutes} min
-                  </span>
+            {nextAction ? (
+              <>
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
+                    <Target size={22} className="text-brand-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-400 mb-1">DSA › {nextAction.patternName}</p>
+                    <h3 className="font-semibold text-gray-900 leading-snug">{nextAction.title}</h3>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className={DIFF_COLOR[nextAction.difficulty] ?? "badge-medium"}>
+                        {nextAction.difficulty[0] + nextAction.difficulty.slice(1).toLowerCase()}
+                      </span>
+                    </div>
+                  </div>
                 </div>
+                <Link href={`/problems/${nextAction.slug}`}
+                  className="mt-4 w-full btn-primary flex items-center justify-center gap-2">
+                  Start problem <ArrowRight size={14} />
+                </Link>
+              </>
+            ) : (
+              <div className="text-center py-6">
+                <p className="text-3xl mb-2">🎉</p>
+                <p className="text-gray-600 font-medium">All caught up!</p>
+                <p className="text-gray-400 text-sm mt-1">You&apos;ve solved all available problems.</p>
               </div>
-            </div>
-            <Link href={nextAction.href}
-              className="mt-4 w-full btn-primary flex items-center justify-center gap-2">
-              Continue <ArrowRight size={14} />
-            </Link>
+            )}
           </div>
 
-          {/* Today's plan */}
+          {/* Today's revision */}
           <div className="card p-5">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Today&apos;s plan</p>
-              <span className="text-xs text-gray-500">{planPct}% complete</span>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Due for Revision</p>
+              {reviews.length > 0 && (
+                <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">
+                  {reviews.length} due
+                </span>
+              )}
             </div>
-            <div className="space-y-2.5">
-              {todayPlan.map((item, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  {item.done
-                    ? <CheckCircle2 size={17} className="text-green-500 shrink-0" />
-                    : <Circle size={17} className="text-gray-300 shrink-0" />
-                  }
-                  <span className={`text-sm ${item.done ? "text-gray-400 line-through" : "text-gray-700"}`}>
-                    {item.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <button className="mt-4 text-xs text-brand-600 hover:text-brand-700 flex items-center gap-1 font-medium">
-              View full plan <ChevronRight size={13} />
-            </button>
+            {reviews.length === 0 ? (
+              <div className="text-center py-6">
+                <CheckCircle2 size={28} className="text-green-400 mx-auto mb-2" />
+                <p className="text-gray-500 text-sm font-medium">Nothing due today</p>
+                <p className="text-gray-400 text-xs mt-1">Great — no reviews pending!</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {reviews.slice(0, 4).map((r) => (
+                  <Link key={r.problemId} href={`/problems/${r.slug}`}
+                    className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors group">
+                    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 truncate flex-1">
+                      {r.title}
+                    </span>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className={DIFF_COLOR[r.difficulty] ?? "badge-medium"}>
+                        {r.difficulty[0] + r.difficulty.slice(1).toLowerCase()}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+                {reviews.length > 4 && (
+                  <Link href="/revision"
+                    className="text-xs text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1 pt-1">
+                    +{reviews.length - 4} more <ChevronRight size={12} />
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -198,37 +240,24 @@ export default function DashboardPage() {
           {/* Progress stats */}
           <div className="lg:col-span-2 card p-5">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Your Progress</p>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-6">
+
               {/* DSA */}
               <Link href="/problems" className="group">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                     <BookOpen size={15} className="text-blue-600" />
                   </div>
-                  <span className="text-sm font-medium text-gray-600">DSA</span>
+                  <span className="text-sm font-medium text-gray-600">DSA Problems</span>
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{Math.round((dsaSolved / dsaTotal) * 100)}%</p>
-                <p className="text-xs text-gray-400 mt-0.5">{dsaSolved} / {dsaTotal} problems</p>
-                <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 rounded-full transition-all"
-                    style={{ width: `${Math.round((dsaSolved / dsaTotal) * 100)}%` }} />
-                </div>
-              </Link>
-
-              {/* Java */}
-              <Link href="/java" className="group">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
-                    <Cpu size={15} className="text-orange-600" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-600">Java</span>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">{Math.round((javaTopics / javaTotalT) * 100)}%</p>
-                <p className="text-xs text-gray-400 mt-0.5">{javaTopics} / {javaTotalT} topics</p>
-                <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-orange-500 rounded-full transition-all"
-                    style={{ width: `${Math.round((javaTopics / javaTotalT) * 100)}%` }} />
-                </div>
+                <p className="text-3xl font-bold text-gray-900">{dsaPct}%</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {dsa.solved} / {dsa.total} solved
+                  {dsa.masteryAvg > 0 && (
+                    <span className="ml-2 text-blue-500">· {dsa.masteryAvg}% mastery avg</span>
+                  )}
+                </p>
+                <ProgressBar value={dsa.solved} max={dsa.total} color="bg-blue-500" />
               </Link>
 
               {/* System Design */}
@@ -239,12 +268,14 @@ export default function DashboardPage() {
                   </div>
                   <span className="text-sm font-medium text-gray-600">System Design</span>
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{Math.round((sdTopics / sdTotalT) * 100)}%</p>
-                <p className="text-xs text-gray-400 mt-0.5">{sdTopics} / {sdTotalT} topics</p>
-                <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-purple-500 rounded-full transition-all"
-                    style={{ width: `${Math.round((sdTopics / sdTotalT) * 100)}%` }} />
-                </div>
+                <p className="text-3xl font-bold text-gray-900">{sdPct}%</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {systemDesign.mastered} / {systemDesign.total} mastered
+                  {systemDesign.masteryAvg > 0 && (
+                    <span className="ml-2 text-purple-500">· {systemDesign.masteryAvg}% mastery avg</span>
+                  )}
+                </p>
+                <ProgressBar value={systemDesign.mastered} max={systemDesign.total} color="bg-purple-500" />
               </Link>
             </div>
           </div>
@@ -254,12 +285,12 @@ export default function DashboardPage() {
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Quick Actions</p>
             <div className="space-y-1.5">
               {[
-                { label: "Start Practice",       href: "/problems",    color: "text-blue-600 bg-blue-50" },
-                { label: "Open AI Mentor",        href: "/ai-mentor",   color: "text-purple-600 bg-purple-50" },
-                { label: `Today's Revision (${reviews.length})`, href: "/revision", color: "text-orange-600 bg-orange-50" },
-                { label: "Take a Mock Interview", href: "/problems",    color: "text-green-600 bg-green-50" },
+                { label: "Start Practice",       href: "/problems",      color: "text-blue-600 bg-blue-50" },
+                { label: "Open AI Mentor",        href: "/ai-mentor",     color: "text-purple-600 bg-purple-50" },
+                { label: `Revision (${reviews.length} due)`, href: "/revision", color: "text-orange-600 bg-orange-50" },
+                { label: "Pattern Learning Path", href: "/patterns",      color: "text-green-600 bg-green-50" },
               ].map(({ label, href, color }) => (
-                <Link key={label} href={href}
+                <Link key={href} href={href}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors group">
                   <span className={`w-7 h-7 rounded-md flex items-center justify-center ${color}`}>
                     <ArrowRight size={13} />
@@ -270,32 +301,6 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-
-        {/* Today's revision (if any) */}
-        {reviews.length > 0 && (
-          <div className="card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-900">Due for Revision</h2>
-              <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">
-                {reviews.length} due today
-              </span>
-            </div>
-            <div className="space-y-2">
-              {reviews.slice(0, 4).map((r) => (
-                <Link key={r.problemId} href={`/problems/${r.slug}`}
-                  className="flex items-center justify-between px-4 py-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors group">
-                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{r.title}</span>
-                  <div className="flex items-center gap-2">
-                    <span className={DIFF_COLOR[r.difficulty] ?? "badge-medium"}>
-                      {r.difficulty[0] + r.difficulty.slice(1).toLowerCase()}
-                    </span>
-                    <span className="text-xs bg-brand-600 text-white px-2 py-0.5 rounded-full font-medium">Review</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Pattern mastery heatmap */}
         {masteryData.length > 0 && (

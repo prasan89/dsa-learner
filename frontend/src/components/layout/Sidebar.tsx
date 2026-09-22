@@ -7,7 +7,6 @@ import {
   RotateCcw, BarChart2, Users, CreditCard, ChevronRight, Zap, LogOut
 } from "lucide-react";
 import { authApi } from "@/lib/api/auth";
-import Cookies from "js-cookie";
 
 const NAV = [
   { href: "/dashboard",     label: "Home",          icon: Home },
@@ -28,8 +27,6 @@ export default function Sidebar() {
 
   async function handleSignOut() {
     try { await authApi.logout(); } catch {}
-    Cookies.remove("accessToken");
-    Cookies.remove("refreshToken");
     router.push("/login");
   }
 

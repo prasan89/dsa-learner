@@ -9,4 +9,5 @@ import java.util.UUID;
 public interface HintRepository extends JpaRepository<Hint, UUID> {
     List<Hint> findByProblemIdOrderByLevel(UUID problemId);
     Optional<Hint> findByProblemIdAndLevel(UUID problemId, int level);
+    int countByProblemId(UUID problemId);
 }
