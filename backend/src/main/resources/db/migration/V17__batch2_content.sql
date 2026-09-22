@@ -32,7 +32,7 @@ $$FUNCTION maxSubArray(nums)
 $$Every non-empty subarray ending at i either starts at i or extends a subarray ending at i-1. Therefore the recurrence considers every possible optimum without enumerating all ranges.$$,
 $$After processing i, current is the maximum sum of a non-empty contiguous subarray whose right endpoint is i.$$,
 $$Initialize best to zero instead of nums[0]; confuse subarray with subsequence; return current instead of global best; mishandle all-negative arrays.$$,
-$$Track start/end indices to return the actual range. For a circular array combine maximum-subarray and minimum-subarray reasoning. The O(1)-state scan can also process an unbounded stream when only the best sum is needed.$$,,
+$$Track start/end indices to return the actual range. For a circular array combine maximum-subarray and minimum-subarray reasoning. The O(1)-state scan can also process an unbounded stream when only the best sum is needed.$$,
 $$public int maxSubArray(int[] nums) {
     int current = nums[0], best = nums[0];
     for (int i = 1; i < nums.length; i++) {
@@ -41,7 +41,7 @@ $$public int maxSubArray(int[] nums) {
     }
     return best;
 }$$
-'CONTENT_REVIEW');
+,'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
 ((SELECT id FROM problems WHERE slug='maximum-subarray'),$$Can you return the start and end indices as well as the maximum sum?$$,'FOLLOWUP',1),
@@ -69,7 +69,7 @@ INSERT INTO hints(problem_id,level,content,label) VALUES
 ((SELECT id FROM problems WHERE slug='product-of-array-except-self'),3,$$Forward: output[i] = prefix, then prefix *= nums[i]. Reverse: output[i] *= suffix, then suffix *= nums[i]. No division is required.$$,'Algorithm')
 ON CONFLICT(problem_id,level) DO UPDATE SET content=EXCLUDED.content,label=EXCLUDED.label;
 
-INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,content_status)
+INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,java_solution,content_status)
 VALUES
 ((SELECT id FROM problems WHERE slug='product-of-array-except-self'),
 $$Each answer excludes one position and decomposes naturally into a prefix product and suffix product. The presence of zero makes division especially unsafe.$$,
@@ -97,7 +97,7 @@ $$FUNCTION productExceptSelf(nums)
 $$Before the reverse pass processes i, output[i] contains exactly all products left of i and suffix contains exactly all products right of i. Their product excludes nums[i].$$,
 $$During the reverse pass, suffix equals the product of nums[i+1..n-1]. During the forward pass, output[i] equals the product of nums[0..i-1].$$,
 $$Using division; including nums[i] in a prefix or suffix; claiming the required output array is not part of the space discussion; ignoring zero and numeric overflow.$$,
-$$Handle zero counts explicitly when division is permitted. For streaming input, exact per-position results generally require retaining enough information to revisit one side. For very large products consider long or BigInteger according to the contract.$$,,
+$$Handle zero counts explicitly when division is permitted. For streaming input, exact per-position results generally require retaining enough information to revisit one side. For very large products consider long or BigInteger according to the contract.$$,
 $$public int[] productExceptSelf(int[] nums) {
     int[] result = new int[nums.length];
     int prefix = 1;
@@ -112,7 +112,7 @@ $$public int[] productExceptSelf(int[] nums) {
     }
     return result;
 }$$
-'CONTENT_REVIEW');
+,'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
 ((SELECT id FROM problems WHERE slug='product-of-array-except-self'),$$Why is division unsafe when the array can contain zero?$$,'FOLLOWUP',1),
@@ -138,7 +138,7 @@ INSERT INTO hints(problem_id,level,content,label) VALUES
 ((SELECT id FROM problems WHERE slug='group-anagrams'),3,$$Build a map from serialized frequency signatures to lists of strings. Each word is counted once.$$,'Algorithm')
 ON CONFLICT(problem_id,level) DO UPDATE SET content=EXCLUDED.content,label=EXCLUDED.label;
 
-INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,content_status)
+INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,java_solution,content_status)
 VALUES
 ((SELECT id FROM problems WHERE slug='group-anagrams'),
 $$Group Anagrams is a canonical frequency-signature hashing problem. Order does not matter, but character multiplicity does.$$,
@@ -164,7 +164,7 @@ $$FUNCTION groupAnagrams(words)
 $$Two strings are anagrams exactly when every character count is equal. Therefore equal signatures are exactly the equivalence classes required by the problem.$$,
 $$After processing any prefix of the input, every processed word is in exactly one group identified by its complete frequency signature.$$,
 $$Using the raw word as the key; forgetting repeated letters; using a mutable array directly as a HashMap key; confusing sorting complexity with counting complexity; assuming lowercase input when the contract does not guarantee it.$$,
-$$For Unicode, use code-point frequency maps. For distributed processing, partition by the canonical signature so equal groups reach the same worker. If only counts are needed, avoid retaining all original strings.$$,,
+$$For Unicode, use code-point frequency maps. For distributed processing, partition by the canonical signature so equal groups reach the same worker. If only counts are needed, avoid retaining all original strings.$$,
 $$public List<List<String>> groupAnagrams(String[] strs) {
     Map<String, List<String>> groups = new HashMap<>();
     for (String word : strs) {
@@ -176,7 +176,7 @@ $$public List<List<String>> groupAnagrams(String[] strs) {
     }
     return new ArrayList<>(groups.values());
 }$$
-'CONTENT_REVIEW');
+,'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
 ((SELECT id FROM problems WHERE slug='group-anagrams'),$$What changes if uppercase letters and punctuation are allowed?$$,'VARIATION',1),
@@ -202,7 +202,7 @@ INSERT INTO hints(problem_id,level,content,label) VALUES
 ((SELECT id FROM problems WHERE slug='3sum'),3,$$For every anchor i, scan i+1..n-1 with two pointers. After a match, move both pointers and skip equal values.$$,'Algorithm')
 ON CONFLICT(problem_id,level) DO UPDATE SET content=EXCLUDED.content,label=EXCLUDED.label;
 
-INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,content_status)
+INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,java_solution,content_status)
 VALUES
 ((SELECT id FROM problems WHERE slug='3sum'),
 $$3Sum is a fixed-anchor plus two-pointers pattern. Sorting turns pair-sum comparisons into safe monotonic pointer movement.$$,
@@ -236,7 +236,7 @@ $$FUNCTION threeSum(nums)
 $$For a fixed anchor, sorted order means a smaller sum can only be increased by moving left rightward, while a larger sum can only be decreased by moving right leftward. Thus an entire set of pairs can be eliminated at each move.$$,
 $$For each anchor, every pair outside the current pointer interval has already been proven unable to create a new valid triplet for that anchor.$$,
 $$Forgetting to sort; returning duplicate triplets; skipping the wrong side after a match; confusing unique values with unique indices; overlooking integer overflow for extreme numeric constraints.$$,
-$$Generalize to arbitrary target. 4Sum fixes two anchors and then uses two pointers. If output can be quadratic, output size itself is a lower bound. Independent anchor ranges can be parallelized with deterministic merge/deduplication.$$,,
+$$Generalize to arbitrary target. 4Sum fixes two anchors and then uses two pointers. If output can be quadratic, output size itself is a lower bound. Independent anchor ranges can be parallelized with deterministic merge/deduplication.$$,
 $$public List<List<Integer>> threeSum(int[] nums) {
     Arrays.sort(nums);
     List<List<Integer>> result = new ArrayList<>();
@@ -256,7 +256,7 @@ $$public List<List<Integer>> threeSum(int[] nums) {
     }
     return result;
 }$$
-'CONTENT_REVIEW');
+,'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
 ((SELECT id FROM problems WHERE slug='3sum'),$$How would you change the algorithm for an arbitrary target?$$,'FOLLOWUP',1),
@@ -282,7 +282,7 @@ INSERT INTO hints(problem_id,level,content,label) VALUES
 ((SELECT id FROM problems WHERE slug='search-rotated-array'),3,$$Run binary search. If left half is sorted and target is inside its range, move right=mid-1; otherwise search the other half. Mirror the logic for a sorted right half.$$,'Algorithm')
 ON CONFLICT(problem_id,level) DO UPDATE SET content=EXCLUDED.content,label=EXCLUDED.label;
 
-INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,content_status)
+INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,java_solution,content_status)
 VALUES
 ((SELECT id FROM problems WHERE slug='search-rotated-array'),
 $$This is binary search with a modified decision rule. A rotated sorted array with distinct values always has at least one sorted half.$$,
@@ -315,7 +315,7 @@ $$FUNCTION search(nums,target)
 $$If the left half is sorted, range comparison tells whether target can be there; if not, the target must be in the other half. The right-sorted case is symmetric. Thus the target remains inside the interval until found or the interval becomes empty.$$,
 $$If target exists, it remains inside [left,right] after every iteration.$$,
 $$Using ordinary binary search; incorrect inclusive boundaries; forgetting the distinct-value assumption; mixing the left-sorted and right-sorted conditions.$$,
-$$With duplicates, if nums[left]==nums[mid]==nums[right], shrinking both boundaries may be necessary and worst-case time can become O(n). The same structure can also find the rotation minimum.$$,,
+$$With duplicates, if nums[left]==nums[mid]==nums[right], shrinking both boundaries may be necessary and worst-case time can become O(n). The same structure can also find the rotation minimum.$$,
 $$public int search(int[] nums, int target) {
     int left = 0, right = nums.length - 1;
     while (left <= right) {
@@ -331,7 +331,7 @@ $$public int search(int[] nums, int target) {
     }
     return -1;
 }$$
-'CONTENT_REVIEW');
+,'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
 ((SELECT id FROM problems WHERE slug='search-rotated-array'),$$Why is at least one half sorted after rotation?$$,'FOLLOWUP',1),
@@ -363,7 +363,7 @@ INSERT INTO hints(problem_id,level,content,label) VALUES
 ((SELECT id FROM problems WHERE slug='daily-temperatures'),3,$$Scan left-to-right with a decreasing stack of indices. Pop while current temperature is greater and store currentIndex-poppedIndex.$$,'Algorithm')
 ON CONFLICT(problem_id,level) DO UPDATE SET content=EXCLUDED.content,label=EXCLUDED.label;
 
-INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,content_status)
+INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,java_solution,content_status)
 VALUES
 ((SELECT id FROM problems WHERE slug='daily-temperatures'),
 $$Daily Temperatures is a monotonic-stack problem. The phrase first greater value to the right is the strongest recognition signal.$$,
@@ -389,7 +389,7 @@ $$FUNCTION dailyTemperatures(t)
 $$When index j is popped at i, no earlier index between j and i had a warmer temperature, otherwise j would already have been popped. Therefore i is its first warmer day.$$,
 $$The stack contains unresolved indices in increasing index order and non-increasing temperature order.$$,
 $$Storing values instead of indices; using >= when equal temperature is not warmer; forgetting unresolved answers stay zero; assuming the while loop makes the algorithm quadratic.$$,
-$$Reverse scanning is an equivalent formulation. The same abstraction supports next smaller and previous greater/smaller. Streaming output is possible for resolved indices, while unresolved state must be retained.$$,,
+$$Reverse scanning is an equivalent formulation. The same abstraction supports next smaller and previous greater/smaller. Streaming output is possible for resolved indices, while unresolved state must be retained.$$,
 $$public int[] dailyTemperatures(int[] temperatures) {
     int[] answer = new int[temperatures.length];
     Deque<Integer> stack = new ArrayDeque<>();
@@ -402,7 +402,7 @@ $$public int[] dailyTemperatures(int[] temperatures) {
     }
     return answer;
 }$$
-'CONTENT_REVIEW');
+,'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
 ((SELECT id FROM problems WHERE slug='daily-temperatures'),$$Why is the monotonic-stack algorithm O(n) despite the nested while loop?$$,'FOLLOWUP',1),
@@ -430,7 +430,7 @@ INSERT INTO hints(problem_id,level,content,label) VALUES
 ((SELECT id FROM problems WHERE slug='merge-two-sorted-lists'),3,$$After the loop, attach the remaining suffix directly. Reuse existing nodes instead of allocating a new node for every value.$$,'Algorithm')
 ON CONFLICT(problem_id,level) DO UPDATE SET content=EXCLUDED.content,label=EXCLUDED.label;
 
-INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,content_status)
+INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,java_solution,content_status)
 VALUES
 ((SELECT id FROM problems WHERE slug='merge-two-sorted-lists'),
 $$Merging sorted linked lists is pointer manipulation. The next smallest output node must be one of the two current heads.$$,
@@ -458,7 +458,7 @@ $$FUNCTION merge(a,b)
 $$Because each list is sorted, its head is the smallest remaining element in that list. Therefore the smaller of the two heads is globally safe to append.$$,
 $$The list after dummy contains exactly the smallest nodes removed from the two inputs so far and remains sorted.$$,
 $$Losing dummy.next; forgetting to advance a pointer; forgetting the remaining suffix; unnecessary node allocation; missing null-list cases.$$,
-$$Merge k lists with a min-heap in O(N log k). Recursive two-list merge is elegant but consumes call-stack space. Preserve immutability by copying nodes when ownership requires it.$$,,
+$$Merge k lists with a min-heap in O(N log k). Recursive two-list merge is elegant but consumes call-stack space. Preserve immutability by copying nodes when ownership requires it.$$,
 $$public ListNode mergeTwoLists(ListNode list1, ListNode list2) {
     ListNode dummy = new ListNode(0), tail = dummy;
     while (list1 != null && list2 != null) {
@@ -472,7 +472,7 @@ $$public ListNode mergeTwoLists(ListNode list1, ListNode list2) {
     tail.next = list1 != null ? list1 : list2;
     return dummy.next;
 }$$
-'CONTENT_REVIEW');
+,'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
 ((SELECT id FROM problems WHERE slug='merge-two-sorted-lists'),$$Can you implement the merge recursively?$$,'VARIATION',1),
@@ -504,7 +504,7 @@ INSERT INTO hints(problem_id,level,content,label) VALUES
 ((SELECT id FROM problems WHERE slug='binary-tree-level-order'),3,$$BFS with ArrayDeque: pop levelSize nodes, collect their values, enqueue non-null children, and append the collected list.$$,'Algorithm')
 ON CONFLICT(problem_id,level) DO UPDATE SET content=EXCLUDED.content,label=EXCLUDED.label;
 
-INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,content_status)
+INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,java_solution,content_status)
 VALUES
 ((SELECT id FROM problems WHERE slug='binary-tree-level-order'),
 $$Level-order traversal is the canonical tree BFS problem. Level by level and same depth are strong recognition clues.$$,
@@ -535,7 +535,7 @@ $$FUNCTION levelOrder(root)
 $$At the beginning of each outer iteration, the queue contains exactly the unprocessed nodes at one depth. Children are added only for the next iteration, so the output is correctly partitioned by depth.$$,
 $$At the beginning of each level iteration, every node in the queue has the same depth.$$,
 $$Processing dynamically changing queue.size(); forgetting null root; using a recursive implementation without considering deep-tree stack depth; using a queue structure with unnecessary synchronization.$$,
-$$DFS can use O(h) call stack. Zigzag order can reverse alternating level lists. Very wide trees can require O(n) BFS memory, and very deep trees may favor iterative traversal to avoid JVM stack overflow.$$,,
+$$DFS can use O(h) call stack. Zigzag order can reverse alternating level lists. Very wide trees can require O(n) BFS memory, and very deep trees may favor iterative traversal to avoid JVM stack overflow.$$,
 $$public List<List<Integer>> levelOrder(TreeNode root) {
     List<List<Integer>> result = new ArrayList<>();
     if (root == null) return result;
@@ -554,7 +554,7 @@ $$public List<List<Integer>> levelOrder(TreeNode root) {
     }
     return result;
 }$$
-'CONTENT_REVIEW');
+,'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
 ((SELECT id FROM problems WHERE slug='binary-tree-level-order'),$$Why must queue.size() be captured before processing the level?$$,'FOLLOWUP',1),
@@ -578,7 +578,7 @@ INSERT INTO hints(problem_id,level,content,label) VALUES
 ((SELECT id FROM problems WHERE slug='kth-largest-element'),3,$$Offer every value into a min-heap. When size exceeds k, remove the minimum. The root at the end is the kth largest.$$,'Algorithm')
 ON CONFLICT(problem_id,level) DO UPDATE SET content=EXCLUDED.content,label=EXCLUDED.label;
 
-INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,content_status)
+INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,java_solution,content_status)
 VALUES
 ((SELECT id FROM problems WHERE slug='kth-largest-element'),
 $$Kth Largest is a top-k/order-statistic problem. The key clue is that a complete sort is unnecessary when only one rank is required.$$,
@@ -602,7 +602,7 @@ $$FUNCTION kthLargest(nums,k)
 $$After every processed prefix, the heap contains exactly the k largest values from that prefix, or all values if fewer than k have been processed. Therefore its minimum is the kth largest after the full scan.$$,
 $$After processing any prefix, the heap contains the k largest processed values, bounded by the number processed when it is less than k.$$,
 $$Using a max-heap and removing the maximum; forgetting duplicates count; claiming O(log n) rather than O(log k); not validating k range.$$,
-$$Quickselect has expected O(n) time and O(1) auxiliary space but different worst-case behavior. The heap is naturally streaming. For distributed data, compute local top-k and merge those candidates into a global top-k.$$,,
+$$Quickselect has expected O(n) time and O(1) auxiliary space but different worst-case behavior. The heap is naturally streaming. For distributed data, compute local top-k and merge those candidates into a global top-k.$$,
 $$public int findKthLargest(int[] nums, int k) {
     PriorityQueue<Integer> minHeap = new PriorityQueue<>();
     for (int num : nums) {
@@ -611,7 +611,7 @@ $$public int findKthLargest(int[] nums, int k) {
     }
     return minHeap.peek();
 }$$
-'CONTENT_REVIEW');
+,'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
 ((SELECT id FROM problems WHERE slug='kth-largest-element'),$$What happens when k is close to n?$$,'FOLLOWUP',1),
@@ -643,7 +643,7 @@ INSERT INTO hints(problem_id,level,content,label) VALUES
 ((SELECT id FROM problems WHERE slug='number-of-islands'),3,$$Use an ArrayDeque for iterative BFS. Mark a land cell visited when enqueuing it so no cell enters the queue more than once.$$,'Algorithm')
 ON CONFLICT(problem_id,level) DO UPDATE SET content=EXCLUDED.content,label=EXCLUDED.label;
 
-INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,content_status)
+INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,java_solution,content_status)
 VALUES
 ((SELECT id FROM problems WHERE slug='number-of-islands'),
 $$Number of Islands is the canonical connected-components-on-a-grid problem. Count each connected region once.$$,
@@ -674,7 +674,7 @@ $$FUNCTION numIslands(grid)
 $$A traversal never crosses water, so it stays inside one component. Marking immediately prevents repeated discovery. Therefore each island contributes exactly one count and every land cell is processed once.$$,
 $$Every cell already marked visited belongs to a discovered component, and no unvisited land cell in the active component can be reached without being discovered by the traversal.$$,
 $$Counting diagonal cells as connected when only four directions are allowed; marking after enqueue rather than before; recursive DFS stack overflow on huge grids; mutating input without permission.$$,
-$$If land is added dynamically, Union-Find can maintain component counts. For huge distributed grids, partitioning needs boundary reconciliation because components can cross partition edges. Use a visited matrix when input mutation is forbidden.$$,,
+$$If land is added dynamically, Union-Find can maintain component counts. For huge distributed grids, partitioning needs boundary reconciliation because components can cross partition edges. Use a visited matrix when input mutation is forbidden.$$,
 $$public int numIslands(char[][] grid) {
     int rows = grid.length, cols = grid[0].length, islands = 0;
     int[][] directions = {{1,0},{-1,0},{0,1},{0,-1}};
@@ -699,7 +699,7 @@ $$public int numIslands(char[][] grid) {
     }
     return islands;
 }$$
-'CONTENT_REVIEW');
+,'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
 ((SELECT id FROM problems WHERE slug='number-of-islands'),$$Can you solve it with DFS instead of BFS?$$,'VARIATION',1),

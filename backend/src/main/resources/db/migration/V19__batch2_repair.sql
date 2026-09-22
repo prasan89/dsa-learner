@@ -162,6 +162,7 @@ public int numIslands(char[][] grid) {
     return islands;
 }$$
 END
+FROM problems p
 WHERE p.id = pc.problem_id
   AND p.slug IN (
       'maximum-subarray',
