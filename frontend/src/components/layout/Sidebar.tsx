@@ -4,24 +4,59 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Home, Code2, Coffee, Layout, Bot, Dumbbell,
-  RotateCcw, BarChart2, Users, CreditCard, ChevronRight, Zap, LogOut, Lock, BookOpen
+  RotateCcw, BarChart2, Users, CreditCard, ChevronRight, Zap, LogOut, Lock,
+  BookOpen, Terminal, Cpu, Braces, Database, Trophy,
 } from "lucide-react";
 import { authApi } from "@/lib/api/auth";
 import { useSubscription } from "@/lib/useSubscription";
 
-const NAV = [
-  { href: "/dashboard",     label: "Home",          icon: Home },
-  { href: "/problems",      label: "DSA",           icon: Code2 },
-  { href: "/learn",         label: "Learn",         icon: BookOpen },
-  { href: "/java",          label: "Java",          icon: Coffee },
-  { href: "/system-design", label: "System Design", icon: Layout },
-  { href: "/ai-mentor",     label: "AI Mentor",     icon: Bot },
-  { href: "/patterns",      label: "Practice",      icon: Dumbbell },
-  { href: "/revision",      label: "Revision",      icon: RotateCcw },
-  { href: "/progress",      label: "Progress",      icon: BarChart2 },
-  { href: "/community",     label: "Community",     icon: Users },
-  { href: "/wallet",        label: "Billing",       icon: CreditCard },
+const SECTION_LEARN = [
+  { href: "/learn",            label: "DSA",             icon: Code2 },
+  { href: "/java",             label: "Java",            icon: Coffee },
+  { href: "/go",               label: "Go",              icon: Terminal },
+  { href: "/rust",             label: "Rust",            icon: Cpu },
+  { href: "/ai-engineering",   label: "AI Engineering",  icon: Bot },
+  { href: "/system-design",    label: "System Design",   icon: Layout },
 ];
+
+const SECTION_PRACTICE = [
+  { href: "/problems",  label: "Problems",   icon: Dumbbell },
+  { href: "/patterns",  label: "Practice",   icon: Braces },
+];
+
+const SECTION_AI = [
+  { href: "/ai-mentor", label: "AI Mentor",  icon: Bot },
+];
+
+const SECTION_PROGRESS = [
+  { href: "/revision",  label: "Revision",   icon: RotateCcw },
+  { href: "/progress",  label: "Progress",   icon: BarChart2 },
+];
+
+const SECTION_OTHER = [
+  { href: "/community", label: "Community",  icon: Users },
+  { href: "/wallet",    label: "Billing",    icon: CreditCard },
+];
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type NavItem = { href: string; label: string; icon: React.ComponentType<any> };
+
+function NavSection({ title, items, path }: { title: string; items: NavItem[]; path: string }) {
+  return (
+    <div className="mb-1">
+      <p className="px-3 pt-3 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{title}</p>
+      {items.map(({ href, label, icon: Icon }) => {
+        const active = path === href || (href !== "/dashboard" && path.startsWith(href));
+        return (
+          <Link key={href} href={href} className={`sidebar-link ${active ? "active" : ""}`}>
+            <Icon size={15} />
+            <span>{label}</span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function Sidebar() {
   const path   = usePathname();
@@ -42,26 +77,27 @@ export default function Sidebar() {
         <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center">
           <Zap size={14} className="text-white" />
         </div>
-        <span className="font-bold text-gray-900 text-sm">DSA Expert</span>
+        <div>
+          <span className="font-bold text-gray-900 text-sm leading-none block">Engineering</span>
+          <span className="text-[10px] text-brand-600 font-semibold tracking-wide">ACADEMY</span>
+        </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-        {NAV.map(({ href, label, icon: Icon }) => {
-          const active = href === "/dashboard"
-            ? path === "/dashboard"
-            : path.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`sidebar-link ${active ? "active" : ""}`}
-            >
-              <Icon size={16} />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
+      {/* Home */}
+      <div className="px-3 pt-3">
+        <Link href="/dashboard" className={`sidebar-link ${path === "/dashboard" ? "active" : ""}`}>
+          <Home size={15} />
+          <span>Home</span>
+        </Link>
+      </div>
+
+      {/* Nav sections */}
+      <nav className="flex-1 overflow-y-auto px-3 pb-2">
+        <NavSection title="Learn"    items={SECTION_LEARN}    path={path} />
+        <NavSection title="Practice" items={SECTION_PRACTICE} path={path} />
+        <NavSection title="AI"       items={SECTION_AI}       path={path} />
+        <NavSection title="Progress" items={SECTION_PROGRESS} path={path} />
+        <NavSection title=""         items={SECTION_OTHER}    path={path} />
       </nav>
 
       {/* Sign out */}
@@ -73,7 +109,7 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* Pro upsell — only shown for free users */}
+      {/* Pro upsell */}
       {pro === false && (
         <div className="mx-3 mb-3 p-3 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200">
           <div className="flex items-center gap-1.5 mb-0.5">
