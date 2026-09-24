@@ -3,30 +3,30 @@
 
 -- 1 Binary Search
 INSERT INTO hints(problem_id,level,content,label) VALUES
-((SELECT id FROM problems WHERE slug='binary-search'),1,$$Identify the binary-search signal: the input is sorted and you need to locate a target. Focus on the invariant that eliminates half the search space per step.$$,'Concept'),
-((SELECT id FROM problems WHERE slug='binary-search'),2,$$Maintain left and right boundaries. Compare the middle element to the target and narrow the window toward the correct half.$$,'Direction'),
-((SELECT id FROM problems WHERE slug='binary-search'),3,$$Trace the invariant: after each comparison, the target, if present, lies within [left, right].$$,'Algorithm')
+((SELECT id FROM problems WHERE slug='binary-search-problem'),1,$$Identify the binary-search signal: the input is sorted and you need to locate a target. Focus on the invariant that eliminates half the search space per step.$$,'Concept'),
+((SELECT id FROM problems WHERE slug='binary-search-problem'),2,$$Maintain left and right boundaries. Compare the middle element to the target and narrow the window toward the correct half.$$,'Direction'),
+((SELECT id FROM problems WHERE slug='binary-search-problem'),3,$$Trace the invariant: after each comparison, the target, if present, lies within [left, right].$$,'Algorithm')
 ON CONFLICT(problem_id,level) DO UPDATE SET content=EXCLUDED.content,label=EXCLUDED.label;
 
 INSERT INTO problem_content(problem_id,recognition_note,pattern_recognition_clues,when_to_use,when_not_to_use,intuition,guided_reasoning,solution,brute_force,brute_time,brute_space,optimal_approach,optimal_time,optimal_space,pseudocode,why_this_works,invariant,common_mistakes,senior_variations,java_solution,content_status) VALUES
-((SELECT id FROM problems WHERE slug='binary-search'),$$Find the index of a target in a sorted array, or return -1.$$,$$Keywords: Binary Search; sorted array; target lookup. Ask what ordering guarantee lets you discard half the space.$$,$$Use when the input is sorted and you need exact-match index lookup.$$,$$Do not use when elements are unsorted or the search space is not monotonic.$$,$$Maintain left and right boundaries. Compare the middle element to the target and narrow the window toward the correct half.$$,$$Maintain left and right boundaries. Compare the middle element to the target and narrow the window toward the correct half.$$,$$Classic binary search with integer midpoint.$$,$$Linear scan is O(n).$$,'O(n)','O(1)',$$Classic binary search with integer midpoint.$$,'O(log n)','O(1)',$$left=0; right=n-1; while left<=right: mid=(left+right)/2; if nums[mid]==target return mid; elif nums[mid]<target left=mid+1; else right=mid-1; return -1$$,$$Each step halves the remaining candidates; after log n steps at most one candidate remains.$$,$$After each step, the target, if present, lies within [left, right].$$,$$Off-by-one in boundary update (mid vs mid±1); integer overflow with (left+right)/2; exiting loop one step early.$$,$$For real arrays use left+(right-left)/2 to avoid overflow. Extend to lower_bound/upper_bound for duplicate handling.$$,$$public int search(int[] nums,int target){int l=0,r=nums.length-1;while(l<=r){int m=l+(r-l)/2;if(nums[m]==target)return m;if(nums[m]<target)l=m+1;else r=m-1;}return -1;}$$,'CONTENT_REVIEW');
+((SELECT id FROM problems WHERE slug='binary-search-problem'),$$Find the index of a target in a sorted array, or return -1.$$,$$Keywords: Binary Search; sorted array; target lookup. Ask what ordering guarantee lets you discard half the space.$$,$$Use when the input is sorted and you need exact-match index lookup.$$,$$Do not use when elements are unsorted or the search space is not monotonic.$$,$$Maintain left and right boundaries. Compare the middle element to the target and narrow the window toward the correct half.$$,$$Maintain left and right boundaries. Compare the middle element to the target and narrow the window toward the correct half.$$,$$Classic binary search with integer midpoint.$$,$$Linear scan is O(n).$$,'O(n)','O(1)',$$Classic binary search with integer midpoint.$$,'O(log n)','O(1)',$$left=0; right=n-1; while left<=right: mid=(left+right)/2; if nums[mid]==target return mid; elif nums[mid]<target left=mid+1; else right=mid-1; return -1$$,$$Each step halves the remaining candidates; after log n steps at most one candidate remains.$$,$$After each step, the target, if present, lies within [left, right].$$,$$Off-by-one in boundary update (mid vs mid±1); integer overflow with (left+right)/2; exiting loop one step early.$$,$$For real arrays use left+(right-left)/2 to avoid overflow. Extend to lower_bound/upper_bound for duplicate handling.$$,$$public int search(int[] nums,int target){int l=0,r=nums.length-1;while(l<=r){int m=l+(r-l)/2;if(nums[m]==target)return m;if(nums[m]<target)l=m+1;else r=m-1;}return -1;}$$,'CONTENT_REVIEW');
 
 INSERT INTO problem_followups(problem_id,question,type,sort_order) VALUES
-((SELECT id FROM problems WHERE slug='binary-search'),$$Why use left+(right-left)/2 instead of (left+right)/2?$$,'FOLLOWUP',1),
-((SELECT id FROM problems WHERE slug='binary-search'),$$How would you find the first occurrence of a duplicate target?$$,'FOLLOWUP',2),
-((SELECT id FROM problems WHERE slug='binary-search'),$$What changes if the array is sorted in descending order?$$,'FOLLOWUP',3),
-((SELECT id FROM problems WHERE slug='binary-search'),$$How do you implement lower_bound (leftmost position ≥ target)?$$,'SENIOR',4),
-((SELECT id FROM problems WHERE slug='binary-search'),$$How would you binary-search over a conceptual sorted space rather than a concrete array?$$,'SENIOR',5)
+((SELECT id FROM problems WHERE slug='binary-search-problem'),$$Why use left+(right-left)/2 instead of (left+right)/2?$$,'FOLLOWUP',1),
+((SELECT id FROM problems WHERE slug='binary-search-problem'),$$How would you find the first occurrence of a duplicate target?$$,'FOLLOWUP',2),
+((SELECT id FROM problems WHERE slug='binary-search-problem'),$$What changes if the array is sorted in descending order?$$,'FOLLOWUP',3),
+((SELECT id FROM problems WHERE slug='binary-search-problem'),$$How do you implement lower_bound (leftmost position ≥ target)?$$,'SENIOR',4),
+((SELECT id FROM problems WHERE slug='binary-search-problem'),$$How would you binary-search over a conceptual sorted space rather than a concrete array?$$,'SENIOR',5)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO test_cases(id,problem_id,input,expected_output,is_hidden,display_order) VALUES
-(gen_random_uuid(),(SELECT id FROM problems WHERE slug='binary-search'),$$6
+(gen_random_uuid(),(SELECT id FROM problems WHERE slug='binary-search-problem'),$$6
 9
 -1 0 3 5 9 12$$,$$4$$,false,1),
-(gen_random_uuid(),(SELECT id FROM problems WHERE slug='binary-search'),$$6
+(gen_random_uuid(),(SELECT id FROM problems WHERE slug='binary-search-problem'),$$6
 2
 -1 0 3 5 9 12$$,$$-1$$,false,2),
-(gen_random_uuid(),(SELECT id FROM problems WHERE slug='binary-search'),$$1
+(gen_random_uuid(),(SELECT id FROM problems WHERE slug='binary-search-problem'),$$1
 1
 1$$,$$0$$,true,3);
 

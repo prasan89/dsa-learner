@@ -12,7 +12,7 @@ UPDATE problems SET free_access = true WHERE slug IN (
     'majority-element',
     'missing-number',
     -- binary search
-    'binary-search',
+    'binary-search-problem',
     'search-insert-position',
     'first-bad-version',
     -- linked list

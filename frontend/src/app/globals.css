@@ -41,4 +41,22 @@
   .btn-ghost {
     @apply hover:bg-gray-100 text-gray-600 font-medium px-4 py-2 rounded-lg transition-colors text-sm;
   }
+
+  /* Keyboard key hint */
+  .kbd {
+    @apply inline-flex items-center justify-center px-1.5 py-0.5 rounded border border-gray-200 bg-gray-50 text-gray-500 font-mono text-[10px] font-semibold leading-none;
+  }
+}
+
+/* ── Monaco linked-code highlight ──────────────────────────────────────────── */
+/* These classes are injected via editor.deltaDecorations — must live outside
+   Tailwind layers so Monaco's iframe/shadow DOM can reach them.              */
+.linked-code-highlight {
+  background-color: rgba(99, 102, 241, 0.18) !important; /* indigo-500/18 */
+  border-left: 2px solid #6366f1 !important;
+}
+.linked-code-gutter {
+  background-color: #6366f1;
+  width: 3px !important;
+  margin-left: 3px;
 }

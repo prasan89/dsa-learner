@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Home, Code2, Coffee, Layout, Bot, Dumbbell,
-  RotateCcw, BarChart2, Users, CreditCard, ChevronRight, Zap, LogOut, Lock
+  RotateCcw, BarChart2, Users, CreditCard, ChevronRight, Zap, LogOut, Lock, BookOpen
 } from "lucide-react";
 import { authApi } from "@/lib/api/auth";
 import { useSubscription } from "@/lib/useSubscription";
@@ -12,6 +12,7 @@ import { useSubscription } from "@/lib/useSubscription";
 const NAV = [
   { href: "/dashboard",     label: "Home",          icon: Home },
   { href: "/problems",      label: "DSA",           icon: Code2 },
+  { href: "/learn/arrays",  label: "Learn",         icon: BookOpen },
   { href: "/java",          label: "Java",          icon: Coffee },
   { href: "/system-design", label: "System Design", icon: Layout },
   { href: "/ai-mentor",     label: "AI Mentor",     icon: Bot },

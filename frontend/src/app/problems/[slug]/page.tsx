@@ -15,6 +15,7 @@ import { hintsApi } from "@/lib/api/hints";
 import { aiApi } from "@/lib/api/ai";
 import HintPanel from "@/components/HintPanel";
 import AiReviewPanel from "@/components/AiReviewPanel";
+import ArrayVisualizer from "@/components/visualizer/ArrayVisualizer";
 import type { RunResult, Submission, Hint } from "@/types";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
@@ -24,7 +25,7 @@ const DEFAULT_CODE = `class Solution {
 
 }`;
 
-type LeftTab = "description" | "learn" | "hints" | "submissions" | "solution";
+type LeftTab = "description" | "learn" | "visualize" | "hints" | "submissions" | "solution";
 type Lang = "Java 17" | "Java 21";
 
 const DIFF_CHIP: Record<string, string> = {
@@ -135,9 +136,16 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
 
   const diff = problem?.difficulty ?? "EASY";
 
+  // Check if this problem belongs to the arrays pattern
+  const isArraysProblem = problem?.patterns?.some(
+    (p: { slug: string }) => p.slug === "arrays" || p.slug === "binary-search" ||
+      p.slug === "two-pointers" || p.slug === "sliding-window"
+  ) ?? false;
+
   const LEFT_TABS: { id: LeftTab; label: string }[] = [
     { id: "description", label: "Description" },
     { id: "learn",       label: "Learn" },
+    ...(isArraysProblem ? [{ id: "visualize" as LeftTab, label: "Visualize" }] : []),
     { id: "hints",       label: `Hints${hints.length > 0 ? ` (${hints.filter(h => h.unlocked).length}/${hints.length})` : ""}` },
     { id: "submissions", label: "Submissions" },
     { id: "solution",    label: "Solution" },
@@ -468,6 +476,24 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
                     </section>
                   )}
                 </>)}
+              </div>
+            )}
+
+            {/* Visualize */}
+            {leftTab === "visualize" && (
+              <div className="p-4">
+                <ArrayVisualizer
+                  algorithmSlug={params.slug}
+                  defaultInput={(() => {
+                    try {
+                      const exs = JSON.parse(problem?.examples ?? "[]");
+                      const first = exs[0]?.input ?? "";
+                      const match = first.match(/\[([^\]]+)\]/);
+                      if (match) return match[1].split(",").map((s: string) => parseInt(s.trim(), 10)).filter((n: number) => !isNaN(n));
+                    } catch {}
+                    return [10, 20, 30, 40, 50];
+                  })()}
+                />
               </div>
             )}
 
