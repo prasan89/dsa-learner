@@ -1,20 +1,31 @@
 // ─── Cell / Node state ───────────────────────────────────────────────────────
 // Extensible: add new states here as new data structures are added.
 export type CellState =
-  | "default"        // untouched
-  | "active"         // currently being examined
-  | "comparing"      // in a comparison operation
-  | "pivot"          // pivot element (sorting)
-  | "found"          // target located
-  | "eliminated"     // ruled out / not in search space
-  | "sorted"         // permanently placed (sorting)
-  | "window-start"   // start of a sliding window
-  | "window-end"     // end of a sliding window
-  | "in-window"      // inside the current window
-  | "left-pointer"   // left two-pointer position
-  | "right-pointer"  // right two-pointer position
-  | "min-tracked"    // tracking a minimum value
-  | "max-tracked";   // tracking a maximum value
+  | "default"          // untouched
+  | "active"           // currently being examined
+  | "comparing"        // in a comparison operation
+  | "pivot"            // pivot element (sorting)
+  | "found"            // target located
+  | "eliminated"       // ruled out / not in search space
+  | "sorted"           // permanently placed (sorting)
+  | "window-start"     // start of a sliding window
+  | "window-end"       // end of a sliding window
+  | "in-window"        // inside the current window
+  | "left-pointer"     // left two-pointer position
+  | "right-pointer"    // right two-pointer position
+  | "min-tracked"      // tracking a minimum value
+  | "max-tracked"      // tracking a maximum value
+  // ── Batch 1 additions ──────────────────────────────────────
+  | "prefix-sum"       // prefix-sum cell (cumulative sum)
+  | "write-ptr"        // write-pointer position (in-place compaction)
+  | "binary-low"       // binary search left boundary
+  | "binary-high"      // binary search right boundary
+  | "binary-mid"       // binary search midpoint
+  | "swap-a"           // first element in a swap pair
+  | "swap-b"           // second element in a swap pair
+  | "partition-lt"     // less-than partition zone
+  | "partition-gt"     // greater-than partition zone
+  | "matrix-cell";     // matrix element (2-D context)
 
 // ─── A single element in a visualization ────────────────────────────────────
 export interface VisualizationCell {

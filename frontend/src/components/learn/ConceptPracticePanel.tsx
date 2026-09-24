@@ -14,13 +14,10 @@ import type { ArrayConcept } from "@/lib/visualizer/tracers/arrayConceptTracers"
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
-// Map concept ID → problem slug
+// Map concept ID → problem slug (V32 original slugs)
 const CONCEPT_PROBLEM_MAP: Record<string, string> = {
-  indexing:        "two-sum",
-  traversal:       "maximum-subarray",
-  access:          "binary-search-problem",
-  update:          "maximum-subarray",
-  "linear-search": "contains-duplicate",
+  "linear-search":     "repeated-sensor-reading",
+  "remove-duplicates": "log-deduplicator",
 };
 
 const DEFAULT_JAVA = `class Solution {
