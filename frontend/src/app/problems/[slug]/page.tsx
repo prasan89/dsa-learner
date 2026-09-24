@@ -16,6 +16,7 @@ import { aiApi } from "@/lib/api/ai";
 import HintPanel from "@/components/HintPanel";
 import AiReviewPanel from "@/components/AiReviewPanel";
 import ArrayVisualizer from "@/components/visualizer/ArrayVisualizer";
+import { ProblemMarkdown, ProblemExamples, ProblemConstraints } from "@/components/ProblemDescription";
 import type { RunResult, Submission, Hint } from "@/types";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
@@ -208,48 +209,19 @@ export default function ProblemPage({ params }: { params: { slug: string } }) {
               <div className="p-5 space-y-5">
                 <h1 className="text-lg font-bold text-gray-900">{problem.title}</h1>
 
-                <div className="prose prose-sm max-w-none
-                  prose-p:text-gray-700 prose-p:leading-relaxed
-                  prose-code:text-green-700 prose-code:bg-green-50 prose-code:px-1 prose-code:rounded prose-code:text-xs
-                  prose-strong:text-gray-900 prose-li:text-gray-700">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {problem.description}
-                  </ReactMarkdown>
+                {/* Description body — markdown with normalization */}
+                <div className="text-sm">
+                  <ProblemMarkdown text={problem.description} />
                 </div>
 
-                {/* Examples */}
-                {problem.examples && (() => {
-                  try {
-                    const exs = JSON.parse(problem.examples);
-                    return (
-                      <div className="space-y-3">
-                        {exs.map((ex: any, i: number) => (
-                          <div key={i} className="bg-gray-50 rounded-xl p-4 text-sm border border-gray-100">
-                            <p className="text-xs font-semibold text-gray-500 mb-2">Example {i + 1}</p>
-                            <div className="font-mono space-y-1 text-xs">
-                              <p><span className="text-gray-500">Input:</span> <span className="text-gray-800">{ex.input}</span></p>
-                              <p><span className="text-gray-500">Output:</span> <span className="text-gray-800">{ex.output}</span></p>
-                              {ex.explanation && <p className="text-gray-400 font-sans mt-1">{ex.explanation}</p>}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  } catch { return null; }
-                })()}
+                {/* Examples — first-class structured blocks */}
+                {problem.examples && (
+                  <ProblemExamples examples={problem.examples} />
+                )}
 
-                {/* Constraints */}
+                {/* Constraints — bullet list with inline code */}
                 {problem.constraints && (
-                  <div>
-                    <p className="text-xs font-semibold text-gray-500 mb-2">Constraints:</p>
-                    <ul className="space-y-1">
-                      {problem.constraints.split("\n").filter(Boolean).map((c: string, i: number) => (
-                        <li key={i} className="text-xs font-mono text-gray-600 flex items-start gap-1">
-                          <span className="text-gray-400 mt-0.5">•</span> {c}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  <ProblemConstraints constraints={problem.constraints} />
                 )}
 
                 {/* Tags */}
