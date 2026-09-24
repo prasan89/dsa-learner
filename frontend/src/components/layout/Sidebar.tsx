@@ -12,7 +12,7 @@ import { useSubscription } from "@/lib/useSubscription";
 const NAV = [
   { href: "/dashboard",     label: "Home",          icon: Home },
   { href: "/problems",      label: "DSA",           icon: Code2 },
-  { href: "/learn/arrays",  label: "Learn",         icon: BookOpen },
+  { href: "/learn",         label: "Learn",         icon: BookOpen },
   { href: "/java",          label: "Java",          icon: Coffee },
   { href: "/system-design", label: "System Design", icon: Layout },
   { href: "/ai-mentor",     label: "AI Mentor",     icon: Bot },

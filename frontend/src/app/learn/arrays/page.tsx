@@ -6,6 +6,7 @@ import InteractiveConceptVisualizer from "@/components/visualizer/InteractiveCon
 import ConceptCompletionPanel from "@/components/learn/ConceptCompletionPanel";
 import ConceptPracticePanel from "@/components/learn/ConceptPracticePanel";
 import { ChevronRight } from "lucide-react";
+import Link from "next/link";
 
 const FLOW_STEPS = ["Understand", "Visualize", "Practice", "Mastery"];
 
@@ -52,7 +53,7 @@ export default function LearnArraysPage() {
         {/* ── Page header ── */}
         <div className="space-y-4">
           <div className="flex items-center gap-1.5 text-xs text-gray-400">
-            <span>Learn</span>
+            <Link href="/learn" className="hover:text-brand-600 transition-colors">Learn</Link>
             <ChevronRight size={11} />
             <span className="text-gray-600 font-medium">Arrays</span>
           </div>
