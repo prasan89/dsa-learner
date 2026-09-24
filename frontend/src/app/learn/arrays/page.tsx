@@ -1,15 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { ARRAY_CONCEPTS } from "@/lib/visualizer/tracers/arrayConceptTracers";
 import InteractiveConceptVisualizer from "@/components/visualizer/InteractiveConceptVisualizer";
+import ConceptCompletionPanel from "@/components/learn/ConceptCompletionPanel";
+import ConceptPracticePanel from "@/components/learn/ConceptPracticePanel";
 import { ChevronRight } from "lucide-react";
 
-const FLOW_STEPS = ["Understand", "Visualize", "Interact", "Code"];
+const FLOW_STEPS = ["Understand", "Visualize", "Practice", "Mastery"];
+
+// Concepts that have a practice problem mapped
+const HAS_PRACTICE = new Set(["indexing", "traversal", "access", "update", "linear-search"]);
+
+type ViewMode = "learn" | "completion" | "practice";
 
 export default function LearnArraysPage() {
-  const [activeId, setActiveId] = useState(ARRAY_CONCEPTS[0].id);
+  const [activeId, setActiveId]   = useState(ARRAY_CONCEPTS[0].id);
+  const [viewMode, setViewMode]   = useState<ViewMode>("learn");
   const concept = ARRAY_CONCEPTS.find((c) => c.id === activeId) ?? ARRAY_CONCEPTS[0];
+
+  const handleConceptComplete = useCallback(() => {
+    setViewMode("completion");
+  }, []);
+
+  const handleSwitchConcept = useCallback((id: string) => {
+    setActiveId(id);
+    setViewMode("learn");
+  }, []);
+
+  const handleTabClick = useCallback((id: string) => {
+    if (id !== activeId) {
+      setActiveId(id);
+      setViewMode("learn");
+    }
+  }, [activeId]);
+
+  const nextConcept = ARRAY_CONCEPTS[ARRAY_CONCEPTS.findIndex((c) => c.id === activeId) + 1] ?? null;
+
+  const handleMastered = useCallback(() => {
+    if (nextConcept) {
+      handleSwitchConcept(nextConcept.id);
+    } else {
+      setViewMode("learn");
+    }
+  }, [nextConcept, handleSwitchConcept]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -33,12 +67,19 @@ export default function LearnArraysPage() {
 
           {/* Flow indicator */}
           <div className="flex items-center gap-1 text-xs text-gray-400 select-none">
-            {FLOW_STEPS.map((step, i) => (
-              <span key={step} className="flex items-center gap-1">
-                {i > 0 && <ChevronRight size={10} className="text-gray-300" />}
-                <span className="font-medium">{step}</span>
-              </span>
-            ))}
+            {FLOW_STEPS.map((step, i) => {
+              const isActive =
+                (step === "Understand" && viewMode === "learn") ||
+                (step === "Visualize" && viewMode === "learn") ||
+                (step === "Practice" && viewMode === "practice") ||
+                (step === "Mastery" && viewMode === "practice");
+              return (
+                <span key={step} className="flex items-center gap-1">
+                  {i > 0 && <ChevronRight size={10} className="text-gray-300" />}
+                  <span className={`font-medium ${isActive ? "text-brand-600" : ""}`}>{step}</span>
+                </span>
+              );
+            })}
           </div>
         </div>
 
@@ -49,7 +90,7 @@ export default function LearnArraysPage() {
               key={c.id}
               role="tab"
               aria-selected={activeId === c.id}
-              onClick={() => setActiveId(c.id)}
+              onClick={() => handleTabClick(c.id)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
                 activeId === c.id
                   ? "bg-brand-600 text-white border-brand-600 shadow-sm"
@@ -75,9 +116,39 @@ export default function LearnArraysPage() {
 
           {/* Card body */}
           <div className="px-7 pt-4 pb-7">
-            <InteractiveConceptVisualizer key={activeId} concept={concept} />
+            <InteractiveConceptVisualizer
+              key={activeId}
+              concept={concept}
+              onComplete={handleConceptComplete}
+            />
           </div>
         </div>
+
+        {/* ── Completion panel (shown after visualization finishes) ── */}
+        {viewMode === "completion" && (
+          <ConceptCompletionPanel
+            concept={concept}
+            hasPracticeSlug={HAS_PRACTICE.has(concept.id)}
+            onPractice={() => setViewMode("practice")}
+            onSkip={() => {
+              if (nextConcept) handleSwitchConcept(nextConcept.id);
+              else setViewMode("learn");
+            }}
+          />
+        )}
+
+        {/* ── Practice panel ── */}
+        {viewMode === "practice" && (
+          <ConceptPracticePanel
+            key={`practice-${activeId}`}
+            concept={concept}
+            onMastered={handleMastered}
+            onClose={() => {
+              if (nextConcept) handleSwitchConcept(nextConcept.id);
+              else setViewMode("learn");
+            }}
+          />
+        )}
 
       </div>
     </div>

@@ -45,7 +45,7 @@ services:
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
       EXECUTION_SERVICE_URL: http://host.docker.internal:8081
-      ANTHROPIC_BASE_URL: http://host.docker.internal:6655
+      ANTHROPIC_BASE_URL: http://host.docker.internal:6655/anthropic
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-rzp_test_placeholder}
       RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-placeholder_secret}

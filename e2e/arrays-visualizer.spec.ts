@@ -37,11 +37,12 @@ test.describe('Arrays Visualizer @smoke @regression', () => {
   });
 
   test('step forward button advances the step counter', async ({ page }) => {
-    // Read initial step counter text
-    const counter = page.locator('span.tabular-nums').first();
+    // The step counter span has class w-14 (unique; cell index spans do not)
+    const counter = page.locator('span.w-14.tabular-nums');
+    await expect(counter).toBeVisible({ timeout: 5000 });
+    await expect(counter).not.toHaveText('—', { timeout: 5000 });
     const before = await counter.textContent();
 
-    // Click step forward
     const stepFwd = page.getByRole('button', { name: /step forward/i });
     await stepFwd.click();
 
@@ -50,14 +51,15 @@ test.describe('Arrays Visualizer @smoke @regression', () => {
   });
 
   test('reset returns to step 1', async ({ page }) => {
-    // Advance a couple of steps
+    const counter = page.locator('span.w-14.tabular-nums');
+    await expect(counter).toBeVisible({ timeout: 5000 });
+    await expect(counter).not.toHaveText('—', { timeout: 5000 });
+
     const stepFwd = page.getByRole('button', { name: /step forward/i });
     await stepFwd.click();
     await stepFwd.click();
 
-    // Reset
     await page.getByRole('button', { name: /reset/i }).click();
-    const counter = page.locator('span.tabular-nums').first();
     await expect(counter).toHaveText(/^1 \//);
   });
 

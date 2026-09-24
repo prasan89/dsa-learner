@@ -62,6 +62,11 @@ public class CreditService {
     }
 
     @Transactional
+    public boolean deductForMentor(UUID userId) {
+        return deduct(userId, FREE_HINT_COST, CreditTransaction.TxType.AI_HINT, "AI mentor chat");
+    }
+
+    @Transactional
     public boolean deductForDetect(UUID userId) {
         return deduct(userId, FREE_DETECT_COST, CreditTransaction.TxType.AI_DETECT, "Pattern detection");
     }

@@ -1,5 +1,7 @@
 package com.dsalearner.service;
 
+import com.dsalearner.dto.request.AiMentorRequest;
+import com.dsalearner.dto.response.AiMentorResponse;
 import com.dsalearner.dto.response.AiReviewResponse;
 import com.dsalearner.dto.response.PatternDetectResponse;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,64 @@ public class AiService {
     private int maxTokens;
 
     private final WebClient.Builder webClientBuilder;
+
+    public AiMentorResponse mentorChat(AiMentorRequest req) {
+        String system = buildMentorSystemPrompt(req);
+        String userMsg = buildMentorUserMessage(req);
+        String raw = callClaude(haikuModel, system, userMsg);
+        return parseMentorResponse(raw);
+    }
+
+    private String buildMentorSystemPrompt(AiMentorRequest req) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("""
+                You are a DSA mentor helping a student learn algorithms through practice.
+                Your role: guide with questions and hints, NEVER give the answer directly.
+
+                Rules:
+                - Ask guiding questions that lead the student to discover the answer
+                - Explain the WHY behind concepts, not just the WHAT
+                - Reference the visualization they just completed when relevant
+                - If code is present, point out specific lines with questions, not corrections
+                - If tests failed, explain what the failure means conceptually
+                - Keep responses concise (2-4 sentences max unless asked for more)
+                - Respond in a warm, encouraging tone
+
+                """);
+        sb.append("Concept: ").append(req.conceptTitle()).append("\n");
+        if (req.masteryLevel() != null && !req.masteryLevel().isEmpty()) {
+            sb.append("Student mastery level: ").append(req.masteryLevel()).append("\n");
+        }
+        sb.append("Attempt #").append(req.attemptCount()).append(", hints used: ").append(req.hintsUsed()).append("\n");
+        return sb.toString();
+    }
+
+    private String buildMentorUserMessage(AiMentorRequest req) {
+        StringBuilder sb = new StringBuilder();
+        if (req.currentCode() != null && !req.currentCode().isBlank()) {
+            sb.append("Current code:\n```java\n").append(req.currentCode()).append("\n```\n\n");
+        }
+        if (req.compilerError() != null && !req.compilerError().isBlank()) {
+            sb.append("Compiler error: ").append(req.compilerError()).append("\n\n");
+        } else if (req.executionResult() != null && !req.executionResult().isBlank()) {
+            sb.append("Execution result: ").append(req.executionResult()).append("\n\n");
+        }
+        if (req.previousMessages() != null) {
+            for (AiMentorRequest.MessageEntry msg : req.previousMessages()) {
+                sb.append(msg.role()).append(": ").append(msg.content()).append("\n");
+            }
+        }
+        sb.append("Student: ").append(req.userMessage());
+        return sb.toString();
+    }
+
+    private AiMentorResponse parseMentorResponse(String raw) {
+        String type = "guidance";
+        if (raw.contains("?")) type = "question";
+        else if (raw.toLowerCase().contains("hint")) type = "hint";
+        else if (raw.toLowerCase().contains("great") || raw.toLowerCase().contains("well done")) type = "encouragement";
+        return new AiMentorResponse(raw.trim(), type);
+    }
 
     private String callClaude(String model, String systemPrompt, String userMessage) {
         WebClient client = webClientBuilder

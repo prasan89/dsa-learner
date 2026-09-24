@@ -71,9 +71,10 @@ function AlgorithmSteps({ steps, activeStep }: { steps: string[]; activeStep: nu
 // ─── Main component ───────────────────────────────────────────────────────────
 interface InteractiveConceptVisualizerProps {
   concept: ArrayConcept;
+  onComplete?: () => void;
 }
 
-export default function InteractiveConceptVisualizer({ concept }: InteractiveConceptVisualizerProps) {
+export default function InteractiveConceptVisualizer({ concept, onComplete }: InteractiveConceptVisualizerProps) {
   const [mode, setMode]         = useState<"watch" | "challenge">("watch");
   const [showCode, setShowCode] = useState(false);
   const [rawInput, setRawInput] = useState(concept.defaultArray.join(", "));
@@ -137,7 +138,7 @@ export default function InteractiveConceptVisualizer({ concept }: InteractiveCon
             </button>
           </div>
         )}
-        <ConceptVisualizer concept={concept} />
+        <ConceptVisualizer concept={concept} onComplete={onComplete} />
       </div>
     );
   }

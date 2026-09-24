@@ -1,7 +1,9 @@
 package com.dsalearner.controller;
 
+import com.dsalearner.dto.request.AiMentorRequest;
 import com.dsalearner.dto.request.AiReviewRequest;
 import com.dsalearner.dto.request.PatternDetectRequest;
+import com.dsalearner.dto.response.AiMentorResponse;
 import com.dsalearner.dto.response.AiReviewResponse;
 import com.dsalearner.dto.response.PatternDetectResponse;
 import com.dsalearner.exception.NotFoundException;
@@ -27,6 +29,29 @@ public class AiController {
     private final AiService aiService;
     private final CreditService creditService;
     private final ProblemRepository problemRepository;
+
+    @PostMapping("/mentor")
+    public ResponseEntity<AiMentorResponse> mentor(
+            @RequestBody AiMentorRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        UUID userId = UUID.fromString(userDetails.getUsername());
+
+        if (creditService.getWallet(userId).totalCredits() < 1) {
+            throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
+                    "Insufficient AI credits. Please purchase more credits.");
+        }
+
+        AiMentorResponse response;
+        try {
+            response = aiService.mentorChat(request);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "AI mentor service is temporarily unavailable. Please try again shortly.");
+        }
+
+        creditService.deductForMentor(userId);
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping("/review")
     public ResponseEntity<AiReviewResponse> review(

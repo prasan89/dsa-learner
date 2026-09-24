@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useVisualizer } from "@/lib/visualizer/useVisualizer";
 import ArrayDisplay from "./ArrayDisplay";
 import VisualizerControls from "./VisualizerControls";
@@ -57,7 +57,7 @@ function AlgorithmSteps({ steps, activeStep }: { steps: string[]; activeStep: nu
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function ConceptVisualizer({ concept }: { concept: ArrayConcept }) {
+export default function ConceptVisualizer({ concept, onComplete }: { concept: ArrayConcept; onComplete?: () => void }) {
   const [rawInput, setRawInput] = useState(concept.defaultArray.join(", "));
   const [rawTarget, setRawTarget] = useState(
     concept.defaultTarget !== undefined ? String(concept.defaultTarget) : ""
@@ -86,6 +86,10 @@ export default function ConceptVisualizer({ concept }: { concept: ArrayConcept }
     currentStep, currentStepIndex, totalSteps, status, speed,
     play, pause, stepForward, stepBack, reset, setSpeed,
   } = useVisualizer(steps, 1);
+
+  useEffect(() => {
+    if (status === "done" && onComplete) onComplete();
+  }, [status, onComplete]);
 
   const activeAlgorithmStep = useMemo(() => {
     if (totalSteps === 0 || concept.algorithmSteps.length === 0) return null;
