@@ -15,13 +15,13 @@ CREATE TABLE problem_content (
 
     -- Brute force explanation
     brute_force       TEXT,
-    brute_time        VARCHAR(30),
-    brute_space       VARCHAR(30),
+    brute_time        VARCHAR(100),
+    brute_space       VARCHAR(100),
 
     -- Optimal approach
     optimal_approach  TEXT,
-    optimal_time      VARCHAR(30),
-    optimal_space     VARCHAR(30),
+    optimal_time      VARCHAR(100),
+    optimal_space     VARCHAR(100),
 
     -- Pseudocode (language-neutral)
     pseudocode        TEXT,
