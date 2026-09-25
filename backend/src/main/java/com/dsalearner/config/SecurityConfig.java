@@ -43,6 +43,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/health").permitAll()
+                .requestMatchers("/api/v1/pipeline/health").permitAll()
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())

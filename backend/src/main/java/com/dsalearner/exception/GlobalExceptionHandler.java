@@ -56,6 +56,41 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(429, "Too Many Requests", ex.getMessage(), Instant.now()));
     }
 
+    @ExceptionHandler(com.dsalearner.pipeline.exception.InvalidTransitionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidTransition(
+            com.dsalearner.pipeline.exception.InvalidTransitionException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(new ErrorResponse(422, "Invalid state transition", ex.getMessage(), Instant.now()));
+    }
+
+    @ExceptionHandler(com.dsalearner.pipeline.exception.PromptNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlePromptNotFound(
+            com.dsalearner.pipeline.exception.PromptNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(404, "Prompt not found", ex.getMessage(), Instant.now()));
+    }
+
+    @ExceptionHandler(com.dsalearner.pipeline.exception.ModelConfigNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleModelConfigNotFound(
+            com.dsalearner.pipeline.exception.ModelConfigNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(404, "Model config not found", ex.getMessage(), Instant.now()));
+    }
+
+    @ExceptionHandler(com.dsalearner.pipeline.exception.BudgetExceededException.class)
+    public ResponseEntity<ErrorResponse> handleBudgetExceeded(
+            com.dsalearner.pipeline.exception.BudgetExceededException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(new ErrorResponse(429, "Budget exceeded", ex.getMessage(), Instant.now()));
+    }
+
+    @ExceptionHandler(com.dsalearner.pipeline.exception.DomainNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleDomainNotFound(
+            com.dsalearner.pipeline.exception.DomainNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(404, "Domain not found", ex.getMessage(), Instant.now()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
