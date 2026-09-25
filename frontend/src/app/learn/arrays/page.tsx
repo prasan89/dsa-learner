@@ -58,8 +58,10 @@ export default function LearnArraysPage() {
   const totalAvailable = ARRAY_CONCEPTS.length;
   const completedCount = completedIds.size;
 
-  // Determine which modules are "unlocked" — only first two for now (Batch 1)
-  const unlockedModules = new Set<ModuleId>(["foundations", "core-operations"]);
+  // Unlock all modules that have at least one lesson built
+  const unlockedModules = new Set<ModuleId>(
+    MODULE_ORDER.filter((m) => (CONCEPTS_BY_MODULE[m]?.length ?? 0) > 0)
+  );
 
   const toggleModule = useCallback((mod: ModuleId) => {
     setExpandedModules((prev) => {
@@ -94,33 +96,39 @@ export default function LearnArraysPage() {
   }, [nextConcept]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 py-10">
+    <div className="min-h-screen" style={{ background: "#FAFAFC" }}>
+      <div className="max-w-6xl mx-auto px-6 py-10">
 
         {/* ── Page header ── */}
-        <div className="mb-8 space-y-3">
-          <div className="flex items-center gap-1.5 text-xs text-gray-400">
-            <Link href="/learn" className="hover:text-brand-600 transition-colors">Learn</Link>
-            <ChevronRight size={11} />
-            <span className="text-gray-600 font-medium">Arrays Academy</span>
+        <div className="mb-8">
+          <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-5">
+            <Link href="/learn" className="hover:text-brand-600 transition-colors font-medium">Learn</Link>
+            <ChevronRight size={11} className="text-gray-300" />
+            <span className="text-gray-500 font-medium">Arrays Academy</span>
           </div>
 
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-6">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-gray-900">Arrays Academy</h1>
-              <p className="text-sm text-gray-500 mt-1 max-w-xl">
+              <h1 className="text-[28px] font-bold tracking-tight text-gray-900 leading-none">Arrays Academy</h1>
+              <p className="text-[14px] text-gray-500 mt-2 max-w-xl leading-relaxed">
                 110 lessons across 12 modules — from memory fundamentals to advanced interview patterns.
                 Master each module to unlock the next.
               </p>
             </div>
             <div className="flex-shrink-0 text-right">
-              <div className="text-2xl font-bold text-brand-600">{completedCount}<span className="text-gray-400 text-sm font-normal">/{totalAvailable}</span></div>
-              <div className="text-xs text-gray-400 mt-0.5">lessons done</div>
+              <div className="text-[28px] font-bold text-brand-600 leading-none tabular-nums">
+                {completedCount}
+                <span className="text-gray-400 text-sm font-normal ml-0.5">/{totalAvailable}</span>
+              </div>
+              <div className="text-xs text-gray-400 mt-1 font-medium">lessons done</div>
+              <div className="text-xs font-semibold text-brand-500 mt-0.5 tabular-nums">
+                {totalAvailable > 0 ? Math.round((completedCount / totalAvailable) * 100) : 0}%
+              </div>
             </div>
           </div>
 
           {/* Overall progress bar */}
-          <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+          <div className="mt-4 h-1.5 bg-gray-200 rounded-full overflow-hidden">
             <div
               className="h-full bg-brand-500 rounded-full transition-all duration-500"
               style={{ width: totalAvailable > 0 ? `${(completedCount / totalAvailable) * 100}%` : "0%" }}
@@ -132,7 +140,7 @@ export default function LearnArraysPage() {
         <div className="flex gap-6 items-start">
 
           {/* ── Sidebar: module accordion ── */}
-          <aside className="w-64 flex-shrink-0 space-y-1.5 sticky top-6">
+          <aside className="w-[240px] flex-shrink-0 space-y-1 sticky top-6">
             {MODULE_ORDER.map((modId) => {
               const meta = MODULE_META[modId];
               const lessons = CONCEPTS_BY_MODULE[modId] ?? [];
@@ -147,49 +155,49 @@ export default function LearnArraysPage() {
                   className={`rounded-xl border overflow-hidden transition-all ${
                     isUnlocked
                       ? "border-gray-200 bg-white"
-                      : "border-gray-100 bg-gray-50/50 opacity-60"
+                      : "border-gray-100 bg-gray-50/40 opacity-50"
                   }`}
                 >
                   {/* Module header */}
                   <button
                     onClick={() => isUnlocked && toggleModule(modId)}
                     disabled={!isUnlocked}
-                    className={`w-full px-3 py-2.5 flex items-center gap-2 text-left ${
-                      isUnlocked ? "hover:bg-gray-50 cursor-pointer" : "cursor-not-allowed"
+                    className={`w-full px-3 py-3 flex items-center gap-2.5 text-left ${
+                      isUnlocked ? "hover:bg-gray-50/80 cursor-pointer" : "cursor-not-allowed"
                     }`}
                   >
                     {isUnlocked ? (
                       <ChevronDown
-                        size={13}
-                        className={`text-gray-400 flex-shrink-0 transition-transform ${isExpanded ? "" : "-rotate-90"}`}
+                        size={12}
+                        className={`text-gray-400 flex-shrink-0 transition-transform duration-200 ${isExpanded ? "" : "-rotate-90"}`}
                       />
                     ) : (
-                      <Lock size={12} className="text-gray-300 flex-shrink-0" />
+                      <Lock size={11} className="text-gray-300 flex-shrink-0" />
                     )}
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs font-semibold text-gray-700 truncate">{meta.label}</div>
+                      <div className="text-[13px] font-semibold text-gray-700 truncate leading-none">{meta.label}</div>
                       {isUnlocked && lessons.length > 0 && (
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <div className="flex-1 h-[3px] bg-gray-100 rounded-full overflow-hidden">
                             <div
                               className="h-full bg-brand-400 rounded-full transition-all"
                               style={{ width: `${pct}%` }}
                             />
                           </div>
-                          <span className="text-[10px] text-gray-400 tabular-nums flex-shrink-0">
+                          <span className="text-[10px] text-gray-400 tabular-nums flex-shrink-0 font-medium">
                             {doneInModule}/{lessons.length}
                           </span>
                         </div>
                       )}
                       {!isUnlocked && (
-                        <div className="text-[10px] text-gray-400 mt-0.5">Complete previous module</div>
+                        <div className="text-[11px] text-gray-400 mt-0.5">Locked</div>
                       )}
                     </div>
                   </button>
 
                   {/* Lesson list */}
                   {isUnlocked && isExpanded && lessons.length > 0 && (
-                    <div className="border-t border-gray-100 py-1">
+                    <div className="pb-1.5">
                       {lessons.map((lesson) => {
                         const isActive = lesson.id === activeId;
                         const isDone = completedIds.has(lesson.id);
@@ -197,24 +205,24 @@ export default function LearnArraysPage() {
                           <button
                             key={lesson.id}
                             onClick={() => handleSelectConcept(lesson.id, modId)}
-                            className={`w-full px-3 py-1.5 text-left flex items-center gap-2 transition-colors ${
+                            className={`w-full px-3 py-2 text-left flex items-center gap-2.5 transition-colors ${
                               isActive
                                 ? "bg-brand-50 text-brand-700"
-                                : "hover:bg-gray-50 text-gray-600"
+                                : "hover:bg-gray-50 text-gray-500"
                             }`}
                           >
-                            <span className={`w-4 h-4 flex-shrink-0 rounded-full border text-[9px] flex items-center justify-center font-mono ${
+                            <span className={`w-[18px] h-[18px] flex-shrink-0 rounded-full border flex items-center justify-center text-[9px] font-mono font-semibold ${
                               isDone
                                 ? "bg-green-500 border-green-500 text-white"
                                 : isActive
-                                ? "border-brand-400 text-brand-500 bg-brand-50"
-                                : "border-gray-200 text-gray-300"
+                                ? "border-brand-400 text-brand-500 bg-white"
+                                : "border-gray-200 text-gray-400"
                             }`}>
                               {isDone ? "✓" : lesson.lessonNumber}
                             </span>
-                            <span className="text-xs truncate">{lesson.title}</span>
+                            <span className="text-[13px] truncate font-medium">{lesson.title}</span>
                             {lesson.lessonType === "flagship" && (
-                              <span className="ml-auto text-[9px] font-semibold text-amber-500 bg-amber-50 px-1 rounded flex-shrink-0">★</span>
+                              <span className="ml-auto text-amber-400 flex-shrink-0 text-[11px]">★</span>
                             )}
                           </button>
                         );
@@ -224,7 +232,7 @@ export default function LearnArraysPage() {
 
                   {/* Coming soon placeholder for locked modules */}
                   {!isUnlocked && (
-                    <div className="px-3 pb-2 text-[10px] text-gray-400 leading-relaxed">
+                    <div className="px-3 pb-2.5 text-[11px] text-gray-400 leading-relaxed">
                       {meta.description}
                     </div>
                   )}
@@ -234,47 +242,48 @@ export default function LearnArraysPage() {
           </aside>
 
           {/* ── Main panel ── */}
-          <div className="flex-1 min-w-0 space-y-6">
+          <div className="flex-1 min-w-0 space-y-5">
 
             {/* Concept card */}
             <div
               key={activeId}
-              className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden"
+              className="bg-white border border-gray-200 rounded-xl overflow-hidden"
+              style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)" }}
             >
               {/* Card header */}
-              <div className="px-7 pt-6 pb-0">
+              <div className="px-8 pt-7 pb-0">
                 <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-semibold text-brand-500 bg-brand-50 px-2 py-0.5 rounded-full uppercase tracking-wide">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[11px] font-semibold text-brand-600 bg-brand-50 px-2.5 py-1 rounded-md uppercase tracking-wide">
                         {MODULE_META[concept.module].label}
                       </span>
-                      <span className="text-[10px] text-gray-400">Lesson {concept.lessonNumber}</span>
+                      <span className="text-[12px] text-gray-400 font-medium">Lesson {concept.lessonNumber}</span>
                       {concept.lessonType === "flagship" && (
-                        <span className="text-[10px] font-semibold text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full">★ Flagship</span>
+                        <span className="text-[11px] font-semibold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-md">★ Flagship</span>
                       )}
                     </div>
-                    <h2 className="text-lg font-bold text-gray-900">{concept.title}</h2>
-                    <p className="text-sm text-gray-400 mt-0.5">{concept.tagline}</p>
+                    <h2 className="text-[20px] font-bold text-gray-900 leading-snug">{concept.title}</h2>
+                    <p className="text-[14px] text-gray-500 mt-1 leading-relaxed">{concept.tagline}</p>
                   </div>
                   {completedIds.has(activeId) && (
-                    <div className="flex-shrink-0 text-xs font-semibold text-green-600 bg-green-50 border border-green-200 px-2.5 py-1 rounded-full">
+                    <div className="flex-shrink-0 text-xs font-semibold text-green-600 bg-green-50 border border-green-100 px-3 py-1.5 rounded-lg">
                       ✓ Completed
                     </div>
                   )}
                 </div>
 
                 {/* Mental model callout */}
-                <div className="mt-3 mb-0 px-3 py-2 bg-brand-50 border border-brand-100 rounded-lg">
-                  <div className="flex items-start gap-2">
+                <div className="mt-5 px-4 py-3 bg-brand-50 border border-brand-100 rounded-lg">
+                  <div className="flex items-start gap-2.5">
                     <BookOpen size={13} className="text-brand-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-brand-700 leading-relaxed">{concept.mentalModel}</p>
+                    <p className="text-[13px] text-brand-700 leading-relaxed">{concept.mentalModel}</p>
                   </div>
                 </div>
               </div>
 
               {/* Visualizer */}
-              <div className="px-7 pt-4 pb-7">
+              <div className="px-8 pt-5 pb-8">
                 <InteractiveConceptVisualizer
                   key={activeId}
                   concept={concept}
@@ -283,18 +292,18 @@ export default function LearnArraysPage() {
               </div>
 
               {/* Why it matters */}
-              <div className="mx-7 mb-7 px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
-                <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Why it matters</div>
-                <p className="text-xs text-gray-600 leading-relaxed">{concept.whyItMatters}</p>
+              <div className="mx-8 mb-6 px-4 py-3.5 bg-gray-50 rounded-lg border border-gray-100">
+                <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Why it matters</div>
+                <p className="text-[13px] text-gray-600 leading-relaxed">{concept.whyItMatters}</p>
               </div>
 
               {/* Common mistakes */}
               {concept.commonMistakes.length > 0 && (
-                <div className="mx-7 mb-7 space-y-1.5">
-                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Common mistakes</div>
+                <div className="mx-8 mb-6 space-y-2">
+                  <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Common mistakes</div>
                   {concept.commonMistakes.map((m, i) => (
-                    <div key={i} className="flex items-start gap-2 text-xs text-gray-600">
-                      <span className="text-red-400 flex-shrink-0 mt-0.5">✗</span>
+                    <div key={i} className="flex items-start gap-2.5 text-[13px] text-gray-600">
+                      <span className="text-red-400 flex-shrink-0 mt-0.5 font-semibold">✗</span>
                       <span>{m}</span>
                     </div>
                   ))}
@@ -303,9 +312,9 @@ export default function LearnArraysPage() {
 
               {/* Pattern connection */}
               {concept.patternConnection && (
-                <div className="mx-7 mb-7 px-4 py-3 bg-violet-50 border border-violet-100 rounded-xl">
-                  <div className="text-[10px] font-semibold text-violet-400 uppercase tracking-widest mb-1">What comes next</div>
-                  <p className="text-xs text-violet-700 leading-relaxed">{concept.patternConnection}</p>
+                <div className="mx-8 mb-7 px-4 py-3.5 bg-violet-50 border border-violet-100 rounded-lg">
+                  <div className="text-[11px] font-semibold text-violet-500 uppercase tracking-widest mb-1.5">What comes next</div>
+                  <p className="text-[13px] text-violet-700 leading-relaxed">{concept.patternConnection}</p>
                 </div>
               )}
             </div>
@@ -351,3 +360,4 @@ export default function LearnArraysPage() {
     </div>
   );
 }
+

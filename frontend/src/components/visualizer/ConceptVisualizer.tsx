@@ -20,10 +20,10 @@ function parseArray(raw: string): number[] | null {
 // ─── Variable pill ────────────────────────────────────────────────────────────
 function VarPill({ k, v }: { k: string; v: number | string | boolean }) {
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-mono bg-white border border-gray-200 rounded-md px-2 py-1">
+    <span className="inline-flex items-center gap-1 text-xs font-mono bg-gray-50 border border-gray-200 rounded-md px-2.5 py-1">
       <span className="text-brand-600 font-semibold">{k}</span>
       <span className="text-gray-300">=</span>
-      <span className="text-gray-700">{String(v)}</span>
+      <span className="text-gray-700 font-medium">{String(v)}</span>
     </span>
   );
 }
@@ -37,7 +37,7 @@ function AlgorithmSteps({ steps, activeStep }: { steps: string[]; activeStep: nu
         return (
           <li
             key={i}
-            className={`flex items-start gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${
+            className={`flex items-start gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all duration-150 ${
               isActive ? "bg-brand-50 text-brand-800" : "text-gray-400"
             }`}
           >
@@ -111,21 +111,21 @@ export default function ConceptVisualizer({ concept, onComplete }: { concept: Ar
     <div className="space-y-0 divide-y divide-gray-100">
 
       {/* ── Explanation ── */}
-      <div className="pb-5">
-        <p className="text-sm text-gray-600 leading-relaxed">{concept.explanation}</p>
+      <div className="pb-6">
+        <p className="text-[14px] text-gray-600 leading-relaxed">{concept.explanation}</p>
       </div>
 
       {/* ── Inputs ── */}
       <div className="py-5">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
-            <label className="block text-xs font-medium text-gray-400 mb-1.5">Array</label>
+            <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Array</label>
             <input
               type="text"
               value={rawInput}
               onChange={handleInputChange}
-              className={`w-full px-3 py-2 rounded-lg border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-400/30 transition-colors ${
-                parseError ? "border-red-300 bg-red-50" : "border-gray-200 bg-white hover:border-gray-300 focus:border-brand-300"
+              className={`w-full px-3 h-10 rounded-lg border text-[13px] font-mono focus:outline-none focus:ring-2 focus:ring-brand-400/30 transition-colors ${
+                parseError ? "border-red-300 bg-red-50" : "border-gray-200 bg-white hover:border-gray-300 focus:border-brand-400"
               }`}
               placeholder="e.g. 10, 25, 31, 42"
               aria-label="Array values"
@@ -134,12 +134,12 @@ export default function ConceptVisualizer({ concept, onComplete }: { concept: Ar
           </div>
           {showTarget && (
             <div className="w-32">
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">{concept.targetLabel}</label>
+              <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">{concept.targetLabel}</label>
               <input
                 type="number"
                 value={rawTarget}
                 onChange={(e) => setRawTarget(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-400/30 hover:border-gray-300 focus:border-brand-300 transition-colors"
+                className="w-full px-3 h-10 rounded-lg border border-gray-200 bg-white text-[13px] font-mono focus:outline-none focus:ring-2 focus:ring-brand-400/30 hover:border-gray-300 focus:border-brand-400 transition-colors"
                 placeholder={concept.showTargetInput === "index" ? "index" : "value"}
                 aria-label={concept.targetLabel}
               />
@@ -154,7 +154,7 @@ export default function ConceptVisualizer({ concept, onComplete }: { concept: Ar
           {cells.length > 0 ? (
             <ArrayDisplay cells={cells} />
           ) : (
-            <div className="flex items-center justify-center h-28 text-sm text-gray-400">
+            <div className="flex items-center justify-center h-32 text-sm text-gray-400">
               Enter an array above to begin.
             </div>
           )}
@@ -162,7 +162,7 @@ export default function ConceptVisualizer({ concept, onComplete }: { concept: Ar
       </div>
 
       {/* ── Controls ── */}
-      <div className="py-4">
+      <div className="py-5">
         <VisualizerControls
           status={status}
           currentStep={currentStepIndex}
@@ -182,7 +182,7 @@ export default function ConceptVisualizer({ concept, onComplete }: { concept: Ar
         <div aria-live="polite" aria-atomic="true">
           {currentStep ? (
             <>
-              <p className="text-sm text-gray-800 leading-relaxed">{currentStep.message}</p>
+              <p className="text-[14px] text-gray-800 leading-relaxed">{currentStep.message}</p>
               {hasVars && (
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {Object.entries(currentStep.variables).map(([k, v]) => (
@@ -192,7 +192,7 @@ export default function ConceptVisualizer({ concept, onComplete }: { concept: Ar
               )}
             </>
           ) : (
-            <p className="text-sm text-gray-400">
+            <p className="text-[13px] text-gray-400">
               Press <kbd className="kbd">Space</kbd> or{" "}
               <kbd className="kbd">→</kbd> to step through the algorithm.
             </p>
@@ -205,25 +205,25 @@ export default function ConceptVisualizer({ concept, onComplete }: { concept: Ar
         {/* Algorithm steps */}
         {concept.algorithmSteps.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Steps</p>
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Steps</p>
             <AlgorithmSteps steps={concept.algorithmSteps} activeStep={activeAlgorithmStep} />
           </div>
         )}
 
         {/* Complexity */}
         <div className="space-y-2 lg:w-48">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Complexity</p>
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Complexity</p>
           <div className="flex lg:flex-col gap-2">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 border border-green-100 text-green-800 text-sm">
-              <span className="text-xs opacity-60">Time</span>
+            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-green-50 border border-green-100 text-green-800 text-[13px]">
+              <span className="text-[11px] text-green-600 font-medium opacity-80">Time</span>
               <span className="font-mono font-bold">{concept.timeComplexity}</span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-100 text-blue-800 text-sm">
-              <span className="text-xs opacity-60">Space</span>
+            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-800 text-[13px]">
+              <span className="text-[11px] text-indigo-600 font-medium opacity-80">Space</span>
               <span className="font-mono font-bold">{concept.spaceComplexity}</span>
             </div>
           </div>
-          <p className="text-xs text-gray-400 leading-relaxed">{concept.complexityNote}</p>
+          <p className="text-[12px] text-gray-400 leading-relaxed">{concept.complexityNote}</p>
         </div>
       </div>
 

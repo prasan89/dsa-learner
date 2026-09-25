@@ -70,9 +70,9 @@ export default function VisualizerControls({
   return (
     <div className="space-y-3">
       {/* Progress track */}
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-3">
         <div
-          className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden"
+          className="flex-1 h-[6px] bg-gray-100 rounded-full overflow-hidden"
           role="progressbar"
           aria-valuenow={currentStep + 1}
           aria-valuemin={1}
@@ -96,7 +96,7 @@ export default function VisualizerControls({
         <button
           onClick={onReset}
           disabled={isEmpty || (atStart && status === "idle")}
-          className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+          className="p-2.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
           aria-label="Reset (R)"
           title="Reset (R)"
         >
@@ -107,7 +107,7 @@ export default function VisualizerControls({
         <button
           onClick={onStepBack}
           disabled={isEmpty || atStart}
-          className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+          className="p-2.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
           aria-label="Step back (←)"
           title="Step back (←)"
         >
@@ -118,7 +118,7 @@ export default function VisualizerControls({
         <button
           onClick={isPlaying ? onPause : onPlay}
           disabled={isEmpty}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 active:bg-brand-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-sm transition-colors shadow-sm"
+          className="flex items-center gap-1.5 px-5 h-10 rounded-lg bg-brand-600 hover:bg-brand-700 active:bg-brand-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-sm transition-colors"
           aria-label={isPlaying ? "Pause (Space)" : isDone ? "Replay (Space)" : "Play (Space)"}
         >
           {isPlaying
@@ -131,7 +131,7 @@ export default function VisualizerControls({
         <button
           onClick={onStepForward}
           disabled={isEmpty || isDone}
-          className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+          className="p-2.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
           aria-label="Step forward (→)"
           title="Step forward (→)"
         >
@@ -141,15 +141,15 @@ export default function VisualizerControls({
         <div className="flex-1" />
 
         {/* Speed */}
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg p-0.5">
           {SPEEDS.map((s) => (
             <button
               key={s}
               onClick={() => onSpeedChange(s)}
-              className={`text-xs font-mono px-2 py-1 rounded-md transition-colors ${
+              className={`text-xs font-mono font-semibold px-2.5 py-1.5 rounded-md transition-all ${
                 speed === s
-                  ? "bg-gray-900 text-white"
-                  : "text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
               aria-label={`Speed ${s}x`}
               aria-pressed={speed === s}

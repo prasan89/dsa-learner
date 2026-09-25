@@ -107,8 +107,8 @@ test.describe('Arrays Visualizer @smoke @regression', () => {
   });
 
   test('challenge mode can be entered and shows an overlay', async ({ page }) => {
-    // Enter challenge mode
-    const challengeBtn = page.getByRole('button', { name: /challenge mode/i });
+    // Enter challenge mode (button now reads "Try Challenge")
+    const challengeBtn = page.getByRole('button', { name: /try challenge/i });
     if (!(await challengeBtn.count())) return; // no challenge for this concept
 
     await challengeBtn.click();
@@ -133,14 +133,14 @@ test.describe('Arrays Visualizer @smoke @regression', () => {
   });
 
   test('watch mode button returns to non-challenge view', async ({ page }) => {
-    const challengeBtn = page.getByRole('button', { name: /challenge mode/i });
+    const challengeBtn = page.getByRole('button', { name: /try challenge/i });
     if (!(await challengeBtn.count())) return;
 
     await challengeBtn.click();
     await expect(page.getByRole('button', { name: /watch mode/i })).toBeVisible();
 
     await page.getByRole('button', { name: /watch mode/i }).click();
-    await expect(page.getByRole('button', { name: /challenge mode/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /try challenge/i })).toBeVisible();
   });
 
   test('progress bar is accessible (has aria attributes)', async ({ page }) => {

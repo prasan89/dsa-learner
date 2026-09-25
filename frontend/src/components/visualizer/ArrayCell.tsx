@@ -51,7 +51,7 @@ export default function ArrayCell({ value, index, state, label }: ArrayCellProps
   const scale = SCALE_STATES.has(state) ? "scale-110" : "scale-100";
 
   return (
-    <div className="flex flex-col items-center gap-1.5">
+    <div className="flex flex-col items-center gap-2">
       {/* Pointer label — always reserve height so cells don't shift */}
       <div className="h-5 flex items-end justify-center">
         {label ? (
@@ -64,9 +64,9 @@ export default function ArrayCell({ value, index, state, label }: ArrayCellProps
       {/* Cell */}
       <div
         className={`
-          w-14 h-14 flex items-center justify-center
-          rounded-xl border-2 font-mono font-semibold text-sm
-          transition-all duration-200 ease-out
+          w-[60px] h-[60px] flex items-center justify-center
+          rounded-[10px] border-2 font-mono font-semibold text-base
+          transition-all duration-200 ease-out select-none
           ${stateClass} ${scale}
         `}
         role="cell"
@@ -76,7 +76,7 @@ export default function ArrayCell({ value, index, state, label }: ArrayCellProps
       </div>
 
       {/* Index label */}
-      <span className="text-[11px] text-gray-400 font-mono tabular-nums">{index}</span>
+      <span className="text-[11px] text-gray-400 font-mono tabular-nums font-medium">{index}</span>
     </div>
   );
 }
