@@ -33,31 +33,31 @@ class AgentRunnerTest {
 
     // ─── Mock agents ──────────────────────────────────────────────────────
 
-    static class EchoAgent implements Agent<String, String> {
+    static class EchoAgent implements Agent<String, Map<String, Object>> {
         @Override public String agentType() { return "echo_agent"; }
-        @Override public AgentOutput<String> execute(AgentInput<String> input) {
+        @Override public AgentOutput<Map<String, Object>> execute(AgentInput<String> input) {
             return new AgentOutput<>(input.agentRunId(), AgentOutput.Status.SUCCEEDED,
-                    "echo:" + input.payload(), 0.99, List.of(), List.of(), false,
+                    Map.of("echo", input.payload()), 0.99, List.of(), List.of(), false,
                     new AgentOutput.AgentMetadata("mock_v1", "mock-model", "mock",
                             10, 20, 0.0, 5, input.context().promptId(),
                             input.context().promptVersion(), "1.0"));
         }
     }
 
-    static class CostlyEchoAgent implements Agent<String, String> {
+    static class CostlyEchoAgent implements Agent<String, Map<String, Object>> {
         @Override public String agentType() { return "costly_echo_agent"; }
-        @Override public AgentOutput<String> execute(AgentInput<String> input) {
+        @Override public AgentOutput<Map<String, Object>> execute(AgentInput<String> input) {
             return new AgentOutput<>(input.agentRunId(), AgentOutput.Status.SUCCEEDED,
-                    "echo:" + input.payload(), 0.95, List.of(), List.of(), false,
+                    Map.of("echo", input.payload()), 0.95, List.of(), List.of(), false,
                     new AgentOutput.AgentMetadata("sonnet_gen_v1", "claude-sonnet-4-6", "anthropic",
                             1000, 500, 0.0180, 100, input.context().promptId(),
                             input.context().promptVersion(), "1.0"));
         }
     }
 
-    static class FailingAgent implements Agent<String, String> {
+    static class FailingAgent implements Agent<String, Map<String, Object>> {
         @Override public String agentType() { return "fail_agent"; }
-        @Override public AgentOutput<String> execute(AgentInput<String> input) {
+        @Override public AgentOutput<Map<String, Object>> execute(AgentInput<String> input) {
             throw new RuntimeException("Agent failure");
         }
     }
@@ -70,11 +70,11 @@ class AgentRunnerTest {
                 .thenReturn(Optional.empty());
         when(agentRunRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        AgentOutput<String> output = runner.run(new EchoAgent(), lessonId, 1,
+        AgentOutput<Map<String, Object>> output = runner.run(new EchoAgent(), lessonId, 1,
                 "language", "de", "hello", promptId, 1, "mock_v1");
 
         assertTrue(output.succeeded());
-        assertEquals("echo:hello", output.output());
+        assertEquals(Map.of("echo", "hello"), output.output());
 
         // Two saves expected: RUNNING then SUCCEEDED
         verify(agentRunRepo, times(2)).save(any());
@@ -87,7 +87,7 @@ class AgentRunnerTest {
         // We verify by checking the output field is set (the same mutable object is saved twice).
         CfAgentRun finalState = captor.getAllValues().get(1);
         assertEquals("SUCCEEDED", finalState.getStatus());
-        assertEquals("echo:hello", finalState.getOutput());
+        assertNotNull(finalState.getOutput());
     }
 
     @Test
@@ -114,18 +114,18 @@ class AgentRunnerTest {
                 .lessonVersion(1)
                 .agentType("echo_agent")
                 .status("SUCCEEDED")
-                .output("echo:hello")        // persisted in prior execution
+                .output(Map.of("echo", "hello"))  // persisted in prior execution
                 .modelConfigKey("mock_v1")
                 .build();
 
         when(agentRunRepo.findSucceededByIdempotencyKey(any(), anyInt(), eq("echo_agent"), any()))
                 .thenReturn(Optional.of(cached));
 
-        AgentOutput<String> output = runner.run(new EchoAgent(), lessonId, 1,
+        AgentOutput<Map<String, Object>> output = runner.run(new EchoAgent(), lessonId, 1,
                 "language", "de", "hello", promptId, 1, "mock_v1");
 
         assertTrue(output.succeeded());
-        assertEquals("echo:hello", output.output(), "Cache hit must return the persisted output");
+        assertEquals(Map.of("echo", "hello"), output.output(), "Cache hit must return the persisted output");
 
         // Agent.execute must NOT be called — no new run record, no cost entry
         verify(agentRunRepo, never()).save(any());
@@ -136,7 +136,7 @@ class AgentRunnerTest {
     void noDuplicateCostOnCacheHit() {
         CfAgentRun cached = CfAgentRun.builder()
                 .id(UUID.randomUUID()).lessonId(lessonId).lessonVersion(1)
-                .agentType("costly_echo_agent").status("SUCCEEDED").output("echo:hello")
+                .agentType("costly_echo_agent").status("SUCCEEDED").output(Map.of("echo", "hello"))
                 .provider("anthropic").modelId("claude-sonnet-4-6")
                 .inputTokens(1000).outputTokens(500)
                 .estimatedCostUsd(java.math.BigDecimal.valueOf(0.0180))
@@ -151,7 +151,7 @@ class AgentRunnerTest {
         verifyNoInteractions(costLedger);
     }
 
-    // ─── Failure handling ─────────────────────────────────────────────────
+    // ─── Failure handling — Blocker 2 regression ─────────────────────────
 
     @Test
     void marksRunFailedOnException() {
@@ -170,7 +170,89 @@ class AgentRunnerTest {
         assertNotNull(lastSave.getErrorMessage());
     }
 
-    // ─── Canonical hashing ────────────────────────────────────────────────
+    /**
+     * Regression for Blocker 2: @CreationTimestamp + @Builder null-on-UPDATE.
+     *
+     * Spring Data calls merge() for entities with a pre-set ID. merge() returns a NEW managed
+     * instance with @CreationTimestamp populated. If the code ignores the return value of the
+     * first save(), subsequent saves on the original (unmanaged) entity have createdAt=null,
+     * violating the NOT NULL constraint.
+     *
+     * This test simulates the DB behavior: the first save() returns an entity with createdAt set.
+     * The fix (run = agentRunRepository.save(run)) ensures the managed instance is used for
+     * all subsequent mutations, so the failure-path save() never sends createdAt=null.
+     */
+    @Test
+    void failurePathDoesNotSendNullCreatedAt() {
+        when(agentRunRepo.findSucceededByIdempotencyKey(any(), anyInt(), any(), any()))
+                .thenReturn(Optional.empty());
+
+        // Simulate DB @CreationTimestamp behavior: first save() returns entity with createdAt set.
+        java.time.Instant dbCreatedAt = java.time.Instant.now();
+        when(agentRunRepo.save(any())).thenAnswer(inv -> {
+            CfAgentRun entity = inv.getArgument(0);
+            if (entity.getCreatedAt() == null) {
+                // Mimic Hibernate setting @CreationTimestamp during INSERT
+                entity.setCreatedAt(dbCreatedAt);
+            }
+            return entity;
+        });
+
+        assertThrows(RuntimeException.class, () ->
+                runner.run(new FailingAgent(), lessonId, 1,
+                        "language", "de", "input", promptId, 1, "mock_v1"));
+
+        ArgumentCaptor<CfAgentRun> captor = ArgumentCaptor.forClass(CfAgentRun.class);
+        verify(agentRunRepo, times(2)).save(captor.capture());
+
+        // Both saves are the same mutable object reference (Mockito returns the same instance).
+        // After run = save(run), the code mutates run before the second save. By capture time
+        // the object is in its final FAILED state. What we can verify is:
+        //   - createdAt is non-null (populated by the first-save mock before the failure path)
+        //   - status is FAILED (mutation applied before second save)
+        //   - completedAt is non-null
+        //   - errorMessage is non-null
+        CfAgentRun secondSave = captor.getAllValues().get(1);
+
+        assertEquals("FAILED", secondSave.getStatus());
+        assertNotNull(secondSave.getCreatedAt(),
+                "createdAt must be non-null on the failure-path save — was the returned entity from first save() used?");
+        assertNotNull(secondSave.getCompletedAt(), "completedAt must be set on failure");
+        assertNotNull(secondSave.getErrorMessage(), "error message must be persisted");
+        assertEquals(dbCreatedAt, secondSave.getCreatedAt(),
+                "createdAt value must be the one set during INSERT, not overwritten");
+    }
+
+    @Test
+    void successPathPreservesCreatedAt() {
+        when(agentRunRepo.findSucceededByIdempotencyKey(any(), anyInt(), any(), any()))
+                .thenReturn(Optional.empty());
+
+        java.time.Instant dbCreatedAt = java.time.Instant.now();
+        when(agentRunRepo.save(any())).thenAnswer(inv -> {
+            CfAgentRun entity = inv.getArgument(0);
+            if (entity.getCreatedAt() == null) {
+                entity.setCreatedAt(dbCreatedAt);
+            }
+            return entity;
+        });
+
+        AgentOutput<Map<String, Object>> output = runner.run(new EchoAgent(), lessonId, 1,
+                "language", "de", "hello", promptId, 1, "mock_v1");
+
+        assertTrue(output.succeeded());
+
+        ArgumentCaptor<CfAgentRun> captor = ArgumentCaptor.forClass(CfAgentRun.class);
+        verify(agentRunRepo, times(2)).save(captor.capture());
+
+        CfAgentRun secondSave = captor.getAllValues().get(1);
+        assertEquals("SUCCEEDED", secondSave.getStatus());
+        assertNotNull(secondSave.getCreatedAt(), "createdAt must be non-null on success save");
+        assertNotNull(secondSave.getCompletedAt(), "completedAt must be set on success");
+        assertEquals(dbCreatedAt, secondSave.getCreatedAt(), "createdAt must match DB-set value");
+    }
+
+
 
     @Test
     void hashIsDeterministicForSameStringPayload() {
@@ -230,13 +312,13 @@ class AgentRunnerTest {
     // ─── AgentOutput cache — Phase 0.2 correctness ───────────────────────
 
     /** Agent that returns issues, recommendations, and culturalFlag=true. */
-    static class RichOutputAgent implements Agent<String, String> {
+    static class RichOutputAgent implements Agent<String, Map<String, Object>> {
         @Override public String agentType() { return "rich_output_agent"; }
-        @Override public AgentOutput<String> execute(AgentInput<String> input) {
+        @Override public AgentOutput<Map<String, Object>> execute(AgentInput<String> input) {
             return new AgentOutput<>(
                     input.agentRunId(), AgentOutput.Status.SUCCEEDED,
-                    "result:" + input.payload(), 0.88,
-                    List.of(new Issue("CULTURAL_SENSITIVITY", Issue.Severity.WARNING, "body", "Check phrasing", null, true)),
+                    Map.of("result", input.payload()), 0.88,
+                    List.of(new Issue("CULTURAL_SENSITIVITY", Issue.Severity.WARNING, "body", "Check phrasing", null, true, null)),
                     List.of("Simplify vocabulary", "Add more examples"),
                     true,
                     new AgentOutput.AgentMetadata("sonnet_gen_v1", "claude-sonnet-4-6", "anthropic",
@@ -263,12 +345,12 @@ class AgentRunnerTest {
 
         // issues persisted
         assertNotNull(saved.getIssues(), "issues must be persisted");
-        List<?> savedIssues = (List<?>) saved.getIssues();
+        List<Object> savedIssues = saved.getIssues();
         assertEquals(1, savedIssues.size());
 
         // recommendations persisted
         assertNotNull(saved.getRecommendations(), "recommendations must be persisted");
-        List<?> savedRecs = (List<?>) saved.getRecommendations();
+        List<Object> savedRecs = saved.getRecommendations();
         assertEquals(2, savedRecs.size());
 
         // culturalFlag persisted
@@ -291,10 +373,10 @@ class AgentRunnerTest {
                 .id(UUID.randomUUID())
                 .lessonId(lessonId).lessonVersion(1)
                 .agentType("rich_output_agent").status("SUCCEEDED")
-                .output("result:hello")
+                .output(Map.of("result", "hello"))
                 .confidence(java.math.BigDecimal.valueOf(0.88))
-                .issues(List.of(issueMap))
-                .recommendations(List.of("Simplify vocabulary", "Add more examples"))
+                .issues(new java.util.ArrayList<>(List.of(issueMap)))
+                .recommendations(new java.util.ArrayList<>(List.of("Simplify vocabulary", "Add more examples")))
                 .culturalFlag(true)
                 .modelConfigKey("sonnet_gen_v1")
                 .build();
@@ -302,11 +384,11 @@ class AgentRunnerTest {
         when(agentRunRepo.findSucceededByIdempotencyKey(any(), anyInt(), eq("rich_output_agent"), any()))
                 .thenReturn(Optional.of(cached));
 
-        AgentOutput<String> output = runner.run(new RichOutputAgent(), lessonId, 1,
+        AgentOutput<Map<String, Object>> output = runner.run(new RichOutputAgent(), lessonId, 1,
                 "language", "de", "hello", promptId, 1, "sonnet_gen_v1");
 
         assertTrue(output.succeeded());
-        assertEquals("result:hello", output.output());
+        assertEquals(Map.of("result", "hello"), output.output());
 
         // issues reconstructed as typed Issue objects
         assertEquals(1, output.issues().size());
@@ -331,7 +413,7 @@ class AgentRunnerTest {
                 .id(UUID.randomUUID())
                 .lessonId(lessonId).lessonVersion(1)
                 .agentType("rich_output_agent").status("SUCCEEDED")
-                .output("result:hello")
+                .output(Map.of("result", "hello"))
                 .build();
 
         when(agentRunRepo.findSucceededByIdempotencyKey(any(), anyInt(), eq("rich_output_agent"), any()))
@@ -339,8 +421,8 @@ class AgentRunnerTest {
 
         // Track whether execute() was called by wrapping in a spy-like subclass.
         boolean[] executed = {false};
-        Agent<String, String> spyAgent = new RichOutputAgent() {
-            @Override public AgentOutput<String> execute(AgentInput<String> input) {
+        Agent<String, Map<String, Object>> spyAgent = new RichOutputAgent() {
+            @Override public AgentOutput<Map<String, Object>> execute(AgentInput<String> input) {
                 executed[0] = true;
                 return super.execute(input);
             }
@@ -360,13 +442,13 @@ class AgentRunnerTest {
                 .id(existingRunId)
                 .lessonId(lessonId).lessonVersion(1)
                 .agentType("rich_output_agent").status("SUCCEEDED")
-                .output("result:hello")
+                .output(Map.of("result", "hello"))
                 .build();
 
         when(agentRunRepo.findSucceededByIdempotencyKey(any(), anyInt(), eq("rich_output_agent"), any()))
                 .thenReturn(Optional.of(cached));
 
-        AgentOutput<String> output = runner.run(new RichOutputAgent(), lessonId, 1,
+        AgentOutput<Map<String, Object>> output = runner.run(new RichOutputAgent(), lessonId, 1,
                 "language", "de", "hello", promptId, 1, "sonnet_gen_v1");
 
         // The returned run ID must be the existing run ID — no new row created.

@@ -186,7 +186,7 @@ CREATE TABLE cf_agent_runs (
     estimated_cost_usd NUMERIC(10,6),
     provider          VARCHAR(50),
     model_id          VARCHAR(100),
-    latency_ms        INT,
+    latency_ms        BIGINT,
 
     retry_count       INT          NOT NULL DEFAULT 0,
     error_message     TEXT,
@@ -236,7 +236,7 @@ CREATE TABLE cf_cost_ledger (
     recorded_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_cf_cost_ledger_date   ON cf_cost_ledger (recorded_at::date);
+CREATE INDEX idx_cf_cost_ledger_date   ON cf_cost_ledger (recorded_at);
 CREATE INDEX idx_cf_cost_ledger_lesson ON cf_cost_ledger (lesson_id);
 
 -- ─── Seed: language domain ────────────────────────────────────────────────

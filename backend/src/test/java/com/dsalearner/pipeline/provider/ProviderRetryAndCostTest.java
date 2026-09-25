@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -89,7 +90,7 @@ class ProviderRetryAndCostTest {
         CfAgentRun cached = CfAgentRun.builder()
                 .id(existingRunId).lessonId(lessonId).lessonVersion(1)
                 .agentType(AgentType.CONTENT_GENERATOR).status("SUCCEEDED")
-                .output("cached-output")
+                .output(Map.of("value", "cached-output"))
                 .modelConfigKey("mock_v1")
                 .estimatedCostUsd(BigDecimal.valueOf(0.05))
                 .build();
@@ -99,15 +100,15 @@ class ProviderRetryAndCostTest {
                 .thenReturn(Optional.of(cached));
 
         boolean[] agentCalled = {false};
-        Agent<String, String> tracingAgent = new Agent<>() {
+        Agent<String, Map<String, Object>> tracingAgent = new Agent<>() {
             @Override public String agentType() { return AgentType.CONTENT_GENERATOR; }
-            @Override public AgentOutput<String> execute(AgentInput<String> input) {
+            @Override public AgentOutput<Map<String, Object>> execute(AgentInput<String> input) {
                 agentCalled[0] = true;
                 throw new AssertionError("Agent must NOT be called on cache hit");
             }
         };
 
-        AgentOutput<String> output = runner.run(
+        AgentOutput<Map<String, Object>> output = runner.run(
                 tracingAgent, lessonId, 1, "language", "de",
                 "input-payload", promptId, 1, "mock_v1");
 

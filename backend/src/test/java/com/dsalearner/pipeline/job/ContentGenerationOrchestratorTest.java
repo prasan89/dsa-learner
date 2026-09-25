@@ -14,6 +14,9 @@ import com.dsalearner.pipeline.repository.CfLessonVersionRepository;
 import com.dsalearner.pipeline.statemachine.WorkflowOrchestrator;
 import com.dsalearner.pipeline.validation.DeterministicValidator;
 import com.dsalearner.pipeline.validation.ValidationResult;
+import com.dsalearner.pipeline.validation.rules.CefrEnumRule;
+import com.dsalearner.pipeline.validation.rules.SchemaRequiredFieldsRule;
+import com.dsalearner.pipeline.validation.rules.WordCountRule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -96,8 +99,7 @@ class ContentGenerationOrchestratorTest {
     }
 
     @Test
-    void validationFailureReachesValidationFailed() {
-        setupLessonAndVersion();
+    void validationFailureReachesValidationFailed() {        setupLessonAndVersion();
         setupSuccessfulAgentOutput();
         when(validator.validate(any(), any(), any())).thenReturn(
                 ValidationResult.fail(List.of(
@@ -132,6 +134,68 @@ class ContentGenerationOrchestratorTest {
         assertNotNull(saved.getBlueprint());
         assertNotNull(saved.getGeneratorRunIds());
     }
+
+    /**
+     * Blocker 3 regression: PLANNED → GENERATING transition fires on first attempt.
+     */
+    @Test
+    void firstAttemptTransitionsPlannedToGenerating() {
+        setupLessonAndVersion();  // lesson is PLANNED
+        setupSuccessfulAgentOutput();
+        when(validator.validate(any(), any(), any())).thenReturn(new ValidationResult(true, List.of()));
+
+        orchestrator.execute(buildJob());
+
+        verify(workflowOrchestrator).applyContentTransition(
+                eq(lessonId), eq(ContentStatus.GENERATING), eq("START_GENERATION"), any(), isNull(), isNull());
+    }
+
+    /**
+     * Blocker 3 regression: on retry, lesson is already GENERATING.
+     * The orchestrator must NOT attempt GENERATING→GENERATING through the state machine.
+     * Generation must proceed normally and reach QA_PENDING.
+     */
+    @Test
+    void retryWhileAlreadyGeneratingSkipsTransitionAndSucceeds() {
+        // Lesson is already GENERATING (first attempt left it here after a mid-generation failure)
+        CfLesson generatingLesson = CfLesson.builder()
+                .id(lessonId).stableRef("de-a1-u01-l01")
+                .domainCode("language").languageCode("de").cefrLevel("A1")
+                .title("Greetings").contentStatus(ContentStatus.GENERATING)
+                .currentVersion(1).build();
+        when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(generatingLesson));
+        when(workflowOrchestrator.applyContentTransition(any(), any(), any(), any(), any(), any()))
+                .thenReturn(generatingLesson);
+
+        CfLessonVersion version = CfLessonVersion.builder()
+                .lessonId(lessonId).version(1).contentStatus("GENERATING").build();
+        when(lessonVersionRepository.findByLessonIdAndVersion(lessonId, 1))
+                .thenReturn(Optional.of(version));
+        when(lessonVersionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        setupSuccessfulAgentOutput();
+        when(validator.validate(any(), any(), any())).thenReturn(new ValidationResult(true, List.of()));
+
+        String resultRef = orchestrator.execute(buildJob());
+
+        assertNotNull(resultRef);
+
+        // START_GENERATION must NOT be called (already GENERATING)
+        verify(workflowOrchestrator, never()).applyContentTransition(
+                eq(lessonId), eq(ContentStatus.GENERATING), any(), any(), any(), any());
+
+        // Generation must reach GENERATED and QA_PENDING
+        verify(workflowOrchestrator).applyContentTransition(
+                eq(lessonId), eq(ContentStatus.GENERATED), any(), any(), any(), isNull());
+        verify(workflowOrchestrator).applyContentTransition(
+                eq(lessonId), eq(ContentStatus.QA_PENDING), any(), any(), isNull(), any());
+    }
+
+    /**
+     * Blocker 3 regression: state machine strictness is preserved for genuinely invalid transitions.
+     * Covered by StateMachineTest.invalidContentTransitions — DRAFT→GENERATING and
+     * GENERATING→GENERATING are both in that parameterized test.
+     */
 
     private void setupLessonAndVersion() {
         CfLesson lesson = CfLesson.builder()
@@ -193,5 +257,32 @@ class ContentGenerationOrchestratorTest {
                 .jobType("CONTENT_GENERATION").status("RUNNING").attempt(1).maxAttempts(3)
                 .payload(Map.of("topic", "Greetings and Introductions"))
                 .build();
+    }
+
+    /**
+     * Regression: buildValidationPayload must include 'title' and 'cefrLevel' at the top level.
+     * Previously these were missing, causing SchemaRequiredFieldsRule to always fail for
+     * language-domain lessons.
+     */
+    @Test
+    void validationPayloadIncludesTitleAndCefrLevel() {
+        setupLessonAndVersion();
+        setupSuccessfulAgentOutput();
+
+        // Use the REAL validator rules — not a mock — to prove the payload is correct
+        DeterministicValidator realValidator = new DeterministicValidator(List.of(
+                new SchemaRequiredFieldsRule(), new CefrEnumRule(), new WordCountRule()));
+        ContentGenerationOrchestrator realOrch = new ContentGenerationOrchestrator(
+                agentRunner, contentAgent, promptRegistry, modelRouter, domainRegistry,
+                realValidator, workflowOrchestrator, lessonRepository, lessonVersionRepository);
+
+        String resultRef = realOrch.execute(buildJob());
+        assertNotNull(resultRef);
+
+        // With real rules, must reach QA_PENDING (not VALIDATION_FAILED)
+        verify(workflowOrchestrator).applyContentTransition(
+                eq(lessonId), eq(ContentStatus.QA_PENDING), any(), any(), isNull(), any());
+        verify(workflowOrchestrator, never()).applyContentTransition(
+                eq(lessonId), eq(ContentStatus.VALIDATION_FAILED), any(), any(), any(), any());
     }
 }

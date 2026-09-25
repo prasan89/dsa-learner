@@ -17,7 +17,6 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -53,14 +52,14 @@ class ContentJobWorkerTest {
 
     @Test
     void pollDoesNothingWhenQueueIsEmpty() {
-        when(listOps.leftPop(any(), anyLong(), any(TimeUnit.class))).thenReturn(null);
+        when(listOps.leftPop(any(String.class))).thenReturn(null);
         worker.poll();
         verify(claimService, never()).claim(any());
     }
 
     @Test
     void invalidUuidOnQueueIsSkipped() {
-        when(listOps.leftPop(any(), anyLong(), any(TimeUnit.class))).thenReturn("not-a-uuid");
+        when(listOps.leftPop(any(String.class))).thenReturn("not-a-uuid");
         worker.poll();
         verify(claimService, never()).claim(any());
     }
@@ -72,7 +71,7 @@ class ContentJobWorkerTest {
         UUID jobId = UUID.randomUUID();
         CfPipelineJob job = buildJob(jobId, "RUNNING", 1, 3);
 
-        when(listOps.leftPop(any(), anyLong(), any(TimeUnit.class))).thenReturn(jobId.toString());
+        when(listOps.leftPop(any(String.class))).thenReturn(jobId.toString());
         when(claimService.claim(jobId)).thenReturn(Optional.of(job));
         when(orchestrator.execute(any())).thenReturn("run-ref-123");
 
@@ -89,7 +88,7 @@ class ContentJobWorkerTest {
     void claimFailureSkipsExecution() {
         UUID jobId = UUID.randomUUID();
 
-        when(listOps.leftPop(any(), anyLong(), any(TimeUnit.class))).thenReturn(jobId.toString());
+        when(listOps.leftPop(any(String.class))).thenReturn(jobId.toString());
         // Claim returns empty → another worker already owns this job
         when(claimService.claim(jobId)).thenReturn(Optional.empty());
 
@@ -114,7 +113,7 @@ class ContentJobWorkerTest {
         UUID jobId = UUID.randomUUID();
         CfPipelineJob job = buildJob(jobId, "RUNNING", 1, 3);
 
-        when(listOps.leftPop(any(), anyLong(), any(TimeUnit.class)))
+        when(listOps.leftPop(any(String.class)))
                 .thenReturn(jobId.toString())   // first delivery
                 .thenReturn(jobId.toString())   // second delivery (duplicate)
                 .thenReturn(null);              // queue drains
@@ -144,7 +143,7 @@ class ContentJobWorkerTest {
         UUID jobId = UUID.randomUUID();
         CfPipelineJob job = buildJob(jobId, "RUNNING", 1, 3);
 
-        when(listOps.leftPop(any(), anyLong(), any(TimeUnit.class))).thenReturn(jobId.toString());
+        when(listOps.leftPop(any(String.class))).thenReturn(jobId.toString());
         when(claimService.claim(jobId)).thenReturn(Optional.of(job));
         when(orchestrator.execute(any())).thenThrow(new LlmProviderException("timeout", true));
 
@@ -164,7 +163,7 @@ class ContentJobWorkerTest {
         // attempt == maxAttempts → canRetry is false even for retryable errors
         CfPipelineJob job = buildJob(jobId, "RUNNING", 3, 3);
 
-        when(listOps.leftPop(any(), anyLong(), any(TimeUnit.class))).thenReturn(jobId.toString());
+        when(listOps.leftPop(any(String.class))).thenReturn(jobId.toString());
         when(claimService.claim(jobId)).thenReturn(Optional.of(job));
         when(orchestrator.execute(any())).thenThrow(new LlmProviderException("timeout", true));
 
@@ -181,7 +180,7 @@ class ContentJobWorkerTest {
         UUID jobId = UUID.randomUUID();
         CfPipelineJob job = buildJob(jobId, "RUNNING", 1, 3);
 
-        when(listOps.leftPop(any(), anyLong(), any(TimeUnit.class))).thenReturn(jobId.toString());
+        when(listOps.leftPop(any(String.class))).thenReturn(jobId.toString());
         when(claimService.claim(jobId)).thenReturn(Optional.of(job));
         when(orchestrator.execute(any())).thenThrow(
                 new InvalidTransitionException("Invalid state transition"));
@@ -202,7 +201,7 @@ class ContentJobWorkerTest {
         // Second attempt (attempt=2): success
         CfPipelineJob secondAttempt = buildJob(jobId, "RUNNING", 2, 3);
 
-        when(listOps.leftPop(any(), anyLong(), any(TimeUnit.class)))
+        when(listOps.leftPop(any(String.class)))
                 .thenReturn(jobId.toString())  // first delivery
                 .thenReturn(jobId.toString())  // retry delivery
                 .thenReturn(null);
@@ -231,7 +230,7 @@ class ContentJobWorkerTest {
         CfPipelineJob job = buildJob(jobId, "RUNNING", 1, 3);
         job.setJobType("UNKNOWN_TYPE");
 
-        when(listOps.leftPop(any(), anyLong(), any(TimeUnit.class))).thenReturn(jobId.toString());
+        when(listOps.leftPop(any(String.class))).thenReturn(jobId.toString());
         when(claimService.claim(jobId)).thenReturn(Optional.of(job));
 
         worker.poll();

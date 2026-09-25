@@ -69,9 +69,16 @@ public class ContentGenerationOrchestrator {
         CfLesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new com.dsalearner.exception.NotFoundException("Lesson not found: " + lessonId));
 
-        // Transition to GENERATING
-        workflowOrchestrator.applyContentTransition(
-                lessonId, ContentStatus.GENERATING, "START_GENERATION", "agent:" + contentGenerationAgent.agentType(), null, null);
+        // Transition to GENERATING — skip if already GENERATING (idempotent retry).
+        // On first attempt the lesson is PLANNED; on retry it is already GENERATING
+        // because the prior attempt failed mid-execution. Attempting GENERATING→GENERATING
+        // through the state machine would throw InvalidTransitionException (non-retryable),
+        // burning the attempt counter and killing the job permanently.
+        if (lesson.getContentStatus() != ContentStatus.GENERATING) {
+            workflowOrchestrator.applyContentTransition(
+                    lessonId, ContentStatus.GENERATING, "START_GENERATION",
+                    "agent:" + contentGenerationAgent.agentType(), null, null);
+        }
 
         // Build generation input from lesson metadata + job payload
         String topic = extractTopic(job, lesson);
@@ -170,6 +177,10 @@ public class ContentGenerationOrchestrator {
 
     private Map<String, Object> buildValidationPayload(LessonContent content) {
         Map<String, Object> payload = new HashMap<>();
+        // Title and cefrLevel are required by SchemaRequiredFieldsRule at the top level.
+        // Both come from the LessonContent metadata block that the agent always populates.
+        payload.put("title",      content.metadata().getOrDefault("topic", ""));
+        payload.put("cefrLevel",  content.metadata().getOrDefault("cefrLevel", "A1"));
         payload.put("content",    content.toContentMap());
         payload.put("vocabulary", content.toVocabularyMap());
         payload.put("grammar",    content.toGrammarMap());

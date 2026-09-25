@@ -105,4 +105,49 @@ class DeterministicValidatorTest {
         assertFalse(result.passed());
         assertTrue(result.errors().stream().anyMatch(i -> "RULE_INTERNAL_ERROR".equals(i.code())));
     }
+
+    /**
+     * Regression: the buildValidationPayload bug omitted title and cefrLevel from the map
+     * passed to the validator. This test proves SchemaRequiredFieldsRule still catches both
+     * missing fields — i.e., the rule was not weakened as part of the fix.
+     */
+    @Test
+    void failsWhenTitleAndCefrLevelAbsentFromLanguagePayload() {
+        // Simulates the pre-fix orchestrator payload: content/vocabulary/grammar/exercises present,
+        // but title and cefrLevel were never added to the top-level map.
+        Map<String, Object> badPayload = new HashMap<>();
+        badPayload.put("content",    Map.of("objectives", List.of("Learn greetings")));
+        badPayload.put("vocabulary", Map.of("items", List.of()));
+        badPayload.put("grammar",    Map.of("title", "heißen", "pattern", "Ich heiße"));
+        badPayload.put("exercises",  Map.of("items", List.of()));
+
+        ValidationResult result = validator.validate(badPayload, "language", "de");
+        assertFalse(result.passed(), "Should fail: title and cefrLevel both missing");
+        assertTrue(result.errors().stream()
+                .anyMatch(i -> "SCHEMA_REQUIRED_FIELDS".equals(i.code()) && "title".equals(i.field())),
+                "Must detect missing title");
+        assertTrue(result.errors().stream()
+                .anyMatch(i -> "SCHEMA_REQUIRED_FIELDS".equals(i.code()) && "cefrLevel".equals(i.field())),
+                "Must detect missing cefrLevel");
+    }
+
+    /**
+     * Regression: the corrected orchestrator payload includes title and cefrLevel.
+     * Proves SchemaRequiredFieldsRule passes when both are present.
+     */
+    @Test
+    void passesWhenTitleAndCefrLevelPresentInLanguagePayload() {
+        Map<String, Object> goodPayload = new HashMap<>();
+        goodPayload.put("title",      "German A1 Greetings");
+        goodPayload.put("cefrLevel",  "A1");
+        goodPayload.put("content",    Map.of("objectives", List.of("Learn greetings"),
+                "explanation", Map.of("intro", "Welcome! " + "word ".repeat(50)),
+                "examples",    List.of()));
+        goodPayload.put("vocabulary", Map.of("items", List.of()));
+        goodPayload.put("grammar",    Map.of("title", "heißen", "pattern", "Ich heiße"));
+        goodPayload.put("exercises",  Map.of("items", List.of()));
+
+        ValidationResult result = validator.validate(goodPayload, "language", "de");
+        assertTrue(result.passed(), "Should pass with title and cefrLevel present: " + result.issues());
+    }
 }

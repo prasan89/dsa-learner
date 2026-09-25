@@ -15,6 +15,7 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -89,7 +90,11 @@ public class AgentRunner {
                 .modelConfigKey(modelConfigKey)
                 .startedAt(Instant.now())
                 .build();
-        agentRunRepository.save(run);
+        // Capture the returned entity: Spring Data calls merge() for entities with a pre-set ID,
+        // and merge() returns a NEW managed instance with @CreationTimestamp populated. The
+        // original `run` variable is an unmanaged copy whose createdAt field stays null — any
+        // subsequent save() on the original would send created_at=null to PostgreSQL.
+        run = agentRunRepository.save(run);
 
         // ─── Build input ──────────────────────────────────────────────────
         AgentInput<TInput> input = new AgentInput<>(
@@ -120,13 +125,27 @@ public class AgentRunner {
         run.setCompletedAt(Instant.now());
         run.setLatencyMs(java.time.Duration.between(run.getStartedAt(), run.getCompletedAt()).toMillis());
 
-        run.setOutput(output.output());
+        // Convert to a plain Map so Hibernate's JacksonJsonFormatMapper can serialize it to JSONB.
+        // Java records with ImmutableCollections fields cause a ClassCastException inside
+        // JacksonJsonFormatMapper.toString() when the field type is Object — the mapper tries
+        // to treat the value as a pre-serialized String. Converting via ObjectMapper first
+        // produces a Map<String,Object> that Hibernate can serialize without issue.
+        run.setOutput(toSerializableMap(output.output()));
         run.setConfidence(output.confidence() > 0
                 ? new java.math.BigDecimal(String.valueOf(output.confidence())) : null);
 
         // Persist issues, recommendations, culturalFlag so cache hits return the complete contract.
-        run.setIssues(output.issues());
-        run.setRecommendations(output.recommendations());
+        // Use new ArrayList<> — CfAgentRun.issues/recommendations are List<Object>; the unchecked
+        // cast is safe here because we only ever write Issue/String elements and read them back
+        // through the typed deserialize methods.
+        @SuppressWarnings("unchecked")
+        List<Object> issueList = output.issues() != null
+                ? new java.util.ArrayList<>((List<Object>)(List<?>)output.issues()) : null;
+        @SuppressWarnings("unchecked")
+        List<Object> recList = output.recommendations() != null
+                ? new java.util.ArrayList<>((List<Object>)(List<?>)output.recommendations()) : null;
+        run.setIssues(issueList);
+        run.setRecommendations(recList);
         run.setCulturalFlag(output.culturalFlag());
 
         if (output.metadata() != null) {
@@ -189,11 +208,12 @@ public class AgentRunner {
         );
     }
 
+    @SuppressWarnings("unchecked")
     private List<Issue> deserializeIssues(CfAgentRun run) {
-        Object raw = run.getIssues();
+        List<Object> raw = run.getIssues();
         if (raw == null) return List.of();
-        if (raw instanceof List<?> list && (list.isEmpty() || list.get(0) instanceof Issue)) {
-            return (List<Issue>) raw;
+        if (raw.isEmpty() || raw.get(0) instanceof Issue) {
+            return (List<Issue>)(List<?>)raw;
         }
         try {
             return CANONICAL_MAPPER.convertValue(raw, ISSUE_LIST_TYPE);
@@ -203,17 +223,59 @@ public class AgentRunner {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private List<String> deserializeRecommendations(CfAgentRun run) {
-        Object raw = run.getRecommendations();
+        List<Object> raw = run.getRecommendations();
         if (raw == null) return List.of();
-        if (raw instanceof List<?> list && (list.isEmpty() || list.get(0) instanceof String)) {
-            return (List<String>) raw;
+        if (raw.isEmpty() || raw.get(0) instanceof String) {
+            return (List<String>)(List<?>)raw;
         }
         try {
             return CANONICAL_MAPPER.convertValue(raw, STRING_LIST_TYPE);
         } catch (Exception e) {
             throw new IllegalStateException(
                     "AgentRunner: failed to deserialize recommendations for run " + run.getId(), e);
+        }
+    }
+
+    /**
+     * Converts a Java record or complex object to a plain Map<String,Object> for safe JSONB
+     * serialization. Hibernate's JacksonJsonFormatMapper fails to serialize Java records whose
+     * fields contain ImmutableCollections because it tries to cast the list value to String when
+     * the entity field type is Object. Converting via ObjectMapper round-trip produces a plain
+     * Map<String,Object> with standard mutable collections that Hibernate handles without issue.
+     * Converts an arbitrary Java object to a plain Map<String,Object> for JSONB serialization.
+     *
+     * Hibernate 6.5.2's JacksonJsonFormatMapper.toString(value, javaType) casts to String
+     * when javaType is either String.class OR Object.class (see bytecode at line 23 of
+     * the checkcast instruction). Storing anything other than a String in an Object-typed
+     * JSONB field therefore always fails with ClassCastException.
+     *
+     * Changing the entity field type to Map<String,Object> avoids this, but requires the
+     * value passed to setOutput() to always be a Map. This method guarantees that:
+     * - null → null
+     * - Map → returned directly (already correct type)
+     * - String/primitive → wrapped as {"value": "<scalar>"} for DB; callers check "value" key
+     * - Java record or POJO → Jackson round-trip to Map
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> toSerializableMap(Object value) {
+        if (value == null) return null;
+        if (value instanceof Map<?,?> m) {
+            return (Map<String, Object>) m;
+        }
+        if (value instanceof String || value instanceof Number || value instanceof Boolean) {
+            return Map.of("value", value);
+        }
+        try {
+            String json = CANONICAL_MAPPER.writeValueAsString(value);
+            if (!json.startsWith("{")) {
+                return Map.of("value", value);
+            }
+            return CANONICAL_MAPPER.readValue(json, new TypeReference<Map<String, Object>>() {});
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "AgentRunner: failed to convert output to serializable map", e);
         }
     }
 

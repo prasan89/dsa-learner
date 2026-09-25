@@ -185,7 +185,8 @@ class GermanQaE2ETest {
                 issues.add(new Issue(agentType + "_issue", severity,
                         (String) ri.getOrDefault("field", ""),
                         (String) ri.getOrDefault("message", ""),
-                        (String) ri.getOrDefault("suggestion", null), false));
+                        (String) ri.getOrDefault("suggestion", null), false,
+                        (String) ri.getOrDefault("evidence", null)));
             }
 
             List<String> recommendations = (List<String>) root.getOrDefault("recommendations", List.of());

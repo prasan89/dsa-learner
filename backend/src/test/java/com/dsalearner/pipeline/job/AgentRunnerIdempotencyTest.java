@@ -44,7 +44,7 @@ class AgentRunnerIdempotencyTest {
         CfAgentRun cached = CfAgentRun.builder()
                 .id(existingRunId).lessonId(lessonId).lessonVersion(1)
                 .agentType(AgentType.CONTENT_GENERATOR)
-                .status("SUCCEEDED").output("cached-output")
+                .status("SUCCEEDED").output(Map.of("value", "cached-output"))
                 .modelConfigKey("mock_v1").build();
 
         // Simulate cache hit
@@ -53,18 +53,18 @@ class AgentRunnerIdempotencyTest {
                 .thenReturn(Optional.of(cached));
 
         boolean[] agentCalled = {false};
-        Agent<String, String> trackingAgent = new Agent<>() {
+        Agent<String, Map<String, Object>> trackingAgent = new Agent<>() {
             @Override public String agentType() { return AgentType.CONTENT_GENERATOR; }
-            @Override public AgentOutput<String> execute(AgentInput<String> input) {
+            @Override public AgentOutput<Map<String, Object>> execute(AgentInput<String> input) {
                 agentCalled[0] = true;
                 return new AgentOutput<>(input.agentRunId(), AgentOutput.Status.SUCCEEDED,
-                        "fresh-output", 0.9, List.of(), List.of(), false,
+                        Map.of("value", "fresh-output"), 0.9, List.of(), List.of(), false,
                         new AgentOutput.AgentMetadata("mock_v1", "mock-model", "anthropic",
                                 100, 200, 0.01, 50, null, 1, "1.0"));
             }
         };
 
-        AgentOutput<String> output = runner.run(trackingAgent, lessonId, 1,
+        AgentOutput<Map<String, Object>> output = runner.run(trackingAgent, lessonId, 1,
                 "language", "de", "input", promptId, 1, "mock_v1");
 
         assertFalse(agentCalled[0], "Agent.execute must NOT be called on cache hit");
@@ -81,12 +81,12 @@ class AgentRunnerIdempotencyTest {
         when(agentRunRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         boolean[] agentCalled = {false};
-        Agent<String, String> trackingAgent = new Agent<>() {
+        Agent<String, Map<String, Object>> trackingAgent = new Agent<>() {
             @Override public String agentType() { return AgentType.CONTENT_GENERATOR; }
-            @Override public AgentOutput<String> execute(AgentInput<String> input) {
+            @Override public AgentOutput<Map<String, Object>> execute(AgentInput<String> input) {
                 agentCalled[0] = true;
                 return new AgentOutput<>(input.agentRunId(), AgentOutput.Status.SUCCEEDED,
-                        "output", 0.9, List.of(), List.of(), false,
+                        Map.of("value", "output"), 0.9, List.of(), List.of(), false,
                         new AgentOutput.AgentMetadata("mock_v1", "mock-model", "mock",
                                 100, 200, 0.0, 50, null, 1, "1.0"));
             }
@@ -102,7 +102,8 @@ class AgentRunnerIdempotencyTest {
     void cacheHitProducesNoDuplicateCostEntry() {
         CfAgentRun cached = CfAgentRun.builder()
                 .id(UUID.randomUUID()).lessonId(lessonId).lessonVersion(1)
-                .agentType(AgentType.CONTENT_GENERATOR).status("SUCCEEDED").output("out")
+                .agentType(AgentType.CONTENT_GENERATOR).status("SUCCEEDED")
+                .output(Map.of("value", "out"))
                 .modelConfigKey("mock_v1")
                 .estimatedCostUsd(BigDecimal.valueOf(0.05))
                 .build();
@@ -116,11 +117,11 @@ class AgentRunnerIdempotencyTest {
         verifyNoInteractions(costLedger);
     }
 
-    static class SimpleAgent implements Agent<String, String> {
+    static class SimpleAgent implements Agent<String, Map<String, Object>> {
         @Override public String agentType() { return AgentType.CONTENT_GENERATOR; }
-        @Override public AgentOutput<String> execute(AgentInput<String> input) {
+        @Override public AgentOutput<Map<String, Object>> execute(AgentInput<String> input) {
             return new AgentOutput<>(input.agentRunId(), AgentOutput.Status.SUCCEEDED,
-                    "output", 0.9, List.of(), List.of(), false,
+                    Map.of("value", "output"), 0.9, List.of(), List.of(), false,
                     new AgentOutput.AgentMetadata("mock_v1", "mock-model", "mock",
                             100, 200, 0.0, 50, null, 1, "1.0"));
         }

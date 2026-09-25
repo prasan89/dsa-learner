@@ -7,6 +7,7 @@ import com.dsalearner.pipeline.domain.LanguageProfile;
 import com.dsalearner.pipeline.exception.FrozenVersionException;
 import com.dsalearner.pipeline.model.entity.CfLesson;
 import com.dsalearner.pipeline.model.entity.CfLessonVersion;
+import com.dsalearner.pipeline.model.entity.CfWorkflowEvent;
 import com.dsalearner.pipeline.repository.CfLessonRepository;
 import com.dsalearner.pipeline.repository.CfLessonVersionRepository;
 import com.dsalearner.pipeline.repository.CfWorkflowEventRepository;
@@ -20,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -69,9 +71,20 @@ public class PipelineService {
                 .build();
         versionRepository.save(v1);
 
-        // Audit event
-        orchestrator.applyContentTransition(lesson.getId(), ContentStatus.DRAFT,
-                "CREATE", actor, null, Map.of("stableRef", stableRef));
+        // Audit event: record CREATE directly — not a state transition, so we do not go
+        // through the state machine (which would reject the non-existent DRAFT→DRAFT path).
+        // The lesson starts as DRAFT; this event records when and by whom it was created.
+        eventRepository.save(CfWorkflowEvent.builder()
+                .lessonId(lesson.getId())
+                .lessonVersion(1)
+                .fromStatus(null)
+                .toStatus(ContentStatus.DRAFT.name())
+                .statusType("content")
+                .trigger("CREATE")
+                .actor(actor != null ? actor : "system")
+                .metadata(Map.of("stableRef", stableRef))
+                .occurredAt(Instant.now())
+                .build());
 
         log.info("Created lesson stableRef={} domainCode={} by={}", stableRef, domainCode, actor);
         return lesson;

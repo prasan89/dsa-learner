@@ -26,6 +26,11 @@ public class MockLlmProvider implements LlmProvider {
                 || sys.contains("pedagogy"));
     }
 
+    private boolean isRevisionRequest(LlmRequest request) {
+        String sys = request.systemPrompt();
+        return sys != null && sys.contains("revising");
+    }
+
     public static final String MOCK_QA_RESPONSE = """
             {
               "overallAssessment": "The lesson is well-structured and appropriate for A1 learners.",

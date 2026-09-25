@@ -38,11 +38,11 @@ public class CfAiModelConfig {
     @Builder.Default
     private int timeoutMs = 30000;
 
-    @Column(nullable = false, precision = 8, scale = 6)
+    @Column(name = "cost_per_1k_input_usd", nullable = false, precision = 8, scale = 6)
     @Builder.Default
     private BigDecimal costPer1kInputUsd = BigDecimal.ZERO;
 
-    @Column(nullable = false, precision = 8, scale = 6)
+    @Column(name = "cost_per_1k_output_usd", nullable = false, precision = 8, scale = 6)
     @Builder.Default
     private BigDecimal costPer1kOutputUsd = BigDecimal.ZERO;
 
