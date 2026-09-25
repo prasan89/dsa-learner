@@ -9,6 +9,7 @@ import com.dsalearner.pipeline.model.entity.CfPipelineJob;
 import com.dsalearner.pipeline.repository.CfAgentRunRepository;
 import com.dsalearner.pipeline.repository.CfLessonRepository;
 import com.dsalearner.pipeline.repository.CfLessonVersionRepository;
+import com.dsalearner.pipeline.service.PipelineJobService;
 import com.dsalearner.pipeline.statemachine.WorkflowOrchestrator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -58,6 +59,7 @@ public class QaOrchestrator {
     private final CfLessonRepository lessonRepository;
     private final CfLessonVersionRepository lessonVersionRepository;
     private final CfAgentRunRepository agentRunRepository;
+    private final PipelineJobService pipelineJobService;
 
     /**
      * Executes QA for the given pipeline job.
@@ -150,7 +152,9 @@ public class QaOrchestrator {
                         lessonId, ContentStatus.REVISION, "ROUTE_TO_REVISION",
                         "orchestrator:qa", null,
                         Map.of("revisionCount", lesson.getRevisionCount() + 1));
-                log.info("QaOrchestrator: REVISION lessonId={}", lessonId);
+                // Auto-enqueue the revision job — this drives the automated revision loop
+                pipelineJobService.submitRevisionGeneration(lessonId, version, Map.of(), "orchestrator:qa");
+                log.info("QaOrchestrator: REVISION lessonId={} — REVISION_GENERATION job enqueued", lessonId);
             }
         }
 

@@ -25,7 +25,6 @@ public class PipelineJobService {
     @Transactional
     public CfPipelineJob submitContentGeneration(UUID lessonId, int lessonVersion,
                                                   Map<String, Object> payload, String actor) {
-        // Guard: reject if an active job already exists for this lesson+type
         boolean alreadyActive = jobRepository.findByLessonIdAndJobTypeAndStatusIn(
                 lessonId, "CONTENT_GENERATION",
                 List.of("QUEUED", "RUNNING", "RETRYING")).isPresent();
@@ -45,6 +44,56 @@ public class PipelineJobService {
         jobQueue.enqueue(job);
         log.info("PipelineJobService: submitted CONTENT_GENERATION jobId={} lessonId={} by={}",
                 job.getId(), lessonId, actor);
+        return job;
+    }
+
+    @Transactional
+    public CfPipelineJob submitQaContent(UUID lessonId, int lessonVersion,
+                                          Map<String, Object> payload, String actor) {
+        boolean alreadyActive = jobRepository.findByLessonIdAndJobTypeAndStatusIn(
+                lessonId, "QA_CONTENT",
+                List.of("QUEUED", "RUNNING", "RETRYING")).isPresent();
+        if (alreadyActive) {
+            throw new ConflictException(
+                    "A QA_CONTENT job is already active for lessonId=" + lessonId);
+        }
+
+        CfPipelineJob job = CfPipelineJob.builder()
+                .lessonId(lessonId)
+                .lessonVersion(lessonVersion)
+                .jobType("QA_CONTENT")
+                .maxAttempts(3)
+                .payload(payload != null ? payload : Map.of())
+                .build();
+
+        jobQueue.enqueue(job);
+        log.info("PipelineJobService: submitted QA_CONTENT jobId={} lessonId={} by={}",
+                job.getId(), lessonId, actor);
+        return job;
+    }
+
+    @Transactional
+    public CfPipelineJob submitRevisionGeneration(UUID lessonId, int lessonVersion,
+                                                   Map<String, Object> payload, String actor) {
+        boolean alreadyActive = jobRepository.findByLessonIdAndJobTypeAndStatusIn(
+                lessonId, "REVISION_GENERATION",
+                List.of("QUEUED", "RUNNING", "RETRYING")).isPresent();
+        if (alreadyActive) {
+            throw new ConflictException(
+                    "A REVISION_GENERATION job is already active for lessonId=" + lessonId);
+        }
+
+        CfPipelineJob job = CfPipelineJob.builder()
+                .lessonId(lessonId)
+                .lessonVersion(lessonVersion)
+                .jobType("REVISION_GENERATION")
+                .maxAttempts(3)
+                .payload(payload != null ? payload : Map.of())
+                .build();
+
+        jobQueue.enqueue(job);
+        log.info("PipelineJobService: submitted REVISION_GENERATION jobId={} lessonId={} version={} by={}",
+                job.getId(), lessonId, lessonVersion, actor);
         return job;
     }
 

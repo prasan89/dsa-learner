@@ -9,6 +9,7 @@ import com.dsalearner.pipeline.model.entity.CfPipelineJob;
 import com.dsalearner.pipeline.repository.CfAgentRunRepository;
 import com.dsalearner.pipeline.repository.CfLessonRepository;
 import com.dsalearner.pipeline.repository.CfLessonVersionRepository;
+import com.dsalearner.pipeline.service.PipelineJobService;
 import com.dsalearner.pipeline.statemachine.WorkflowOrchestrator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,7 @@ class QaOrchestratorTest {
     @Mock CfLessonRepository lessonRepository;
     @Mock CfLessonVersionRepository lessonVersionRepository;
     @Mock CfAgentRunRepository agentRunRepository;
+    @Mock PipelineJobService pipelineJobService;
 
     QaOrchestrator orchestrator;
 
@@ -49,7 +51,7 @@ class QaOrchestratorTest {
         orchestrator = new QaOrchestrator(
                 agentRunner, languageAgent, cefrAgent, exerciseAgent, pedagogyAgent,
                 qaAggregator, promptRegistry, modelRouter, workflowOrchestrator,
-                lessonRepository, lessonVersionRepository, agentRunRepository);
+                lessonRepository, lessonVersionRepository, agentRunRepository, pipelineJobService);
 
         lenient().when(languageAgent.agentType()).thenReturn(AgentType.LINGUISTIC_QA);
         lenient().when(cefrAgent.agentType()).thenReturn(AgentType.CEFR_QA);
@@ -154,7 +156,7 @@ class QaOrchestratorTest {
     }
 
     @Test
-    void qaFail_withinRevisionLimit_transitionsToRevision() {
+    void qaFail_withinRevisionLimit_transitionsToRevisionAndEnqueuesJob() {
         CfLesson lesson = buildLesson();
         when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
         when(lessonVersionRepository.findByLessonIdAndVersion(lessonId, 1))
@@ -172,6 +174,8 @@ class QaOrchestratorTest {
                 eq(lessonId), eq(ContentStatus.REVISION), any(), any(), any(), any());
         verify(workflowOrchestrator, never()).applyContentTransition(
                 eq(lessonId), eq(ContentStatus.HUMAN_REVIEW_REQUIRED), any(), any(), any(), any());
+        // Auto-enqueue: REVISION_GENERATION job must be submitted automatically
+        verify(pipelineJobService).submitRevisionGeneration(eq(lessonId), anyInt(), any(), any());
     }
 
     @Test
@@ -193,6 +197,8 @@ class QaOrchestratorTest {
                 eq(lessonId), eq(ContentStatus.HUMAN_REVIEW_REQUIRED), any(), any(), any(), any());
         verify(workflowOrchestrator, never()).applyContentTransition(
                 eq(lessonId), eq(ContentStatus.REVISION), any(), any(), any(), any());
+        // No revision job when escalating to HUMAN_REVIEW_REQUIRED
+        verify(pipelineJobService, never()).submitRevisionGeneration(any(), anyInt(), any(), any());
     }
 
     @Test

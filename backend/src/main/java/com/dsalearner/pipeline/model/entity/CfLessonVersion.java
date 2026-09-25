@@ -84,6 +84,11 @@ public class CfLessonVersion {
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> revisionFeedback;
 
+    // Added in Phase 1B.1 (V37): version number of the version that was revised to produce this one.
+    // NULL for originally-generated versions.
+    @Column
+    private Integer parentVersion;
+
     @Column(nullable = false)
     @Builder.Default
     private boolean frozen = false;

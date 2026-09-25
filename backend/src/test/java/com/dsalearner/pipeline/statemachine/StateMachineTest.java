@@ -28,6 +28,7 @@ class StateMachineTest {
         "QA_PENDING,   QA_FAILED",
         "QA_FAILED,    REVISION",
         "QA_FAILED,    HUMAN_REVIEW_REQUIRED",
+        "REVISION,     GENERATING",
         "REVISION,     QA_PENDING",
         "REVISION,     HUMAN_REVIEW_REQUIRED",
         "QA_PASSED,    APPROVED",
@@ -49,6 +50,9 @@ class StateMachineTest {
         "DRAFT,     QA_PENDING",
         "DRAFT,     QA_PENDING",
         "DRAFT,     APPROVED",
+        "DRAFT,     DRAFT",            // Blocker 4 regression: CREATE event must not go through state machine
+        "DRAFT,     GENERATING",       // Blocker 3 regression: must be PLANNED before GENERATING
+        "GENERATING,GENERATING",       // Blocker 3 regression: retry must not re-attempt this transition
         "PLANNED,   APPROVED",
         "PLANNED,   QA_PENDING",
         "GENERATED, QA_PENDING",      // must go through VALIDATION_PENDING first

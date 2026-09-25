@@ -136,10 +136,6 @@ public class PipelineController {
 
     // ─── Async Jobs ───────────────────────────────────────────────────────
 
-    /**
-     * Submit an asynchronous pipeline job.
-     * POST /api/v1/pipeline/jobs  (authenticated)
-     */
     @PostMapping("/jobs")
     public ResponseEntity<JobResponse> submitJob(
             @Valid @RequestBody SubmitJobRequest req,
@@ -150,10 +146,26 @@ public class PipelineController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(JobResponse.from(job));
     }
 
-    /**
-     * Poll job status.
-     * GET /api/v1/pipeline/jobs/{jobId}  (authenticated)
-     */
+    @PostMapping("/lessons/{id}/qa")
+    public ResponseEntity<JobResponse> submitQaJob(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "1") int version,
+            @AuthenticationPrincipal UserDetails user) {
+        CfPipelineJob job = pipelineJobService.submitQaContent(
+                id, version, Map.of(), actorFrom(user));
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(JobResponse.from(job));
+    }
+
+    @PostMapping("/lessons/{id}/revise")
+    public ResponseEntity<JobResponse> submitRevisionJob(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "1") int sourceVersion,
+            @AuthenticationPrincipal UserDetails user) {
+        CfPipelineJob job = pipelineJobService.submitRevisionGeneration(
+                id, sourceVersion, Map.of(), actorFrom(user));
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(JobResponse.from(job));
+    }
+
     @GetMapping("/jobs/{jobId}")
     public ResponseEntity<JobResponse> getJob(@PathVariable UUID jobId) {
         return ResponseEntity.ok(JobResponse.from(pipelineJobService.getJob(jobId)));

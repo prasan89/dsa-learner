@@ -28,8 +28,8 @@ import java.util.UUID;
  *
  * Transaction separation:
  *   Claim and terminal-state persistence each run in their own short transaction.
- *   The LLM network call (via ContentGenerationOrchestrator) runs BETWEEN them,
- *   with no database connection held open during the external call.
+ *   The LLM network call (via orchestrators) runs BETWEEN them, with no database
+ *   connection held open during the external call.
  *
  * Idempotency:
  *   AgentRunner's existing input-hash mechanism prevents duplicate LLM calls
@@ -44,6 +44,7 @@ public class ContentJobWorker {
     private final StringRedisTemplate redisTemplate;
     private final ContentGenerationOrchestrator generationOrchestrator;
     private final QaOrchestrator qaOrchestrator;
+    private final RevisionGenerationOrchestrator revisionOrchestrator;
 
     @Scheduled(fixedDelay = 500)
     public void poll() {
@@ -86,8 +87,9 @@ public class ContentJobWorker {
 
     private String dispatch(CfPipelineJob job) {
         return switch (job.getJobType()) {
-            case "CONTENT_GENERATION" -> generationOrchestrator.execute(job);
-            case "QA_CONTENT"         -> qaOrchestrator.execute(job);
+            case "CONTENT_GENERATION"  -> generationOrchestrator.execute(job);
+            case "QA_CONTENT"          -> qaOrchestrator.execute(job);
+            case "REVISION_GENERATION" -> revisionOrchestrator.execute(job);
             default -> throw new IllegalArgumentException("Unknown job type: " + job.getJobType());
         };
     }

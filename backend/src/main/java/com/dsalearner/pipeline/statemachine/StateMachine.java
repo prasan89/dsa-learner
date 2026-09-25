@@ -25,7 +25,7 @@ public class StateMachine {
             Map.entry(ContentStatus.VALIDATION_FAILED,      Set.of(ContentStatus.REVISION)),
             Map.entry(ContentStatus.QA_PENDING,             Set.of(ContentStatus.QA_PASSED, ContentStatus.QA_FAILED)),
             Map.entry(ContentStatus.QA_FAILED,              Set.of(ContentStatus.REVISION, ContentStatus.HUMAN_REVIEW_REQUIRED)),
-            Map.entry(ContentStatus.REVISION,               Set.of(ContentStatus.QA_PENDING, ContentStatus.HUMAN_REVIEW_REQUIRED)),
+            Map.entry(ContentStatus.REVISION,               Set.of(ContentStatus.GENERATING, ContentStatus.QA_PENDING, ContentStatus.HUMAN_REVIEW_REQUIRED)),
             Map.entry(ContentStatus.QA_PASSED,              Set.of(ContentStatus.HUMAN_REVIEW_REQUIRED, ContentStatus.APPROVED)),
             Map.entry(ContentStatus.HUMAN_REVIEW_REQUIRED,  Set.of(ContentStatus.APPROVED, ContentStatus.REVISION, ContentStatus.ARCHIVED)),
             Map.entry(ContentStatus.APPROVED,               Set.of(ContentStatus.ARCHIVED)),

@@ -18,6 +18,9 @@ public final class AgentType {
     public static final String EXERCISE_QA           = "exercise_qa";
     public static final String CONSISTENCY_QA        = "consistency_qa";
 
+    // Revision
+    public static final String REVISION_GENERATOR   = "revision_generator";
+
     // Post-QA
     public static final String EDITOR                = "editor";
     public static final String FINAL_GATE            = "final_gate";
