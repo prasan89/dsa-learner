@@ -3,6 +3,13 @@ export const E2E_EMAIL = process.env.E2E_EMAIL || 'e2e-user@example.com';
 export const E2E_PASSWORD = process.env.E2E_PASSWORD || 'Test@1234';
 export async function login(page: Page) {
   await page.goto('/login');
+  // New split-screen login: path selector shows first.
+  // Click DSA to advance to the form stage.
+  const pathSelector = page.locator('button').filter({ hasText: /Continue with DSA/i });
+  if (await pathSelector.count()) {
+    await pathSelector.click();
+    await page.waitForTimeout(350); // wait for fade transition
+  }
   await page.locator('input[name="email"]').fill(E2E_EMAIL);
   await page.locator('input[name="password"]').fill(E2E_PASSWORD);
   await page.getByRole('button', { name: /sign in/i }).click();

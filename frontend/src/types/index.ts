@@ -1,9 +1,12 @@
 // ─── Auth ────────────────────────────────────────────────────
+export type LearningPath = "dsa" | "languages";
+
 export interface User {
   id: string;
   email: string;
   name: string;
   avatarUrl?: string;
+  learningPath?: LearningPath;
   createdAt: string;
 }
 

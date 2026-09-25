@@ -6,8 +6,8 @@ import { Toaster } from "react-hot-toast";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "DSA Pattern Expert",
-  description: "Learn DSA patterns, practice problems, get AI mentoring",
+  title: "Academy — Learn DSA & Languages",
+  description: "One learning platform for technical skills and languages. Master DSA, coding interviews, and language learning with AI.",
 };
 
 export default function RootLayout({
