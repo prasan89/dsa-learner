@@ -76,9 +76,16 @@ public class QaOrchestrator {
                 .orElseThrow(() -> new com.dsalearner.exception.NotFoundException(
                         "LessonVersion not found: lessonId=%s version=%d".formatted(lessonId, version)));
 
-        // Build the lesson JSON that all 4 QA agents will evaluate
-        String lessonJson = buildLessonJson(lv, lessonId);
+        // Build the lesson map — kept as Map for cross-validation, then serialized for LLM agents
+        Map<String, Object> lessonMap = buildLessonMap(lv);
+        String lessonJson = serialiseLessonMap(lessonMap, lessonId);
         QaInput qaInput = new QaInput(lessonJson);
+
+        // Deterministic cross-validation — no LLM calls, runs before QA agents
+        ExerciseAnswerCrossValidator.Result crossValidation =
+                new ExerciseAnswerCrossValidator().validate(lessonMap);
+        log.info("QaOrchestrator: cross-validation taughtForms={} lessonId={}",
+                crossValidation.taughtForms().size(), lessonId);
 
         log.info("QaOrchestrator: starting QA for lessonId={} version={}", lessonId, version);
 
@@ -106,8 +113,8 @@ public class QaOrchestrator {
                     lessonId);
         }
 
-        // ── Persist qa_decision on each run ──────────────────────────────────
-        QaAggregator.Decision decision = qaAggregator.aggregate(outputs);
+        // ── Aggregate with cross-validation for false-positive protection ────
+        QaAggregator.Decision decision = qaAggregator.aggregate(outputs, crossValidation);
         String decisionStr = decision.name();
 
         for (UUID runId : runIds) {
@@ -177,14 +184,17 @@ public class QaOrchestrator {
         };
     }
 
-    private String buildLessonJson(CfLessonVersion lv, UUID lessonId) {
+    private Map<String, Object> buildLessonMap(CfLessonVersion lv) {
         Map<String, Object> lessonMap = new LinkedHashMap<>();
         if (lv.getContent()    != null) lessonMap.putAll(lv.getContent());
         if (lv.getVocabulary() != null) lessonMap.put("vocabulary", lv.getVocabulary());
         if (lv.getGrammar()    != null) lessonMap.put("grammar",    lv.getGrammar());
         if (lv.getExercises()  != null) lessonMap.put("exercises",  lv.getExercises());
         if (lv.getBlueprint()  != null) lessonMap.put("metadata",   lv.getBlueprint());
+        return lessonMap;
+    }
 
+    private String serialiseLessonMap(Map<String, Object> lessonMap, UUID lessonId) {
         try {
             return MAPPER.writeValueAsString(lessonMap);
         } catch (JsonProcessingException e) {
@@ -214,11 +224,15 @@ public class QaOrchestrator {
         for (AgentOutput<QaResult> output : outputs) {
             if (output.issues() == null) continue;
             for (var issue : output.issues()) {
+                // Only include validated errors (those with evidence) in revision feedback
+                if (issue.severity() != com.dsalearner.pipeline.agent.Issue.Severity.ERROR) continue;
+                if (issue.isUnsupported()) continue;
                 Map<String, Object> issueMap = new LinkedHashMap<>();
-                issueMap.put("agent",     output.output() != null ? "qa" : "unknown");
-                issueMap.put("severity",  issue.severity().name());
-                issueMap.put("field",     issue.field());
-                issueMap.put("message",   issue.message());
+                issueMap.put("agent",    output.output() != null ? "qa" : "unknown");
+                issueMap.put("severity", issue.severity().name());
+                issueMap.put("field",    issue.field());
+                issueMap.put("message",  issue.message());
+                if (issue.evidence()   != null) issueMap.put("evidence",   issue.evidence());
                 if (issue.suggestion() != null) issueMap.put("suggestion", issue.suggestion());
                 allIssues.add(issueMap);
             }

@@ -117,7 +117,8 @@ public abstract class BaseGermanQaAgent implements Agent<QaInput, QaResult> {
                         (String) rawIssue.getOrDefault("field", ""),
                         (String) rawIssue.getOrDefault("message", ""),
                         (String) rawIssue.getOrDefault("suggestion", null),
-                        false
+                        false,
+                        (String) rawIssue.getOrDefault("evidence", null)
                 ));
             }
 

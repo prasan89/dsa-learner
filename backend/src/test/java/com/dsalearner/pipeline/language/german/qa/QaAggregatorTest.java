@@ -41,24 +41,45 @@ class QaAggregatorTest {
     }
 
     @Test
-    void anyError_returnsFail() {
+    void supportedError_returnsFail() {
         var result = aggregator.aggregate(List.of(
                 outputWithIssues(List.of(Issue.warning("W1", "f", "w"))),
-                outputWithIssues(List.of(Issue.error("E1", "field", "critical error")))
+                outputWithIssues(List.of(Issue.errorWithEvidence("E1", "exercises[0].correctAnswer",
+                        "critical error", "grammar.examples[0].german = 'Ich bin'")))
         ));
         assertEquals(QaAggregator.Decision.FAIL, result);
         assertTrue(aggregator.isFail(result));
     }
 
     @Test
-    void multipleErrors_returnsFail() {
+    void multipleSupportedErrors_returnsFail() {
         var result = aggregator.aggregate(List.of(
                 outputWithIssues(List.of(
-                        Issue.error("E1", "f1", "e1"),
-                        Issue.error("E2", "f2", "e2")
+                        Issue.errorWithEvidence("E1", "f1", "e1", "lesson says X"),
+                        Issue.errorWithEvidence("E2", "f2", "e2", "lesson says Y")
                 ))
         ));
         assertEquals(QaAggregator.Decision.FAIL, result);
+    }
+
+    @Test
+    void unsupportedError_noEvidence_downgradedToWarning() {
+        // Issue.error() produces no evidence → isUnsupported() → downgraded to WARNING
+        var result = aggregator.aggregate(List.of(
+                outputWithIssues(List.of(Issue.error("E1", "exercises[0]", "fake error")))
+        ));
+        assertEquals(QaAggregator.Decision.PASS_WITH_WARNINGS, result,
+                "An ERROR with no evidence must be downgraded to WARNING, yielding PASS_WITH_WARNINGS");
+        assertFalse(aggregator.isFail(result));
+    }
+
+    @Test
+    void unsupportedError_blankEvidence_downgradedToWarning() {
+        var blankEvidenceError = new Issue("E1", Issue.Severity.ERROR, "exercises[2]",
+                "flagged without evidence", null, false, "   ");
+        var result = aggregator.aggregate(List.of(outputWithIssues(List.of(blankEvidenceError))));
+        assertEquals(QaAggregator.Decision.PASS_WITH_WARNINGS, result,
+                "An ERROR with blank evidence must be downgraded to WARNING");
     }
 
     @Test
@@ -80,7 +101,32 @@ class QaAggregatorTest {
         var result = aggregator.aggregate(List.of(
                 outputWithIssues(List.of(Issue.info("I1", "f", "info msg")))
         ));
-        // INFO does not count as warning or error
         assertEquals(QaAggregator.Decision.PASS, result);
+    }
+
+    // ── resolveEffectiveSeverity unit tests ──────────────────────────────────
+
+    @Test
+    void effectiveSeverity_supportedError_staysError() {
+        Issue e = Issue.errorWithEvidence("E", "exercises[0].correctAnswer", "msg", "lesson text X");
+        assertEquals(Issue.Severity.ERROR, aggregator.resolveEffectiveSeverity(e, null));
+    }
+
+    @Test
+    void effectiveSeverity_unsupportedError_becomesWarning() {
+        Issue e = Issue.error("E", "exercises[0]", "flagged without evidence");
+        assertEquals(Issue.Severity.WARNING, aggregator.resolveEffectiveSeverity(e, null));
+    }
+
+    @Test
+    void effectiveSeverity_warning_unchangedEvenWithoutEvidence() {
+        Issue w = Issue.warning("W", "field", "a warning");
+        assertEquals(Issue.Severity.WARNING, aggregator.resolveEffectiveSeverity(w, null));
+    }
+
+    @Test
+    void effectiveSeverity_info_unchanged() {
+        Issue i = Issue.info("I", "field", "info");
+        assertEquals(Issue.Severity.INFO, aggregator.resolveEffectiveSeverity(i, null));
     }
 }

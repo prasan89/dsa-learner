@@ -128,7 +128,7 @@ class QaOrchestratorTest {
         when(lessonVersionRepository.findByLessonIdAndVersion(lessonId, 1))
                 .thenReturn(Optional.of(buildVersion()));
         stubAllAgentsPass();
-        when(qaAggregator.aggregate(any())).thenReturn(QaAggregator.Decision.PASS);
+        when(qaAggregator.aggregate(any(), any())).thenReturn(QaAggregator.Decision.PASS);
         when(qaAggregator.isFail(QaAggregator.Decision.PASS)).thenReturn(false);
 
         String result = orchestrator.execute(buildJob());
@@ -146,7 +146,7 @@ class QaOrchestratorTest {
         when(lessonVersionRepository.findByLessonIdAndVersion(lessonId, 1))
                 .thenReturn(Optional.of(buildVersion()));
         stubAllAgentsPass();
-        when(qaAggregator.aggregate(any())).thenReturn(QaAggregator.Decision.PASS_WITH_WARNINGS);
+        when(qaAggregator.aggregate(any(), any())).thenReturn(QaAggregator.Decision.PASS_WITH_WARNINGS);
         when(qaAggregator.isFail(QaAggregator.Decision.PASS_WITH_WARNINGS)).thenReturn(false);
 
         orchestrator.execute(buildJob());
@@ -162,7 +162,7 @@ class QaOrchestratorTest {
         when(lessonVersionRepository.findByLessonIdAndVersion(lessonId, 1))
                 .thenReturn(Optional.of(buildVersion()));
         stubAllAgentsPass();
-        when(qaAggregator.aggregate(any())).thenReturn(QaAggregator.Decision.FAIL);
+        when(qaAggregator.aggregate(any(), any())).thenReturn(QaAggregator.Decision.FAIL);
         when(qaAggregator.isFail(QaAggregator.Decision.FAIL)).thenReturn(true);
         when(workflowOrchestrator.incrementRevisionCount(eq(lessonId), any())).thenReturn(false);
 
@@ -185,7 +185,7 @@ class QaOrchestratorTest {
         when(lessonVersionRepository.findByLessonIdAndVersion(lessonId, 1))
                 .thenReturn(Optional.of(buildVersion()));
         stubAllAgentsPass();
-        when(qaAggregator.aggregate(any())).thenReturn(QaAggregator.Decision.FAIL);
+        when(qaAggregator.aggregate(any(), any())).thenReturn(QaAggregator.Decision.FAIL);
         when(qaAggregator.isFail(QaAggregator.Decision.FAIL)).thenReturn(true);
         when(workflowOrchestrator.incrementRevisionCount(eq(lessonId), any())).thenReturn(true);
 
@@ -207,7 +207,7 @@ class QaOrchestratorTest {
         when(lessonVersionRepository.findByLessonIdAndVersion(lessonId, 1))
                 .thenReturn(Optional.of(buildVersion()));
         stubAllAgentsPass();
-        when(qaAggregator.aggregate(any())).thenReturn(QaAggregator.Decision.PASS);
+        when(qaAggregator.aggregate(any(), any())).thenReturn(QaAggregator.Decision.PASS);
         when(qaAggregator.isFail(any())).thenReturn(false);
 
         orchestrator.execute(buildJob());
@@ -224,7 +224,7 @@ class QaOrchestratorTest {
         when(lessonVersionRepository.findByLessonIdAndVersion(lessonId, 1))
                 .thenReturn(Optional.of(buildVersion()));
         stubAllAgentsPass();
-        when(qaAggregator.aggregate(any())).thenReturn(QaAggregator.Decision.PASS);
+        when(qaAggregator.aggregate(any(), any())).thenReturn(QaAggregator.Decision.PASS);
         when(qaAggregator.isFail(any())).thenReturn(false);
 
         String resultRef = orchestrator.execute(buildJob());
