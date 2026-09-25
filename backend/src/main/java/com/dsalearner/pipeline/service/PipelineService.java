@@ -4,6 +4,7 @@ import com.dsalearner.exception.NotFoundException;
 import com.dsalearner.pipeline.domain.ContentStatus;
 import com.dsalearner.pipeline.domain.DomainRegistry;
 import com.dsalearner.pipeline.domain.LanguageProfile;
+import com.dsalearner.pipeline.exception.FrozenVersionException;
 import com.dsalearner.pipeline.model.entity.CfLesson;
 import com.dsalearner.pipeline.model.entity.CfLessonVersion;
 import com.dsalearner.pipeline.repository.CfLessonRepository;
@@ -156,5 +157,89 @@ public class PipelineService {
     public List<CfLesson> getLessonsByDomain(String domainCode) {
         return lessonRepository.findAll().stream()
                 .filter(l -> domainCode.equals(l.getDomainCode())).toList();
+    }
+
+    /**
+     * Freezes a lesson version, making it immutable.
+     * A frozen version cannot have its content updated.
+     * Published content must go through this path before being served.
+     */
+    @Transactional
+    public CfLessonVersion freezeVersion(UUID lessonId, int version, String actor) {
+        CfLessonVersion lessonVersion = versionRepository.findByLessonIdAndVersion(lessonId, version)
+                .orElseThrow(() -> new NotFoundException(
+                        "Lesson version not found: lessonId=%s version=%d".formatted(lessonId, version)));
+
+        if (lessonVersion.isFrozen()) {
+            throw new FrozenVersionException(
+                    "Version %d of lesson %s is already frozen".formatted(version, lessonId));
+        }
+
+        lessonVersion.setFrozen(true);
+        CfLessonVersion saved = versionRepository.save(lessonVersion);
+        log.info("Frozen lessonId={} version={} by={}", lessonId, version, actor);
+        return saved;
+    }
+
+    /**
+     * Updates mutable content fields on a lesson version.
+     * Throws FrozenVersionException if the version is frozen.
+     */
+    @Transactional
+    public CfLessonVersion updateVersionContent(UUID lessonId, int version,
+                                                 Map<String, Object> content, String actor) {
+        CfLessonVersion lessonVersion = versionRepository.findByLessonIdAndVersion(lessonId, version)
+                .orElseThrow(() -> new NotFoundException(
+                        "Lesson version not found: lessonId=%s version=%d".formatted(lessonId, version)));
+
+        if (lessonVersion.isFrozen()) {
+            throw new FrozenVersionException(
+                    "Cannot modify frozen version %d of lesson %s. Create a new version instead."
+                            .formatted(version, lessonId));
+        }
+
+        if (content.containsKey("content")) {
+            lessonVersion.setContent((Map<String, Object>) content.get("content"));
+        }
+        if (content.containsKey("blueprint")) {
+            lessonVersion.setBlueprint((Map<String, Object>) content.get("blueprint"));
+        }
+        if (content.containsKey("vocabulary")) {
+            lessonVersion.setVocabulary((Map<String, Object>) content.get("vocabulary"));
+        }
+        if (content.containsKey("grammar")) {
+            lessonVersion.setGrammar((Map<String, Object>) content.get("grammar"));
+        }
+        if (content.containsKey("exercises")) {
+            lessonVersion.setExercises((Map<String, Object>) content.get("exercises"));
+        }
+
+        CfLessonVersion saved = versionRepository.save(lessonVersion);
+        log.info("Updated version content lessonId={} version={} by={}", lessonId, version, actor);
+        return saved;
+    }
+
+    /**
+     * Creates a new version for revision. The new version inherits current content
+     * but starts unfrozen with REVISION status.
+     */
+    @Transactional
+    public CfLessonVersion createNextVersion(UUID lessonId, String actor) {
+        CfLesson lesson = getLesson(lessonId);
+        int nextVersion = lesson.getCurrentVersion() + 1;
+
+        CfLessonVersion newVersion = CfLessonVersion.builder()
+                .lessonId(lessonId)
+                .version(nextVersion)
+                .contentStatus(ContentStatus.REVISION.name())
+                .frozen(false)
+                .build();
+        versionRepository.save(newVersion);
+
+        lesson.setCurrentVersion(nextVersion);
+        lessonRepository.save(lesson);
+
+        log.info("Created version {} for lessonId={} by={}", nextVersion, lessonId, actor);
+        return newVersion;
     }
 }

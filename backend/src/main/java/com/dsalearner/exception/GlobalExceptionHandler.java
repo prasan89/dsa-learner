@@ -91,6 +91,13 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(404, "Domain not found", ex.getMessage(), Instant.now()));
     }
 
+    @ExceptionHandler(com.dsalearner.pipeline.exception.FrozenVersionException.class)
+    public ResponseEntity<ErrorResponse> handleFrozenVersion(
+            com.dsalearner.pipeline.exception.FrozenVersionException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(409, "Frozen version", ex.getMessage(), Instant.now()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

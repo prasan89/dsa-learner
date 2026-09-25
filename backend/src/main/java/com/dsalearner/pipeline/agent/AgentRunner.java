@@ -3,6 +3,8 @@ package com.dsalearner.pipeline.agent;
 import com.dsalearner.pipeline.model.entity.CfAgentRun;
 import com.dsalearner.pipeline.repository.CfAgentRunRepository;
 import com.dsalearner.pipeline.service.CostLedgerService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -15,11 +17,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.fasterxml.jackson.databind.MapperFeature.SORT_PROPERTIES_ALPHABETICALLY;
+
 /**
  * Executes agents with idempotency, run tracking, and cost recording.
  *
  * Idempotency: if an identical (lessonId, lessonVersion, agentType, inputHash)
  * already has status=SUCCEEDED, returns the cached output without calling the agent.
+ *
+ * Canonical hashing: payload is serialized via Jackson with sorted keys so that
+ * equivalent structured inputs (e.g. Maps with different insertion order) produce
+ * the same SHA-256 hash. Hashing failure throws — never falls back to random.
  */
 @Component
 @RequiredArgsConstructor
@@ -28,6 +36,11 @@ public class AgentRunner {
 
     private final CfAgentRunRepository agentRunRepository;
     private final CostLedgerService costLedgerService;
+
+    // Canonical JSON serializer: sorted keys, no indentation.
+    private static final ObjectMapper CANONICAL_MAPPER = new ObjectMapper()
+            .configure(SORT_PROPERTIES_ALPHABETICALLY, true)
+            .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
 
     public <TInput, TOutput> AgentOutput<TOutput> run(
             Agent<TInput, TOutput> agent,
@@ -94,11 +107,16 @@ public class AgentRunner {
             throw e;
         }
 
-        // ─── Update run record ────────────────────────────────────────────
+        // ─── Update run record (persist output for idempotency cache) ─────
         String status = output.succeeded() ? "SUCCEEDED" : "FAILED";
         run.setStatus(status);
         run.setCompletedAt(Instant.now());
         run.setLatencyMs(java.time.Duration.between(run.getStartedAt(), run.getCompletedAt()).toMillis());
+
+        // Persist the output so cache hits can reconstruct the result without re-executing.
+        run.setOutput(output.output());
+        run.setConfidence(output.confidence() > 0
+                ? new java.math.BigDecimal(String.valueOf(output.confidence())) : null);
 
         if (output.metadata() != null) {
             AgentOutput.AgentMetadata m = output.metadata();
@@ -110,8 +128,8 @@ public class AgentRunner {
         }
         agentRunRepository.save(run);
 
-        // ─── Record cost ──────────────────────────────────────────────────
-        if (output.metadata() != null && output.metadata().estimatedCostUsd() > 0) {
+        // ─── Record cost (only on success; cache hits never reach here) ───
+        if (output.succeeded() && output.metadata() != null && output.metadata().estimatedCostUsd() > 0) {
             AgentOutput.AgentMetadata m = output.metadata();
             costLedgerService.record(lessonId, lessonVersion, runId,
                     domainCode, languageCode,
@@ -147,14 +165,27 @@ public class AgentRunner {
         );
     }
 
+    /**
+     * Produces a SHA-256 idempotency hash for the given execution identity.
+     *
+     * Payload serialization uses canonical JSON (sorted keys) so that equivalent
+     * structured inputs — e.g. Maps with different insertion order — always produce
+     * the same hash. Primitives and Strings are serialized as JSON scalars.
+     *
+     * Throws IllegalStateException on serialization or digest failure rather than
+     * silently falling back to random — idempotency must be correct or fail fast.
+     */
     static String hash(UUID lessonId, int version, String agentType, Object payload) {
         try {
-            String data = lessonId + ":" + version + ":" + agentType + ":" + payload;
+            String serializedPayload = CANONICAL_MAPPER.writeValueAsString(payload);
+            String data = lessonId + ":" + version + ":" + agentType + ":" + serializedPayload;
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] digest = md.digest(data.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(digest);
         } catch (Exception e) {
-            return UUID.randomUUID().toString(); // fallback: no idempotency
+            throw new IllegalStateException(
+                    "AgentRunner: canonical hash failed for lessonId=%s agent=%s — aborting to preserve idempotency"
+                            .formatted(lessonId, agentType), e);
         }
     }
 }
