@@ -134,9 +134,16 @@ public abstract class BaseGermanQaAgent implements Agent<QaInput, QaResult> {
     }
 
     private String extractJson(String text) {
-        int start = text.indexOf('{');
-        int end   = text.lastIndexOf('}');
-        if (start >= 0 && end > start) return text.substring(start, end + 1);
-        return text;
+        String t = text.strip();
+        // Strip markdown code fences: ```json\n...\n``` or ```\n...\n```
+        if (t.startsWith("```")) {
+            int firstNewline = t.indexOf('\n');
+            if (firstNewline > 0) t = t.substring(firstNewline + 1).strip();
+            if (t.endsWith("```")) t = t.substring(0, t.length() - 3).strip();
+        }
+        int start = t.indexOf('{');
+        int end   = t.lastIndexOf('}');
+        if (start >= 0 && end > start) return t.substring(start, end + 1);
+        return t;
     }
 }

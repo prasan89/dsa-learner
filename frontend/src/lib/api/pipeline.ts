@@ -43,6 +43,12 @@ export interface CfAgentRun {
   status: string;
   output: Record<string, unknown> | null;
   idempotencyKey: string;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  estimatedCostUsd: number | null;
+  provider: string | null;
+  modelId: string | null;
+  latencyMs: number | null;
   createdAt: string;
   completedAt: string | null;
 }
@@ -62,4 +68,7 @@ export const pipelineApi = {
 
   getAgentRuns: (lessonId: string, version: number) =>
     api.get<CfAgentRun[]>(`/v1/pipeline/lessons/${lessonId}/runs?version=${version}`),
+
+  getLessonCost: (lessonId: string) =>
+    api.get<{ lesson_id: string; total_usd: number }>(`/v1/pipeline/cost/lesson/${lessonId}`),
 };

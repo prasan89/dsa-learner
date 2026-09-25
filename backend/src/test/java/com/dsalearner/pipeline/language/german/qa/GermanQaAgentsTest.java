@@ -144,6 +144,30 @@ class GermanQaAgentsTest {
     }
 
     @Test
+    void languageAgent_withMarkdownFencedJson_parsesCorrectly() {
+        String fencedResponse = "```json\n" + MockLlmProvider.MOCK_QA_RESPONSE + "\n```";
+        when(mockProvider.generate(any())).thenReturn(
+                new LlmResponse(fencedResponse, 100, 80, "mock-haiku", "mock"));
+
+        AgentOutput<QaResult> output = languageAgent.execute(buildInput(languageAgent));
+
+        assertEquals(AgentOutput.Status.SUCCEEDED, output.status());
+        assertFalse(output.output().hasErrors());
+    }
+
+    @Test
+    void languageAgent_withPlainFencedJson_parsesCorrectly() {
+        String fencedResponse = "```\n" + MockLlmProvider.MOCK_QA_RESPONSE + "\n```";
+        when(mockProvider.generate(any())).thenReturn(
+                new LlmResponse(fencedResponse, 100, 80, "mock-haiku", "mock"));
+
+        AgentOutput<QaResult> output = languageAgent.execute(buildInput(languageAgent));
+
+        assertEquals(AgentOutput.Status.SUCCEEDED, output.status());
+        assertFalse(output.output().hasErrors());
+    }
+
+    @Test
     void languageAgent_withInvalidJson_throwsIllegalState() {
         when(mockProvider.generate(any())).thenReturn(
                 new LlmResponse("not json at all", 10, 5, "mock-haiku", "mock"));

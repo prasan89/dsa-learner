@@ -485,6 +485,61 @@ export default function LessonDetailPage() {
           <QaSection runs={agentRuns} />
         </Section>
 
+        {/* Run Costs & Latency */}
+        {agentRuns.length > 0 && (
+          <Section title="Run Costs & Latency" defaultOpen={false}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                    <th className="text-left py-2 pr-3">Agent</th>
+                    <th className="text-left py-2 pr-3">Model</th>
+                    <th className="text-right py-2 pr-3">In Tokens</th>
+                    <th className="text-right py-2 pr-3">Out Tokens</th>
+                    <th className="text-right py-2 pr-3">Cost (USD)</th>
+                    <th className="text-right py-2">Latency</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {agentRuns.map((run) => (
+                    <tr key={run.id} className="text-gray-700">
+                      <td className="py-2 pr-3 font-mono text-[10px] text-gray-500">{run.agentType}</td>
+                      <td className="py-2 pr-3 text-gray-500 truncate max-w-[120px]">{run.modelId ?? "—"}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums">{run.inputTokens?.toLocaleString() ?? "—"}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums">{run.outputTokens?.toLocaleString() ?? "—"}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums font-medium">
+                        {run.estimatedCostUsd != null ? `$${run.estimatedCostUsd.toFixed(6)}` : "—"}
+                      </td>
+                      <td className="py-2 text-right tabular-nums">
+                        {run.latencyMs != null ? `${(run.latencyMs / 1000).toFixed(1)}s` : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-gray-200 font-semibold text-gray-800">
+                    <td colSpan={2} className="pt-2 pr-3 text-xs">Total</td>
+                    <td className="pt-2 pr-3 text-right tabular-nums text-xs">
+                      {agentRuns.reduce((s, r) => s + (r.inputTokens ?? 0), 0).toLocaleString()}
+                    </td>
+                    <td className="pt-2 pr-3 text-right tabular-nums text-xs">
+                      {agentRuns.reduce((s, r) => s + (r.outputTokens ?? 0), 0).toLocaleString()}
+                    </td>
+                    <td className="pt-2 pr-3 text-right tabular-nums text-xs">
+                      ${agentRuns.reduce((s, r) => s + (r.estimatedCostUsd ?? 0), 0).toFixed(6)}
+                    </td>
+                    <td className="pt-2 text-right tabular-nums text-xs">
+                      {agentRuns.reduce((s, r) => s + (r.latencyMs ?? 0), 0) > 0
+                        ? `${(agentRuns.reduce((s, r) => s + (r.latencyMs ?? 0), 0) / 1000).toFixed(1)}s`
+                        : "—"}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </Section>
+        )}
+
       </div>
     </div>
   );
