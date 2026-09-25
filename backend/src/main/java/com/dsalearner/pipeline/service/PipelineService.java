@@ -13,6 +13,8 @@ import com.dsalearner.pipeline.repository.CfWorkflowEventRepository;
 import com.dsalearner.pipeline.statemachine.WorkflowOrchestrator;
 import com.dsalearner.pipeline.validation.DeterministicValidator;
 import com.dsalearner.pipeline.validation.ValidationResult;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,6 +39,10 @@ public class PipelineService {
     private final WorkflowOrchestrator orchestrator;
     private final DeterministicValidator validator;
     private final DomainRegistry domainRegistry;
+
+    // Used only for deep-copying JSONB map fields during version creation.
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
 
     @Transactional
     public CfLesson createLesson(String stableRef, String domainCode, String languageCode,
@@ -220,26 +226,68 @@ public class PipelineService {
     }
 
     /**
-     * Creates a new version for revision. The new version inherits current content
-     * but starts unfrozen with REVISION status.
+     * Creates a new version for revision, inheriting the current version's content.
+     *
+     * Content fields (blueprint, content, vocabulary, grammar, exercises, audio_manifest)
+     * are deep-copied via Jackson so v1 and v2 share no mutable object references.
+     *
+     * Lineage fields inherited as-is (read-only context for reviewers):
+     *   prompt_versions, model_configs, generator_run_ids, revision_log, checksum
+     *
+     * qa_run_ids is intentionally NOT inherited: v2 has not been QA'd yet.
+     * The new version starts unfrozen with REVISION status.
+     *
+     * v1 is never modified.
      */
     @Transactional
     public CfLessonVersion createNextVersion(UUID lessonId, String actor) {
         CfLesson lesson = getLesson(lessonId);
-        int nextVersion = lesson.getCurrentVersion() + 1;
+        int currentVersion = lesson.getCurrentVersion();
+        int nextVersion = currentVersion + 1;
+
+        CfLessonVersion source = versionRepository.findByLessonIdAndVersion(lessonId, currentVersion)
+                .orElseThrow(() -> new NotFoundException(
+                        "Current version not found: lessonId=%s version=%d".formatted(lessonId, currentVersion)));
 
         CfLessonVersion newVersion = CfLessonVersion.builder()
                 .lessonId(lessonId)
                 .version(nextVersion)
                 .contentStatus(ContentStatus.REVISION.name())
                 .frozen(false)
+                // Deep-copy content fields so v1 and v2 share no mutable references.
+                .blueprint(deepCopy(source.getBlueprint()))
+                .content(deepCopy(source.getContent()))
+                .vocabulary(deepCopy(source.getVocabulary()))
+                .grammar(deepCopy(source.getGrammar()))
+                .exercises(deepCopy(source.getExercises()))
+                .audioManifest(deepCopy(source.getAudioManifest()))
+                // Inherit lineage for reviewer context; qa_run_ids omitted (v2 not yet QA'd).
+                .promptVersions(deepCopy(source.getPromptVersions()))
+                .modelConfigs(deepCopy(source.getModelConfigs()))
+                .generatorRunIds(deepCopy(source.getGeneratorRunIds()))
+                .revisionLog(deepCopy(source.getRevisionLog()))
+                .checksum(source.getChecksum())
                 .build();
         versionRepository.save(newVersion);
 
         lesson.setCurrentVersion(nextVersion);
         lessonRepository.save(lesson);
 
-        log.info("Created version {} for lessonId={} by={}", nextVersion, lessonId, actor);
+        log.info("Created version {} for lessonId={} from v{} by={}", nextVersion, lessonId, currentVersion, actor);
         return newVersion;
+    }
+
+    /**
+     * Deep-copies a JSONB map via Jackson serialization/deserialization.
+     * Returns null when the source map is null (field not yet populated).
+     * Guarantees v1 and v2 never share mutable Map references.
+     */
+    private Map<String, Object> deepCopy(Map<String, Object> source) {
+        if (source == null) return null;
+        try {
+            return MAPPER.readValue(MAPPER.writeValueAsBytes(source), MAP_TYPE);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to deep-copy version content map", e);
+        }
     }
 }

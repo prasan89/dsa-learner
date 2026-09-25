@@ -226,4 +226,152 @@ class AgentRunnerTest {
         String h2 = AgentRunner.hash(lessonId, 1, "agent-B", "input");
         assertNotEquals(h1, h2);
     }
+
+    // ─── AgentOutput cache — Phase 0.2 correctness ───────────────────────
+
+    /** Agent that returns issues, recommendations, and culturalFlag=true. */
+    static class RichOutputAgent implements Agent<String, String> {
+        @Override public String agentType() { return "rich_output_agent"; }
+        @Override public AgentOutput<String> execute(AgentInput<String> input) {
+            return new AgentOutput<>(
+                    input.agentRunId(), AgentOutput.Status.SUCCEEDED,
+                    "result:" + input.payload(), 0.88,
+                    List.of(new Issue("CULTURAL_SENSITIVITY", Issue.Severity.WARNING, "body", "Check phrasing", null, true)),
+                    List.of("Simplify vocabulary", "Add more examples"),
+                    true,
+                    new AgentOutput.AgentMetadata("sonnet_gen_v1", "claude-sonnet-4-6", "anthropic",
+                            200, 100, 0.0050, 80,
+                            input.context().promptId(), input.context().promptVersion(), "1.0")
+            );
+        }
+    }
+
+    @Test
+    void persistsCompleteAgentOutputOnFirstExecution() {
+        when(agentRunRepo.findSucceededByIdempotencyKey(any(), anyInt(), any(), any()))
+                .thenReturn(Optional.empty());
+        when(agentRunRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        runner.run(new RichOutputAgent(), lessonId, 1,
+                "language", "de", "hello", promptId, 1, "sonnet_gen_v1");
+
+        ArgumentCaptor<CfAgentRun> captor = ArgumentCaptor.forClass(CfAgentRun.class);
+        verify(agentRunRepo, times(2)).save(captor.capture());
+
+        CfAgentRun saved = captor.getAllValues().get(1);
+        assertEquals("SUCCEEDED", saved.getStatus());
+
+        // issues persisted
+        assertNotNull(saved.getIssues(), "issues must be persisted");
+        List<?> savedIssues = (List<?>) saved.getIssues();
+        assertEquals(1, savedIssues.size());
+
+        // recommendations persisted
+        assertNotNull(saved.getRecommendations(), "recommendations must be persisted");
+        List<?> savedRecs = (List<?>) saved.getRecommendations();
+        assertEquals(2, savedRecs.size());
+
+        // culturalFlag persisted
+        assertTrue(saved.isCulturalFlag(), "culturalFlag must be persisted as true");
+    }
+
+    @Test
+    void cacheHitReconstructsCompleteAgentOutput() {
+        // Simulate a run persisted by a prior execution — JSONB round-trip returns List<LinkedHashMap>
+        // for Issue fields, matching what Hibernate deserialises from the database.
+        java.util.LinkedHashMap<String, Object> issueMap = new java.util.LinkedHashMap<>();
+        issueMap.put("code", "CULTURAL_SENSITIVITY");
+        issueMap.put("severity", "WARNING");
+        issueMap.put("field", "body");
+        issueMap.put("message", "Check phrasing");
+        issueMap.put("suggestion", null);
+        issueMap.put("cultural", true);
+
+        CfAgentRun cached = CfAgentRun.builder()
+                .id(UUID.randomUUID())
+                .lessonId(lessonId).lessonVersion(1)
+                .agentType("rich_output_agent").status("SUCCEEDED")
+                .output("result:hello")
+                .confidence(java.math.BigDecimal.valueOf(0.88))
+                .issues(List.of(issueMap))
+                .recommendations(List.of("Simplify vocabulary", "Add more examples"))
+                .culturalFlag(true)
+                .modelConfigKey("sonnet_gen_v1")
+                .build();
+
+        when(agentRunRepo.findSucceededByIdempotencyKey(any(), anyInt(), eq("rich_output_agent"), any()))
+                .thenReturn(Optional.of(cached));
+
+        AgentOutput<String> output = runner.run(new RichOutputAgent(), lessonId, 1,
+                "language", "de", "hello", promptId, 1, "sonnet_gen_v1");
+
+        assertTrue(output.succeeded());
+        assertEquals("result:hello", output.output());
+
+        // issues reconstructed as typed Issue objects
+        assertEquals(1, output.issues().size());
+        Issue issue = output.issues().get(0);
+        assertEquals("CULTURAL_SENSITIVITY", issue.code());
+        assertEquals(Issue.Severity.WARNING, issue.severity());
+        assertEquals("body", issue.field());
+        assertEquals("Check phrasing", issue.message());
+
+        // recommendations reconstructed
+        assertEquals(2, output.recommendations().size());
+        assertEquals("Simplify vocabulary", output.recommendations().get(0));
+        assertEquals("Add more examples", output.recommendations().get(1));
+
+        // culturalFlag reconstructed
+        assertTrue(output.culturalFlag(), "culturalFlag must be true on cache hit");
+    }
+
+    @Test
+    void agentNotExecutedOnCacheHit() {
+        CfAgentRun cached = CfAgentRun.builder()
+                .id(UUID.randomUUID())
+                .lessonId(lessonId).lessonVersion(1)
+                .agentType("rich_output_agent").status("SUCCEEDED")
+                .output("result:hello")
+                .build();
+
+        when(agentRunRepo.findSucceededByIdempotencyKey(any(), anyInt(), eq("rich_output_agent"), any()))
+                .thenReturn(Optional.of(cached));
+
+        // Track whether execute() was called by wrapping in a spy-like subclass.
+        boolean[] executed = {false};
+        Agent<String, String> spyAgent = new RichOutputAgent() {
+            @Override public AgentOutput<String> execute(AgentInput<String> input) {
+                executed[0] = true;
+                return super.execute(input);
+            }
+        };
+
+        runner.run(spyAgent, lessonId, 1, "language", "de", "hello", promptId, 1, "sonnet_gen_v1");
+
+        assertFalse(executed[0], "Agent.execute must NOT be called on a cache hit");
+        // No new run record created
+        verify(agentRunRepo, never()).save(any());
+    }
+
+    @Test
+    void noDuplicateRunOnCacheHit() {
+        UUID existingRunId = UUID.randomUUID();
+        CfAgentRun cached = CfAgentRun.builder()
+                .id(existingRunId)
+                .lessonId(lessonId).lessonVersion(1)
+                .agentType("rich_output_agent").status("SUCCEEDED")
+                .output("result:hello")
+                .build();
+
+        when(agentRunRepo.findSucceededByIdempotencyKey(any(), anyInt(), eq("rich_output_agent"), any()))
+                .thenReturn(Optional.of(cached));
+
+        AgentOutput<String> output = runner.run(new RichOutputAgent(), lessonId, 1,
+                "language", "de", "hello", promptId, 1, "sonnet_gen_v1");
+
+        // The returned run ID must be the existing run ID — no new row created.
+        assertEquals(existingRunId, output.agentRunId(),
+                "Cache hit must return the existing run ID, not create a new run");
+        verify(agentRunRepo, never()).save(any());
+    }
 }

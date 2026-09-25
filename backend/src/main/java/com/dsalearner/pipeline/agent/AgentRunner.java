@@ -3,6 +3,7 @@ package com.dsalearner.pipeline.agent;
 import com.dsalearner.pipeline.model.entity.CfAgentRun;
 import com.dsalearner.pipeline.repository.CfAgentRunRepository;
 import com.dsalearner.pipeline.service.CostLedgerService;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,10 @@ import static com.fasterxml.jackson.databind.MapperFeature.SORT_PROPERTIES_ALPHA
  * Canonical hashing: payload is serialized via Jackson with sorted keys so that
  * equivalent structured inputs (e.g. Maps with different insertion order) produce
  * the same SHA-256 hash. Hashing failure throws — never falls back to random.
+ *
+ * Complete output contract: on success, the full AgentOutput — including issues,
+ * recommendations, and culturalFlag — is persisted to cf_agent_runs so that cache
+ * hits reconstruct an equivalent AgentOutput without re-executing the agent.
  */
 @Component
 @RequiredArgsConstructor
@@ -41,6 +46,9 @@ public class AgentRunner {
     private static final ObjectMapper CANONICAL_MAPPER = new ObjectMapper()
             .configure(SORT_PROPERTIES_ALPHABETICALLY, true)
             .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
+
+    private static final TypeReference<List<Issue>>   ISSUE_LIST_TYPE   = new TypeReference<>() {};
+    private static final TypeReference<List<String>>  STRING_LIST_TYPE  = new TypeReference<>() {};
 
     public <TInput, TOutput> AgentOutput<TOutput> run(
             Agent<TInput, TOutput> agent,
@@ -62,8 +70,7 @@ public class AgentRunner {
         if (existing.isPresent()) {
             log.info("AgentRunner: cache hit for lessonId={} version={} agent={} hash={}",
                     lessonId, lessonVersion, agent.agentType(), inputHash);
-            CfAgentRun cached = existing.get();
-            return buildCachedOutput(cached);
+            return buildCachedOutput(existing.get());
         }
 
         // ─── Create run record ────────────────────────────────────────────
@@ -107,16 +114,20 @@ public class AgentRunner {
             throw e;
         }
 
-        // ─── Update run record (persist output for idempotency cache) ─────
+        // ─── Persist complete output (enables idempotency cache reconstruction) ─
         String status = output.succeeded() ? "SUCCEEDED" : "FAILED";
         run.setStatus(status);
         run.setCompletedAt(Instant.now());
         run.setLatencyMs(java.time.Duration.between(run.getStartedAt(), run.getCompletedAt()).toMillis());
 
-        // Persist the output so cache hits can reconstruct the result without re-executing.
         run.setOutput(output.output());
         run.setConfidence(output.confidence() > 0
                 ? new java.math.BigDecimal(String.valueOf(output.confidence())) : null);
+
+        // Persist issues, recommendations, culturalFlag so cache hits return the complete contract.
+        run.setIssues(output.issues());
+        run.setRecommendations(output.recommendations());
+        run.setCulturalFlag(output.culturalFlag());
 
         if (output.metadata() != null) {
             AgentOutput.AgentMetadata m = output.metadata();
@@ -143,16 +154,29 @@ public class AgentRunner {
         return output;
     }
 
+    /**
+     * Reconstructs a complete AgentOutput from a persisted SUCCEEDED run.
+     *
+     * issues and recommendations are deserialized from JSONB. If either field is
+     * null (legacy run before Phase 0.2) an empty list is returned rather than
+     * throwing, keeping backwards compatibility with existing data.
+     *
+     * If deserialization of persisted data produces an unexpected type, an
+     * IllegalStateException is thrown rather than silently returning incomplete data.
+     */
     @SuppressWarnings("unchecked")
     private <TOutput> AgentOutput<TOutput> buildCachedOutput(CfAgentRun run) {
+        List<Issue> issues = deserializeIssues(run);
+        List<String> recommendations = deserializeRecommendations(run);
+
         return new AgentOutput<>(
                 run.getId(),
                 AgentOutput.Status.SUCCEEDED,
                 (TOutput) run.getOutput(),
                 run.getConfidence() != null ? run.getConfidence().doubleValue() : 1.0,
-                List.of(),
-                List.of(),
-                false,
+                issues,
+                recommendations,
+                run.isCulturalFlag(),
                 new AgentOutput.AgentMetadata(
                         run.getModelConfigKey(), run.getModelId(), run.getProvider(),
                         run.getInputTokens() != null ? run.getInputTokens() : 0,
@@ -163,6 +187,34 @@ public class AgentRunner {
                         "cached"
                 )
         );
+    }
+
+    private List<Issue> deserializeIssues(CfAgentRun run) {
+        Object raw = run.getIssues();
+        if (raw == null) return List.of();
+        if (raw instanceof List<?> list && (list.isEmpty() || list.get(0) instanceof Issue)) {
+            return (List<Issue>) raw;
+        }
+        try {
+            return CANONICAL_MAPPER.convertValue(raw, ISSUE_LIST_TYPE);
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "AgentRunner: failed to deserialize issues for run " + run.getId(), e);
+        }
+    }
+
+    private List<String> deserializeRecommendations(CfAgentRun run) {
+        Object raw = run.getRecommendations();
+        if (raw == null) return List.of();
+        if (raw instanceof List<?> list && (list.isEmpty() || list.get(0) instanceof String)) {
+            return (List<String>) raw;
+        }
+        try {
+            return CANONICAL_MAPPER.convertValue(raw, STRING_LIST_TYPE);
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "AgentRunner: failed to deserialize recommendations for run " + run.getId(), e);
+        }
     }
 
     /**

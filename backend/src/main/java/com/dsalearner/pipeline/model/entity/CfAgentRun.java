@@ -64,6 +64,10 @@ public class CfAgentRun {
     @Column(columnDefinition = "jsonb")
     private Object recommendations;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean culturalFlag = false;
+
     // Cost tracking
     private Integer inputTokens;
     private Integer outputTokens;
