@@ -44,6 +44,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: dsa_password
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       EXECUTION_SERVICE_URL: http://host.docker.internal:8081
       ANTHROPIC_BASE_URL: http://host.docker.internal:6655/anthropic
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
