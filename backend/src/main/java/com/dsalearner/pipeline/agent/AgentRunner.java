@@ -4,6 +4,7 @@ import com.dsalearner.pipeline.model.entity.CfAgentRun;
 import com.dsalearner.pipeline.repository.CfAgentRunRepository;
 import com.dsalearner.pipeline.service.CostLedgerService;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.RequiredArgsConstructor;
@@ -44,9 +45,12 @@ public class AgentRunner {
     private final CostLedgerService costLedgerService;
 
     // Canonical JSON serializer: sorted keys, no indentation.
+    // FAIL_ON_UNKNOWN_PROPERTIES disabled so cached runs written before a schema change
+    // (e.g. Issue gaining the 'evidence' field and losing 'error') still deserialize.
     private static final ObjectMapper CANONICAL_MAPPER = new ObjectMapper()
             .configure(SORT_PROPERTIES_ALPHABETICALLY, true)
-            .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
+            .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private static final TypeReference<List<Issue>>   ISSUE_LIST_TYPE   = new TypeReference<>() {};
     private static final TypeReference<List<String>>  STRING_LIST_TYPE  = new TypeReference<>() {};
