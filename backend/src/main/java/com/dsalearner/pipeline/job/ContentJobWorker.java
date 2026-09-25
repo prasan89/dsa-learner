@@ -1,5 +1,6 @@
 package com.dsalearner.pipeline.job;
 
+import com.dsalearner.pipeline.language.german.qa.QaOrchestrator;
 import com.dsalearner.pipeline.model.entity.CfPipelineJob;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,7 +10,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Polls the Redis job queue and executes Content Factory pipeline jobs.
@@ -43,11 +43,12 @@ public class ContentJobWorker {
     private final JobClaimService claimService;
     private final StringRedisTemplate redisTemplate;
     private final ContentGenerationOrchestrator generationOrchestrator;
+    private final QaOrchestrator qaOrchestrator;
 
     @Scheduled(fixedDelay = 500)
     public void poll() {
         String jobIdStr = redisTemplate.opsForList()
-                .leftPop(RedisContentJobQueue.QUEUE_KEY, 0, TimeUnit.MILLISECONDS);
+                .leftPop(RedisContentJobQueue.QUEUE_KEY);
         if (jobIdStr == null) return;
 
         UUID jobId;
@@ -86,6 +87,7 @@ public class ContentJobWorker {
     private String dispatch(CfPipelineJob job) {
         return switch (job.getJobType()) {
             case "CONTENT_GENERATION" -> generationOrchestrator.execute(job);
+            case "QA_CONTENT"         -> qaOrchestrator.execute(job);
             default -> throw new IllegalArgumentException("Unknown job type: " + job.getJobType());
         };
     }
@@ -95,7 +97,7 @@ public class ContentJobWorker {
         boolean canRetry  = retryable && job.getAttempt() < job.getMaxAttempts();
 
         log.error("ContentJobWorker: jobId={} attempt={} retryable={} error={}",
-                job.getId(), job.getAttempt(), retryable, e.getMessage());
+                job.getId(), job.getAttempt(), retryable, e.getMessage(), e);
 
         if (canRetry) {
             claimService.markRetrying(job.getId(), abbreviate(e.getMessage(), 500),

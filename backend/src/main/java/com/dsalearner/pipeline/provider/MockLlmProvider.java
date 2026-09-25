@@ -15,9 +15,24 @@ public class MockLlmProvider implements LlmProvider {
 
     @Override
     public LlmResponse generate(LlmRequest request) {
-        String text = MOCK_GERMAN_A1_LESSON;
-        return new LlmResponse(text, 150, 800, request.modelId(), providerName());
+        String text = isQaRequest(request) ? MOCK_QA_RESPONSE : MOCK_GERMAN_A1_LESSON;
+        return new LlmResponse(text, 150, 200, request.modelId(), providerName());
     }
+
+    private boolean isQaRequest(LlmRequest request) {
+        String sys = request.systemPrompt();
+        return sys != null && (sys.contains("QA") || sys.contains("language teacher")
+                || sys.contains("CEFR") || sys.contains("exercise designer")
+                || sys.contains("pedagogy"));
+    }
+
+    public static final String MOCK_QA_RESPONSE = """
+            {
+              "overallAssessment": "The lesson is well-structured and appropriate for A1 learners.",
+              "issues": [],
+              "recommendations": ["Consider adding more pronunciation guides."]
+            }
+            """;
 
     public static final String MOCK_GERMAN_A1_LESSON = """
             {

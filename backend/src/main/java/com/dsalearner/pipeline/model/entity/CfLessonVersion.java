@@ -78,6 +78,12 @@ public class CfLessonVersion {
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> revisionLog;
 
+    // Added in Phase 1B (V36): structured QA issues forwarded to the revision generator.
+    // Populated on QA FAIL so the next generation agent receives targeted feedback.
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Object> revisionFeedback;
+
     @Column(nullable = false)
     @Builder.Default
     private boolean frozen = false;

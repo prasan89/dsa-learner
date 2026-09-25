@@ -8,6 +8,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -51,18 +52,18 @@ public class CfAgentRun {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private Object output;
+    private Map<String, Object> output;
 
     @Column(precision = 4, scale = 3)
     private BigDecimal confidence;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private Object issues;
+    private List<Object> issues;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private Object recommendations;
+    private List<Object> recommendations;
 
     @Column(nullable = false)
     @Builder.Default
@@ -82,6 +83,11 @@ public class CfAgentRun {
     private String modelId;
 
     private Long latencyMs;
+
+    // Added in Phase 1B (V36): deterministic aggregated QA decision for QA agent runs.
+    // PASS, PASS_WITH_WARNINGS, or FAIL. NULL for generation agent runs.
+    @Column(length = 25)
+    private String qaDecision;
 
     @Column(nullable = false)
     @Builder.Default
