@@ -3,7 +3,6 @@ package com.dsalearner.pipeline.job;
 import com.dsalearner.pipeline.agent.*;
 import com.dsalearner.pipeline.domain.ContentStatus;
 import com.dsalearner.pipeline.domain.DomainRegistry;
-import com.dsalearner.pipeline.domain.LanguageProfile;
 import com.dsalearner.pipeline.language.ContentGenerationInput;
 import com.dsalearner.pipeline.language.LessonContent;
 import com.dsalearner.pipeline.model.entity.CfLesson;
@@ -11,14 +10,12 @@ import com.dsalearner.pipeline.model.entity.CfLessonVersion;
 import com.dsalearner.pipeline.model.entity.CfPipelineJob;
 import com.dsalearner.pipeline.repository.CfLessonRepository;
 import com.dsalearner.pipeline.repository.CfLessonVersionRepository;
-import com.dsalearner.pipeline.service.PipelineService;
 import com.dsalearner.pipeline.statemachine.WorkflowOrchestrator;
 import com.dsalearner.pipeline.validation.DeterministicValidator;
 import com.dsalearner.pipeline.validation.ValidationResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -53,8 +50,18 @@ public class ContentGenerationOrchestrator {
     /**
      * Executes content generation for the given job.
      * Returns the agent run ID (stored as resultReference on the job).
+     *
+     * Transaction boundaries:
+     *   - State transitions (GENERATING, GENERATED, etc.) each run inside WorkflowOrchestrator's
+     *     own @Transactional method — short, DB-only transactions.
+     *   - The LLM call (agentRunner.run → agent.execute → provider.generate) runs between
+     *     those transactions with no open DB connection.
+     *   - persistContent() uses the Spring Data default: each repository.save() runs in
+     *     its own implicit transaction.
+     *
+     * This method intentionally has NO @Transactional so it does not hold a DB connection
+     * across the external LLM call.
      */
-    @Transactional
     public String execute(CfPipelineJob job) {
         UUID lessonId = job.getLessonId();
         int version   = job.getLessonVersion();

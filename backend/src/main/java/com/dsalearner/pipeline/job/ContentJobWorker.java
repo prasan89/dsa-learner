@@ -1,15 +1,12 @@
 package com.dsalearner.pipeline.job;
 
 import com.dsalearner.pipeline.model.entity.CfPipelineJob;
-import com.dsalearner.pipeline.repository.CfPipelineJobRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -22,23 +19,31 @@ import java.util.concurrent.TimeUnit;
  *                    → RETRYING (transient failure, attempt < maxAttempts)
  *                    → FAILED   (non-retryable or attempt == maxAttempts)
  *
- * Duplicate-delivery safety: the worker atomically claims a job by setting
- * status=RUNNING only if it is currently QUEUED or RETRYING. A second
- * delivery of the same job ID finds status=RUNNING|SUCCEEDED and skips it.
+ * Atomic duplicate-delivery safety:
+ *   JobClaimService.claim() issues a single UPDATE...WHERE status IN ('QUEUED','RETRYING').
+ *   Only the worker whose UPDATE affects 1 row owns the job.
+ *   A second delivery of the same job ID gets 0 rows updated and is silently skipped.
+ *   This remains safe across multiple JVM instances because the safety boundary is
+ *   PostgreSQL row-level locking, not a JVM-local lock.
  *
- * Idempotency: AgentRunner's existing input-hash mechanism ensures the same
- * agent execution does not call the model twice even if the worker restarts.
+ * Transaction separation:
+ *   Claim and terminal-state persistence each run in their own short transaction.
+ *   The LLM network call (via ContentGenerationOrchestrator) runs BETWEEN them,
+ *   with no database connection held open during the external call.
+ *
+ * Idempotency:
+ *   AgentRunner's existing input-hash mechanism prevents duplicate LLM calls
+ *   even if the worker restarts mid-execution after claiming a job.
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class ContentJobWorker {
 
-    private final CfPipelineJobRepository jobRepository;
+    private final JobClaimService claimService;
     private final StringRedisTemplate redisTemplate;
     private final ContentGenerationOrchestrator generationOrchestrator;
 
-    /** Poll interval: 500ms. Appropriate for single-JVM MVP. */
     @Scheduled(fixedDelay = 500)
     public void poll() {
         String jobIdStr = redisTemplate.opsForList()
@@ -53,46 +58,29 @@ public class ContentJobWorker {
             return;
         }
 
-        processJob(jobId);
-    }
-
-    @Transactional
-    protected void processJob(UUID jobId) {
-        Optional<CfPipelineJob> maybeJob = jobRepository.findById(jobId);
-        if (maybeJob.isEmpty()) {
-            log.warn("ContentJobWorker: jobId={} not found in DB — skipping", jobId);
+        // ── 1. Atomic claim (own transaction; no DB connection held after commit) ──
+        Optional<CfPipelineJob> maybeClaimed = claimService.claim(jobId);
+        if (maybeClaimed.isEmpty()) {
+            log.info("ContentJobWorker: jobId={} claim failed — already owned or completed, skipping", jobId);
             return;
         }
 
-        CfPipelineJob job = maybeJob.get();
-
-        // Atomic claim: skip if already running or completed (duplicate delivery safety)
-        if (!isClaimable(job)) {
-            log.info("ContentJobWorker: jobId={} status={} — skipping (not claimable)",
-                    jobId, job.getStatus());
-            return;
-        }
-
-        job.setStatus("RUNNING");
-        job.setAttempt(job.getAttempt() + 1);
-        job.setStartedAt(Instant.now());
-        job.setError(null);
-        jobRepository.save(job);
-
+        CfPipelineJob job = maybeClaimed.get();
         log.info("ContentJobWorker: claimed jobId={} lessonId={} attempt={}/{}",
                 jobId, job.getLessonId(), job.getAttempt(), job.getMaxAttempts());
 
+        // ── 2. Execute (no DB transaction; LLM call is a pure network operation) ──
+        String resultRef;
         try {
-            String resultRef = dispatch(job);
-            job.setStatus("SUCCEEDED");
-            job.setResultReference(resultRef);
-            job.setCompletedAt(Instant.now());
-            jobRepository.save(job);
-            log.info("ContentJobWorker: SUCCEEDED jobId={} lessonId={}", jobId, job.getLessonId());
-
+            resultRef = dispatch(job);
         } catch (Exception e) {
             handleFailure(job, e);
+            return;
         }
+
+        // ── 3. Persist success (own transaction) ──
+        claimService.markSucceeded(jobId, resultRef);
+        log.info("ContentJobWorker: SUCCEEDED jobId={} lessonId={}", jobId, job.getLessonId());
     }
 
     private String dispatch(CfPipelineJob job) {
@@ -110,26 +98,15 @@ public class ContentJobWorker {
                 job.getId(), job.getAttempt(), retryable, e.getMessage());
 
         if (canRetry) {
-            job.setStatus("RETRYING");
-            job.setError(abbreviate(e.getMessage(), 500));
-            jobRepository.save(job);
-            // Re-enqueue after short back-off by pushing the ID back
-            redisTemplate.opsForList().rightPush(
-                    RedisContentJobQueue.QUEUE_KEY, job.getId().toString());
+            claimService.markRetrying(job.getId(), abbreviate(e.getMessage(), 500),
+                    RedisContentJobQueue.QUEUE_KEY, redisTemplate);
             log.info("ContentJobWorker: jobId={} RETRYING (attempt {}/{})",
                     job.getId(), job.getAttempt(), job.getMaxAttempts());
         } else {
-            job.setStatus("FAILED");
-            job.setError(abbreviate(e.getMessage(), 2000));
-            job.setCompletedAt(Instant.now());
-            jobRepository.save(job);
+            claimService.markFailed(job.getId(), abbreviate(e.getMessage(), 2000));
             log.error("ContentJobWorker: jobId={} FAILED (retryable={} attempts={}/{})",
                     job.getId(), retryable, job.getAttempt(), job.getMaxAttempts());
         }
-    }
-
-    private boolean isClaimable(CfPipelineJob job) {
-        return "QUEUED".equals(job.getStatus()) || "RETRYING".equals(job.getStatus());
     }
 
     private String abbreviate(String msg, int max) {
