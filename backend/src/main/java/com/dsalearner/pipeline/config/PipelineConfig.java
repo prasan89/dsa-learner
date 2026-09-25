@@ -1,32 +1,44 @@
 package com.dsalearner.pipeline.config;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+
+import java.util.concurrent.Executor;
 
 /**
- * Phase 0 async foundation.
+ * Phase 1A async foundation.
  *
- * ## What exists now
- * - Spring @EnableAsync is active. PipelineService methods can be called asynchronously.
- * - Redis is already wired (StringRedisTemplate used in login rate limiting).
- *   The same Redis connection factory is available for queue use.
- * - No BullMQ / separate queue technology is introduced. The architecture
- *   intentionally defers queue workers to Phase 1.
+ * @EnableAsync  — allows @Async on service methods.
+ * @EnableScheduling — enables @Scheduled on ContentJobWorker.poll().
  *
- * ## What Phase 1A will build on top of this
- * - A ThreadPoolTaskExecutor (configured here) for agent execution.
- * - Spring @Async on generation/QA methods in PipelineService so the HTTP
- *   request returns immediately and the pipeline runs in the background.
- * - A status-polling endpoint (/api/v1/pipeline/lessons/{id}/status) so callers
- *   can track async progress.
- * - Redis can optionally be used for job state if cross-node coordination is needed.
+ * The pipelineExecutor thread pool isolates Content Factory work from the
+ * HTTP thread pool and provides clean shutdown on application stop.
  *
- * ## Intentionally deferred
- * - BullMQ / dedicated job queue (deferred to Phase 2+ when batch generation is needed).
- * - Dead-letter handling, retry queues, job persistence.
- * - Worker process separation (single JVM for MVP; split when throughput demands it).
+ * Queue architecture:
+ *   HTTP request → CF job saved to PostgreSQL → job ID pushed to Redis list
+ *   ContentJobWorker (scheduled every 500ms) → pops from Redis → executes pipeline
+ *
+ * Single-JVM for Phase 1A. Horizontal scaling (multiple worker nodes sharing the
+ * Redis queue) is safe because the worker atomically claims each job.
  */
 @Configuration
 @EnableAsync
+@EnableScheduling
 public class PipelineConfig {
+
+    @Bean("pipelineExecutor")
+    public Executor pipelineExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(4);
+        executor.setQueueCapacity(50);
+        executor.setThreadNamePrefix("cf-pipeline-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(30);
+        executor.initialize();
+        return executor;
+    }
 }

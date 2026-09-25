@@ -4,6 +4,7 @@ import com.dsalearner.config.SecurityConfig;
 import com.dsalearner.pipeline.repository.CfWorkflowEventRepository;
 import com.dsalearner.pipeline.service.AgentRunService;
 import com.dsalearner.pipeline.service.CostLedgerService;
+import com.dsalearner.pipeline.service.PipelineJobService;
 import com.dsalearner.pipeline.service.PipelineService;
 import com.dsalearner.security.JwtService;
 import com.dsalearner.security.UserDetailsServiceImpl;
@@ -44,6 +45,7 @@ class PipelineControllerSecurityTest {
     @MockBean AgentRunService agentRunService;
     @MockBean CostLedgerService costLedgerService;
     @MockBean CfWorkflowEventRepository workflowEventRepository;
+    @MockBean PipelineJobService pipelineJobService;
 
     // Mocked dependencies of JwtAuthFilter — real filter stays active.
     @MockBean JwtService jwtService;
@@ -109,6 +111,22 @@ class PipelineControllerSecurityTest {
     @Test
     void dailyCostRequiresAuth() throws Exception {
         mvc.perform(get("/api/v1/pipeline/cost/daily"))
+                .andExpect(status().isForbidden());
+    }
+
+    // ─── Phase 1A: Job endpoints require auth ─────────────────────────────
+
+    @Test
+    void submitJobRequiresAuth() throws Exception {
+        mvc.perform(post("/api/v1/pipeline/jobs")
+                        .contentType("application/json")
+                        .content("{\"lessonId\":\"00000000-0000-0000-0000-000000000001\",\"lessonVersion\":1}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getJobRequiresAuth() throws Exception {
+        mvc.perform(get("/api/v1/pipeline/jobs/00000000-0000-0000-0000-000000000001"))
                 .andExpect(status().isForbidden());
     }
 }

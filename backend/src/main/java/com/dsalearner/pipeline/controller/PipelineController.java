@@ -2,14 +2,17 @@ package com.dsalearner.pipeline.controller;
 
 import com.dsalearner.pipeline.model.entity.CfAgentRun;
 import com.dsalearner.pipeline.model.entity.CfLesson;
+import com.dsalearner.pipeline.model.entity.CfPipelineJob;
 import com.dsalearner.pipeline.model.entity.CfWorkflowEvent;
 import com.dsalearner.pipeline.repository.CfWorkflowEventRepository;
 import com.dsalearner.pipeline.service.AgentRunService;
 import com.dsalearner.pipeline.service.CostLedgerService;
+import com.dsalearner.pipeline.service.PipelineJobService;
 import com.dsalearner.pipeline.service.PipelineService;
 import com.dsalearner.pipeline.validation.ValidationResult;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +34,7 @@ public class PipelineController {
     private final AgentRunService agentRunService;
     private final CostLedgerService costLedgerService;
     private final CfWorkflowEventRepository workflowEventRepository;
+    private final PipelineJobService pipelineJobService;
 
     // ─── Lessons ─────────────────────────────────────────────────────────
 
@@ -130,13 +134,38 @@ public class PipelineController {
         return ResponseEntity.ok(Map.of("status", "ok", "service", "content-factory"));
     }
 
+    // ─── Async Jobs ───────────────────────────────────────────────────────
+
+    /**
+     * Submit an asynchronous pipeline job.
+     * POST /api/v1/pipeline/jobs  (authenticated)
+     */
+    @PostMapping("/jobs")
+    public ResponseEntity<JobResponse> submitJob(
+            @Valid @RequestBody SubmitJobRequest req,
+            @AuthenticationPrincipal UserDetails user) {
+        CfPipelineJob job = pipelineJobService.submitContentGeneration(
+                req.lessonId(), req.lessonVersion(),
+                req.payload(), actorFrom(user));
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(JobResponse.from(job));
+    }
+
+    /**
+     * Poll job status.
+     * GET /api/v1/pipeline/jobs/{jobId}  (authenticated)
+     */
+    @GetMapping("/jobs/{jobId}")
+    public ResponseEntity<JobResponse> getJob(@PathVariable UUID jobId) {
+        return ResponseEntity.ok(JobResponse.from(pipelineJobService.getJob(jobId)));
+    }
+
     // ─── Helpers ─────────────────────────────────────────────────────────
 
     private String actorFrom(UserDetails user) {
         return user != null ? "admin:" + user.getUsername() : "system";
     }
 
-    // ─── Request DTOs ─────────────────────────────────────────────────────
+    // ─── Request / Response DTOs ──────────────────────────────────────────
 
     record CreateLessonRequest(
             @NotBlank String stableRef,
@@ -145,4 +174,34 @@ public class PipelineController {
             String cefrLevel,
             String title
     ) {}
+
+    record SubmitJobRequest(
+            @NotNull UUID lessonId,
+            int lessonVersion,
+            Map<String, Object> payload
+    ) {}
+
+    record JobResponse(
+            UUID jobId,
+            String status,
+            UUID lessonId,
+            int lessonVersion,
+            String jobType,
+            int attempt,
+            int maxAttempts,
+            java.time.Instant createdAt,
+            java.time.Instant startedAt,
+            java.time.Instant completedAt,
+            String resultReference,
+            String error
+    ) {
+        static JobResponse from(CfPipelineJob job) {
+            return new JobResponse(
+                    job.getId(), job.getStatus(), job.getLessonId(), job.getLessonVersion(),
+                    job.getJobType(), job.getAttempt(), job.getMaxAttempts(),
+                    job.getCreatedAt(), job.getStartedAt(), job.getCompletedAt(),
+                    job.getResultReference(), job.getError()
+            );
+        }
+    }
 }
