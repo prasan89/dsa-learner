@@ -2,8 +2,10 @@ package com.dsalearner.pipeline.controller;
 
 import com.dsalearner.pipeline.model.entity.CfAgentRun;
 import com.dsalearner.pipeline.model.entity.CfLesson;
+import com.dsalearner.pipeline.model.entity.CfLessonVersion;
 import com.dsalearner.pipeline.model.entity.CfPipelineJob;
 import com.dsalearner.pipeline.model.entity.CfWorkflowEvent;
+import com.dsalearner.pipeline.repository.CfLessonVersionRepository;
 import com.dsalearner.pipeline.repository.CfWorkflowEventRepository;
 import com.dsalearner.pipeline.service.AgentRunService;
 import com.dsalearner.pipeline.service.CostLedgerService;
@@ -34,6 +36,7 @@ public class PipelineController {
     private final AgentRunService agentRunService;
     private final CostLedgerService costLedgerService;
     private final CfWorkflowEventRepository workflowEventRepository;
+    private final CfLessonVersionRepository lessonVersionRepository;
     private final PipelineJobService pipelineJobService;
 
     // ─── Lessons ─────────────────────────────────────────────────────────
@@ -61,6 +64,18 @@ public class PipelineController {
     @GetMapping("/lessons/{id}")
     public ResponseEntity<CfLesson> getLesson(@PathVariable UUID id) {
         return ResponseEntity.ok(pipelineService.getLesson(id));
+    }
+
+    @GetMapping("/lessons/{id}/versions")
+    public ResponseEntity<List<CfLessonVersion>> listVersions(@PathVariable UUID id) {
+        return ResponseEntity.ok(lessonVersionRepository.findAllByLessonIdOrderByVersionAsc(id));
+    }
+
+    @GetMapping("/lessons/{id}/versions/{version}")
+    public ResponseEntity<CfLessonVersion> getVersion(@PathVariable UUID id, @PathVariable int version) {
+        return lessonVersionRepository.findByLessonIdAndVersion(id, version)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // ─── Workflow Triggers ────────────────────────────────────────────────

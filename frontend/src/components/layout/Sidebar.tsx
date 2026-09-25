@@ -6,7 +6,7 @@ import {
   Home, Code2, Coffee, Layout, Bot, Dumbbell,
   RotateCcw, BarChart2, Users, CreditCard, ChevronRight,
   Zap, LogOut, Lock, Terminal, Cpu, Braces, Globe, MessageSquare,
-  BookOpen, Mic, GraduationCap,
+  BookOpen, Mic, GraduationCap, FlaskConical,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { authApi } from "@/lib/api/auth";
@@ -59,6 +59,10 @@ const LANG_AI = [
 
 const LANG_PROGRESS = [
   { href: "/progress", label: "Progress", icon: BarChart2 },
+];
+
+const LANG_ADMIN = [
+  { href: "/content-factory/german-a1", label: "Content Factory", icon: FlaskConical },
 ];
 
 const SECTION_OTHER = [
@@ -169,6 +173,7 @@ export default function Sidebar() {
             <NavSection title="Practice"  items={LANG_PRACTICE}  path={path} />
             <NavSection title="AI"        items={LANG_AI}        path={path} />
             <NavSection title="Progress"  items={LANG_PROGRESS}  path={path} />
+            <NavSection title="Admin"     items={LANG_ADMIN}     path={path} />
           </>
         )}
         <NavSection title="" items={SECTION_OTHER} path={path} />

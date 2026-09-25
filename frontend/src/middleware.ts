@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PROTECTED_PATHS = ["/dashboard", "/problems", "/patterns", "/profile", "/wallet", "/system-design", "/java", "/ai-mentor", "/revision", "/progress", "/learn"];
+const PROTECTED_PATHS = ["/dashboard", "/problems", "/patterns", "/profile", "/wallet", "/system-design", "/java", "/ai-mentor", "/revision", "/progress", "/learn", "/content-factory"];
 
 export function middleware(request: NextRequest) {
   const accessToken = request.cookies.get("accessToken")?.value;
