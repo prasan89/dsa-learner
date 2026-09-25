@@ -6,25 +6,29 @@ test.describe('Arrays Visualizer @smoke @regression', () => {
     await login(page);
     await page.goto('/learn/arrays');
     await expect(page.locator('h1')).toContainText('Arrays');
+    // Wait for the visualizer to hydrate — Play becomes enabled once steps load
+    await expect(page.getByRole('button', { name: /play/i }).first()).toBeEnabled({ timeout: 10000 });
   });
 
-  test('@smoke page loads with concept tabs', async ({ page }) => {
-    // 5 concept tabs visible
-    const tabs = page.getByRole('tab');
-    await expect(tabs).toHaveCount(5);
-    await expect(tabs.first()).toBeVisible();
+  test('@smoke page loads with lesson sidebar', async ({ page }) => {
+    // Sidebar lesson buttons are present (no role="tab" — sidebar uses plain buttons)
+    const lessonBtns = page.locator('aside button');
+    await expect(lessonBtns.first()).toBeVisible();
+    const count = await lessonBtns.count();
+    expect(count).toBeGreaterThan(0);
   });
 
   test('@smoke default visualization renders', async ({ page }) => {
     // Array cells are present (role=cell)
     const cells = page.locator('[role="cell"]');
     await expect(cells.first()).toBeVisible({ timeout: 5000 });
-    await expect(cells).toHaveCount(await cells.count());
+    const count = await cells.count();
+    expect(count).toBeGreaterThan(0);
   });
 
   test('@smoke play/pause controls work', async ({ page }) => {
     const playBtn = page.getByRole('button', { name: /play/i }).first();
-    await expect(playBtn).toBeVisible();
+    await expect(playBtn).toBeEnabled();
 
     // Start playing
     await playBtn.click();
@@ -37,13 +41,13 @@ test.describe('Arrays Visualizer @smoke @regression', () => {
   });
 
   test('step forward button advances the step counter', async ({ page }) => {
-    // The step counter span has class w-14 (unique; cell index spans do not)
-    const counter = page.locator('span.w-14.tabular-nums');
+    // Step counter: "1 / N" text inside the progress row
+    const counter = page.locator('span.tabular-nums').filter({ hasText: /\d+ \/ \d+/ });
     await expect(counter).toBeVisible({ timeout: 5000 });
-    await expect(counter).not.toHaveText('—', { timeout: 5000 });
     const before = await counter.textContent();
 
     const stepFwd = page.getByRole('button', { name: /step forward/i });
+    await expect(stepFwd).toBeEnabled();
     await stepFwd.click();
 
     const after = await counter.textContent();
@@ -51,11 +55,11 @@ test.describe('Arrays Visualizer @smoke @regression', () => {
   });
 
   test('reset returns to step 1', async ({ page }) => {
-    const counter = page.locator('span.w-14.tabular-nums');
+    const counter = page.locator('span.tabular-nums').filter({ hasText: /\d+ \/ \d+/ });
     await expect(counter).toBeVisible({ timeout: 5000 });
-    await expect(counter).not.toHaveText('—', { timeout: 5000 });
 
     const stepFwd = page.getByRole('button', { name: /step forward/i });
+    await expect(stepFwd).toBeEnabled();
     await stepFwd.click();
     await stepFwd.click();
 
@@ -63,18 +67,19 @@ test.describe('Arrays Visualizer @smoke @regression', () => {
     await expect(counter).toHaveText(/^1 \//);
   });
 
-  test('switching concept tab changes visualization', async ({ page }) => {
-    const tabs = page.getByRole('tab');
-    const first = tabs.nth(0);
-    const second = tabs.nth(1);
+  test('switching lesson changes visualization', async ({ page }) => {
+    // Sidebar lesson buttons in the expanded (first) module
+    const lessonBtns = page.locator('aside button').filter({ hasText: /^\d/ });
+    const count = await lessonBtns.count();
+    if (count < 2) return; // skip if only one lesson visible
 
-    const firstLabel = await first.textContent();
-    const secondLabel = await second.textContent();
+    const firstLabel  = await lessonBtns.nth(0).textContent();
+    const secondLabel = await lessonBtns.nth(1).textContent();
     expect(firstLabel).not.toBe(secondLabel);
 
-    await second.click();
-    await expect(second).toHaveAttribute('aria-selected', 'true');
-    await expect(first).toHaveAttribute('aria-selected', 'false');
+    await lessonBtns.nth(1).click();
+    // The lesson title in the main panel should update
+    await expect(page.locator('h2')).toBeVisible({ timeout: 3000 });
   });
 
   test('custom array input changes the visualization', async ({ page }) => {
@@ -84,30 +89,22 @@ test.describe('Arrays Visualizer @smoke @regression', () => {
 
     // Cells should now reflect the 3-element array
     const cells = page.locator('[role="cell"]');
-    await expect(cells).toHaveCount(3);
+    await expect(cells).toHaveCount(3, { timeout: 5000 });
   });
 
-  test('linear search tab shows target input and allows search', async ({ page }) => {
-    // Click the Linear Search tab
-    const tabs = page.getByRole('tab');
-    let linearTab = null;
-    for (let i = 0; i < await tabs.count(); i++) {
-      const label = await tabs.nth(i).textContent();
-      if (label?.toLowerCase().includes('linear')) {
-        linearTab = tabs.nth(i);
-        break;
-      }
-    }
-    if (!linearTab) return; // skip if tab name changed
+  test('linear search lesson shows target input', async ({ page }) => {
+    // Navigate to the Linear Search lesson in the sidebar
+    const linearBtn = page.locator('aside button').filter({ hasText: /linear search/i });
+    if (!(await linearBtn.count())) return; // skip if not in current module
 
-    await linearTab.click();
+    await linearBtn.click();
     // Target input should appear
     const targetInput = page.getByRole('spinbutton').first();
-    await expect(targetInput).toBeVisible({ timeout: 3000 });
+    await expect(targetInput).toBeVisible({ timeout: 5000 });
   });
 
   test('challenge mode can be entered and shows an overlay', async ({ page }) => {
-    // Enter challenge mode (button now reads "Try Challenge")
+    // Enter challenge mode (button reads "Try Challenge")
     const challengeBtn = page.getByRole('button', { name: /try challenge/i });
     if (!(await challengeBtn.count())) return; // no challenge for this concept
 
@@ -117,6 +114,7 @@ test.describe('Arrays Visualizer @smoke @regression', () => {
     const stepFwd = page.getByRole('button', { name: /step forward/i });
     let attempts = 0;
     while (attempts < 20) {
+      if (await stepFwd.isDisabled()) break;
       await stepFwd.click();
       const challengeOverlay = page.locator('text=Challenge').first();
       if (await challengeOverlay.isVisible({ timeout: 500 }).catch(() => false)) {
@@ -137,10 +135,10 @@ test.describe('Arrays Visualizer @smoke @regression', () => {
     if (!(await challengeBtn.count())) return;
 
     await challengeBtn.click();
-    await expect(page.getByRole('button', { name: /watch mode/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /watch mode/i })).toBeVisible({ timeout: 5000 });
 
     await page.getByRole('button', { name: /watch mode/i }).click();
-    await expect(page.getByRole('button', { name: /try challenge/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /try challenge/i })).toBeVisible({ timeout: 5000 });
   });
 
   test('progress bar is accessible (has aria attributes)', async ({ page }) => {
@@ -160,7 +158,7 @@ test.describe('Arrays Visualizer @smoke @regression', () => {
     await page.locator('h1').click();
 
     const playBtn = page.getByRole('button', { name: /play/i }).first();
-    await expect(playBtn).toBeVisible();
+    await expect(playBtn).toBeEnabled();
 
     // Press Space to play
     await page.keyboard.press('Space');

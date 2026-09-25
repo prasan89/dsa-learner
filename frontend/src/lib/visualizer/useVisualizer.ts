@@ -23,26 +23,30 @@ export interface UseVisualizerReturn extends VisualizationState {
 
 export function useVisualizer(steps: VisualizationStep[], initialSpeed = 2): UseVisualizerReturn {
   const engineRef = useRef<VisualizationEngine | null>(null);
+  // Track engine instance in state so the steps effect re-runs after strict-mode remount
+  const [engine, setEngine] = useState<VisualizationEngine | null>(null);
   const [vizState, setVizState] = useState<VisualizationState>(INITIAL_STATE);
 
   // Create engine once per component lifetime
   useEffect(() => {
-    const engine = new VisualizationEngine();
-    engineRef.current = engine;
-    engine.setSpeed(initialSpeed);
-    const unsub = engine.subscribe((s) => setVizState(s));
+    const eng = new VisualizationEngine();
+    engineRef.current = eng;
+    eng.setSpeed(initialSpeed);
+    const unsub = eng.subscribe((s) => setVizState(s));
+    setEngine(eng);
     return () => {
       unsub();
-      engine.destroy();
+      eng.destroy();
+      setEngine(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Reload steps whenever they change (new algorithm or new input)
+  // Reload steps whenever they change or the engine is (re-)created
   useEffect(() => {
-    if (!engineRef.current) return;
-    engineRef.current.load(steps);
-  }, [steps]);
+    if (!engine) return;
+    engine.load(steps);
+  }, [engine, steps]);
 
   const play         = useCallback(() => engineRef.current?.play(), []);
   const pause        = useCallback(() => engineRef.current?.pause(), []);
