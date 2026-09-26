@@ -3,6 +3,136 @@ import api from "./client";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type LessonStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
+export type StepType =
+  | "NARRATIVE"
+  | "VOCABULARY_CARD"
+  | "GRAMMAR_EXPLANATION"
+  | "MULTIPLE_CHOICE"
+  | "FILL_IN_BLANK"
+  | "TRANSLATION"
+  | "VOCABULARY_SUMMARY"
+  | "LESSON_REVIEW";
+
+// ── Step payload types (one per StepType) ────────────────────────────────────
+
+export interface VocabularyCardPayload {
+  german: string;
+  english: string;
+  example?: string | null;
+  pronunciation?: string | null;
+  vocabIndex: number;
+}
+
+export interface VocabularySummaryPayload {
+  items: VocabularyCardPayload[];
+  count: number;
+}
+
+export interface MultipleChoicePayload {
+  type: "MULTIPLE_CHOICE";
+  question: string;
+  options: string[];
+  correctAnswer: string;
+  explanation?: string | null;
+  exerciseIndex: number;
+}
+
+export interface FillInBlankPayload {
+  type: "FILL_IN_BLANK";
+  question: string;
+  correctAnswer: string;
+  hint?: string | null;
+  exerciseIndex: number;
+}
+
+export interface TranslationPayload {
+  type: "TRANSLATION";
+  source: string;
+  correctAnswer: string;
+  hint?: string | null;
+  exerciseIndex: number;
+}
+
+export interface NarrativePayload {
+  sectionIndex: number;
+  [key: string]: unknown;
+}
+
+export interface GrammarExplanationPayload {
+  ruleIndex: number;
+  [key: string]: unknown;
+}
+
+export interface LessonReviewPayload {
+  lessonTitle: string;
+  cefrLevel: string;
+  exerciseCount: number;
+}
+
+export type StepPayload =
+  | VocabularyCardPayload
+  | VocabularySummaryPayload
+  | MultipleChoicePayload
+  | FillInBlankPayload
+  | TranslationPayload
+  | NarrativePayload
+  | GrammarExplanationPayload
+  | LessonReviewPayload
+  | Record<string, unknown>;
+
+export interface ExperiencePlanStep {
+  index: number;
+  type: StepType;
+  payload: StepPayload;
+  audioKey: string | null;
+  isExercise: boolean;
+}
+
+export interface ExperiencePlan {
+  lessonId: string;
+  lessonVersionId: string;
+  lessonVersion: number;
+  lessonTitle: string;
+  cefrLevel: string;
+  languageCode: string;
+  unitDisplayName: string | null;
+  totalSteps: number;
+  totalExercises: number;
+  steps: ExperiencePlanStep[];
+}
+
+export interface LessonResponse {
+  lessonId: string;
+  title: string;
+  cefrLevel: string;
+  languageCode: string;
+  unitDisplayName: string | null;
+  learnerStatus: LessonStatus;
+  currentStepIndex: number;
+  score: number | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  experiencePlan: ExperiencePlan;
+}
+
+export interface StepProgressDto {
+  lessonId: string;
+  status: LessonStatus;
+  stepIndex: number;
+  score: number | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  lastInteractionAt: string | null;
+}
+
+export interface LessonCompletionDto {
+  lessonId: string;
+  lessonStatus: LessonStatus;
+  score: number;
+  completedAt: string;
+  nextLevelUnlocked: boolean;
+  nextCefrLevel: string | null;
+}
 export type LevelStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
 
 export interface LessonSummary {
@@ -64,6 +194,15 @@ export const academyApi = {
 
   getProgress: (language: string) =>
     api.get<ProgressResponse>(`/v1/academy/${language}/progress`),
+
+  getLesson: (language: string, lessonId: string) =>
+    api.get<LessonResponse>(`/v1/academy/${language}/lessons/${lessonId}`),
+
+  updateStepProgress: (language: string, lessonId: string, stepIndex: number) =>
+    api.patch<StepProgressDto>(`/v1/academy/${language}/lessons/${lessonId}/step`, { stepIndex }),
+
+  completeLesson: (language: string, lessonId: string, score: number) =>
+    api.post<LessonCompletionDto>(`/v1/academy/${language}/lessons/${lessonId}/complete`, { score }),
 };
 
 // ── Derived helpers ───────────────────────────────────────────────────────────
