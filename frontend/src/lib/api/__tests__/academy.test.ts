@@ -349,3 +349,219 @@ describe("Academy API endpoint paths", () => {
     expect(path).toContain("french");
   });
 });
+
+// ── 10. Curriculum UX redesign: level journey rail state logic ─────────────────
+
+describe("Level journey rail state derivation", () => {
+  const levels = [
+    makeLevel({ cefrLevel: "A1", ordinal: 1, status: "COMPLETED" }),
+    makeLevel({ cefrLevel: "A2", ordinal: 2, status: "IN_PROGRESS" }),
+    makeLevel({ cefrLevel: "B1", ordinal: 3, status: "NOT_STARTED" }),
+    makeLevel({ cefrLevel: "B2", ordinal: 4, status: "NOT_STARTED" }),
+    makeLevel({ cefrLevel: "C1", ordinal: 5, status: "NOT_STARTED" }),
+    makeLevel({ cefrLevel: "C2", ordinal: 6, status: "NOT_STARTED" }),
+  ];
+
+  test("completed level should show checkmark, not lock", () => {
+    const a1 = levels[0];
+    const isCompleted = a1.status === "COMPLETED";
+    const isLocked = a1.status === "NOT_STARTED" && a1.ordinal > 1;
+    expect(isCompleted).toBe(true);
+    expect(isLocked).toBe(false);
+  });
+
+  test("in-progress level is not locked", () => {
+    const a2 = levels[1];
+    const isLocked = a2.status === "NOT_STARTED" && a2.ordinal > 1;
+    expect(isLocked).toBe(false);
+  });
+
+  test("B1 through C2 are locked (NOT_STARTED, ordinal > 1)", () => {
+    const locked = levels.filter((l) => l.status === "NOT_STARTED" && l.ordinal > 1);
+    expect(locked.map((l) => l.cefrLevel)).toEqual(["B1", "B2", "C1", "C2"]);
+  });
+
+  test("clicking a locked level should trigger locked message, not change activeCefr", () => {
+    // Simulate the guard: locked levels return early
+    let activeCefr = "A2";
+    let lockedMessage: string | null = null;
+
+    function handleSelectLevel(cefr: string) {
+      const level = levels.find((l) => l.cefrLevel === cefr);
+      if (!level) return;
+      if (level.status === "NOT_STARTED" && level.ordinal > 1) {
+        lockedMessage = cefr;
+        return;
+      }
+      lockedMessage = null;
+      activeCefr = cefr;
+    }
+
+    handleSelectLevel("B1");
+    expect(lockedMessage).toBe("B1");
+    expect(activeCefr).toBe("A2"); // unchanged
+
+    handleSelectLevel("A1");
+    expect(lockedMessage).toBeNull();
+    expect(activeCefr).toBe("A1");
+  });
+
+  test("first level (ordinal 1) is never locked even if NOT_STARTED", () => {
+    const a1Fresh = makeLevel({ cefrLevel: "A1", ordinal: 1, status: "NOT_STARTED" });
+    const isLocked = a1Fresh.status === "NOT_STARTED" && a1Fresh.ordinal > 1;
+    expect(isLocked).toBe(false);
+  });
+});
+
+// ── 11. Curriculum UX redesign: lesson score display logic ─────────────────────
+
+describe("Lesson score display", () => {
+  test("completed lesson with score >= 80 gets high-score styling", () => {
+    const lesson = makeLesson({ status: "COMPLETED", score: 87 });
+    const isCompleted = lesson.status === "COMPLETED";
+    const showScore = isCompleted && lesson.score !== null;
+    const scoreDisplay = showScore ? `${Math.round(lesson.score!)}%` : null;
+    const isHighScore = lesson.score !== null && lesson.score >= 80;
+    expect(scoreDisplay).toBe("87%");
+    expect(isHighScore).toBe(true);
+  });
+
+  test("completed lesson with score < 80 gets neutral styling", () => {
+    const lesson = makeLesson({ status: "COMPLETED", score: 65 });
+    const isHighScore = lesson.score !== null && lesson.score >= 80;
+    expect(isHighScore).toBe(false);
+  });
+
+  test("completed lesson with null score shows no score badge", () => {
+    const lesson = makeLesson({ status: "COMPLETED", score: null });
+    const showScore = lesson.status === "COMPLETED" && lesson.score !== null;
+    expect(showScore).toBe(false);
+  });
+
+  test("not-started lesson never shows score badge", () => {
+    const lesson = makeLesson({ status: "NOT_STARTED", score: null });
+    const showScore = lesson.status === "COMPLETED" && lesson.score !== null;
+    expect(showScore).toBe(false);
+  });
+
+  test("in-progress lesson never shows score badge", () => {
+    const lesson = makeLesson({ status: "IN_PROGRESS", score: 40 });
+    const showScore = lesson.status === "COMPLETED" && lesson.score !== null;
+    expect(showScore).toBe(false);
+  });
+
+  test("score rounds to nearest integer for display", () => {
+    const lesson = makeLesson({ status: "COMPLETED", score: 87.6 });
+    const scoreDisplay = `${Math.round(lesson.score!)}%`;
+    expect(scoreDisplay).toBe("88%");
+  });
+});
+
+// ── 12. Curriculum UX redesign: level hero progress calculations ───────────────
+
+describe("LevelHero progress display", () => {
+  test("pct rounds correctly for non-round numbers", () => {
+    const level = makeLevel({ lessonsTotal: 24, lessonsCompleted: 13 });
+    const pct = Math.min(100, Math.round((level.lessonsCompleted / level.lessonsTotal) * 100));
+    expect(pct).toBe(54);
+  });
+
+  test("100% when all done", () => {
+    const level = makeLevel({ lessonsTotal: 10, lessonsCompleted: 10 });
+    const pct = Math.min(100, Math.round((level.lessonsCompleted / level.lessonsTotal) * 100));
+    expect(pct).toBe(100);
+  });
+
+  test("pct not shown (0) when completed is 0", () => {
+    const level = makeLevel({ lessonsTotal: 10, lessonsCompleted: 0 });
+    const pct = level.lessonsTotal > 0
+      ? Math.min(100, Math.round((level.lessonsCompleted / level.lessonsTotal) * 100))
+      : 0;
+    expect(pct).toBe(0);
+    // pct > 0 is false so the % suffix would be hidden
+    expect(pct > 0).toBe(false);
+  });
+
+  test("displayName from LevelSummary takes priority over CEFR_DISPLAY", () => {
+    const level = makeLevel({ cefrLevel: "A1", displayName: "Starter" });
+    // The component uses: level.displayName || CEFR_DISPLAY[level.cefrLevel]
+    const name = level.displayName || CEFR_DISPLAY[level.cefrLevel];
+    expect(name).toBe("Starter");
+  });
+
+  test("CEFR_DISPLAY used as fallback when displayName is empty", () => {
+    const level = makeLevel({ cefrLevel: "A1", displayName: "" });
+    const name = level.displayName || CEFR_DISPLAY[level.cefrLevel];
+    expect(name).toBe("Beginner");
+  });
+});
+
+// ── 13. Curriculum UX redesign: continue CTA lesson count display ──────────────
+
+describe("ContinueCta lesson count", () => {
+  test("shows 'Lesson N of M' when total > 0", () => {
+    const level = makeLevel({
+      units: [
+        {
+          unitId: "u1",
+          displayName: null,
+          ordinal: 1,
+          lessons: [
+            makeLesson({ position: 1, status: "COMPLETED" }),
+            makeLesson({ lessonId: "l2", position: 2, status: "IN_PROGRESS" }),
+            makeLesson({ lessonId: "l3", position: 3, status: "NOT_STARTED" }),
+          ],
+        },
+      ],
+    });
+    const allLessons = level.units.flatMap((u) => u.lessons);
+    const totalLessons = allLessons.length;
+    const cta = resolveCtaAction(level);
+    expect(cta.kind).toBe("continue");
+    if (cta.kind === "continue") {
+      const label = `Lesson ${cta.lesson.position} of ${totalLessons}`;
+      expect(label).toBe("Lesson 2 of 3");
+    }
+  });
+});
+
+// ── 14. Curriculum UX redesign: unit header completion counting ────────────────
+
+describe("UnitSection completion count", () => {
+  test("allDone is true when every lesson is COMPLETED", () => {
+    const lessons = [
+      makeLesson({ status: "COMPLETED" }),
+      makeLesson({ lessonId: "l2", status: "COMPLETED" }),
+    ];
+    const completedCount = lessons.filter((l) => l.status === "COMPLETED").length;
+    const allDone = completedCount === lessons.length && lessons.length > 0;
+    expect(allDone).toBe(true);
+  });
+
+  test("allDone is false when one lesson is still NOT_STARTED", () => {
+    const lessons = [
+      makeLesson({ status: "COMPLETED" }),
+      makeLesson({ lessonId: "l2", status: "NOT_STARTED" }),
+    ];
+    const completedCount = lessons.filter((l) => l.status === "COMPLETED").length;
+    const allDone = completedCount === lessons.length && lessons.length > 0;
+    expect(allDone).toBe(false);
+  });
+
+  test("allDone is false for empty unit", () => {
+    const lessons: LessonSummary[] = [];
+    const completedCount = lessons.filter((l) => l.status === "COMPLETED").length;
+    const allDone = completedCount === lessons.length && lessons.length > 0;
+    expect(allDone).toBe(false);
+  });
+
+  test("partial progress fraction displayed correctly", () => {
+    const lessons = [
+      makeLesson({ status: "COMPLETED" }),
+      makeLesson({ lessonId: "l2", status: "COMPLETED" }),
+      makeLesson({ lessonId: "l3", status: "NOT_STARTED" }),
+    ];
+    const completedCount = lessons.filter((l) => l.status === "COMPLETED").length;
+    expect(`${completedCount}/${lessons.length}`).toBe("2/3");
+  });
+});
