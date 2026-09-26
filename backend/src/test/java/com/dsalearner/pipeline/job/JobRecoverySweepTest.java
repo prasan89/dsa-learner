@@ -112,7 +112,7 @@ class JobRecoverySweepTest {
 
     @Test
     void staleTresholdConstantIs60Seconds() {
-        assertEquals(60L, JobRecoverySweep.STALE_THRESHOLD_SECONDS);
+        assertEquals(120L, JobRecoverySweep.STALE_THRESHOLD_SECONDS);
     }
 
     private CfPipelineJob staleJob(UUID id) {

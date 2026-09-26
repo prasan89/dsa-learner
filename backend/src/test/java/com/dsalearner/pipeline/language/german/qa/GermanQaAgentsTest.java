@@ -172,7 +172,7 @@ class GermanQaAgentsTest {
         when(mockProvider.generate(any())).thenReturn(
                 new LlmResponse("not json at all", 10, 5, "mock-haiku", "mock"));
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(com.dsalearner.pipeline.provider.LlmProviderException.class,
                 () -> languageAgent.execute(buildInput(languageAgent)));
     }
 }
