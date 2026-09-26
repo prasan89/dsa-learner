@@ -65,8 +65,8 @@ public class CurriculumBatchProcessor {
 
         for (CfCurriculumLevel level : generatingLevels) {
             syncPlanStatuses(level);
+            dependencyService.refreshBlockedStatus(level.getId()); // PLANNED→QUEUED if deps met
             dispatchBatch(curriculum, level, batchSize);
-            sweepQaPending(curriculum, level);
             checkLevelCompletion(curriculum, level);
         }
 
@@ -175,10 +175,10 @@ public class CurriculumBatchProcessor {
 
     /**
      * Sweeps QA_PENDING lessons that have no active QA_CONTENT job and submits one.
-     * Covers lessons that reached QA_PENDING before the auto-submit was added to
-     * ContentGenerationOrchestrator, and acts as a safety net for any future gaps.
+     * Called from the scheduler OUTSIDE the main processCurriculum transaction so that
+     * a conflict exception inside submitQaContent cannot poison the outer transaction.
      */
-    private void sweepQaPending(CfCurriculum curriculum, CfCurriculumLevel level) {
+    public void sweepQaPending(CfCurriculum curriculum, CfCurriculumLevel level) {
         lessonRepository.findByLanguageCodeAndContentStatus(curriculum.getLanguageCode(), ContentStatus.QA_PENDING)
                 .stream()
                 .filter(l -> {
