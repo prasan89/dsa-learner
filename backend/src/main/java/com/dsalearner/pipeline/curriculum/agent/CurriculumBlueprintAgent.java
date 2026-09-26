@@ -12,14 +12,13 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * Calls the LLM to generate a per-level curriculum blueprint.
- * Input carries the language profile + CEFR level + optional prior-level context.
- * Output is a LevelBlueprint parsed from JSON.
+ * Calls the LLM to generate a full A1–C2 curriculum blueprint in one shot.
+ * Output is a CurriculumBlueprint (all levels) parsed from JSON.
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class CurriculumBlueprintAgent implements Agent<BlueprintInput, LevelBlueprint> {
+public class CurriculumBlueprintAgent implements Agent<BlueprintInput, CurriculumBlueprint> {
 
     private final PromptRegistry promptRegistry;
     private final ModelRouter modelRouter;
@@ -33,7 +32,7 @@ public class CurriculumBlueprintAgent implements Agent<BlueprintInput, LevelBlue
     }
 
     @Override
-    public AgentOutput<LevelBlueprint> execute(AgentInput<BlueprintInput> input) {
+    public AgentOutput<CurriculumBlueprint> execute(AgentInput<BlueprintInput> input) {
         BlueprintInput payload = input.payload();
         AgentInput.AgentContext ctx = input.context();
 
@@ -42,7 +41,8 @@ public class CurriculumBlueprintAgent implements Agent<BlueprintInput, LevelBlue
 
         String userPrompt = prompt.promptText()
                 .replace("{{languageCode}}", payload.languageCode())
-                .replace("{{languageDisplayName}}", payload.languageDisplayName())
+                .replace("{{languageDisplayName}}", payload.languageDisplayName() != null
+                        ? payload.languageDisplayName() : payload.languageCode())
                 .replace("{{script}}", payload.script() != null ? payload.script() : "Latin")
                 .replace("{{domainCode}}", payload.domainCode())
                 .replace("{{cefrLevels}}", String.join(", ", payload.cefrLevels()))
@@ -50,9 +50,8 @@ public class CurriculumBlueprintAgent implements Agent<BlueprintInput, LevelBlue
                 .replace("{{proficiencyFramework}}", payload.proficiencyFramework() != null
                         ? payload.proficiencyFramework() : "CEFR");
 
-        log.info("{}: generating blueprint for {} {} levels=[{}]",
-                agentType(), payload.languageDisplayName(), payload.languageCode(),
-                String.join(",", payload.cefrLevels()));
+        log.info("{}: generating full curriculum blueprint for {} levels=[{}]",
+                agentType(), payload.languageDisplayName(), String.join(",", payload.cefrLevels()));
 
         LlmResponse llmResponse = providerRegistry.get(modelConfig.provider()).generate(
                 new LlmRequest(
@@ -65,8 +64,11 @@ public class CurriculumBlueprintAgent implements Agent<BlueprintInput, LevelBlue
                 )
         );
 
-        LevelBlueprint result = parseBlueprint(llmResponse.text(), payload);
+        CurriculumBlueprint result = parseBlueprint(llmResponse.text(), payload);
         double cost = modelConfig.estimateCost(llmResponse.inputTokens(), llmResponse.outputTokens());
+
+        log.info("{}: blueprint parsed — {} total lessons across {} levels",
+                agentType(), result.totalLessons(), result.levels() != null ? result.levels().size() : 0);
 
         return new AgentOutput<>(
                 input.agentRunId(),
@@ -84,19 +86,15 @@ public class CurriculumBlueprintAgent implements Agent<BlueprintInput, LevelBlue
         );
     }
 
-    private LevelBlueprint parseBlueprint(String text, BlueprintInput payload) {
+    private CurriculumBlueprint parseBlueprint(String text, BlueprintInput payload) {
         try {
             String json = extractJson(text);
-            return MAPPER.readValue(json, LevelBlueprint.class);
+            return MAPPER.readValue(json, CurriculumBlueprint.class);
         } catch (Exception e) {
-            log.error("{}: failed to parse blueprint JSON — {}",
-                    agentType(), e.getMessage());
-            // Return a minimal blueprint so the orchestrator can record the failure
-            return new LevelBlueprint(
-                    payload.cefrLevels().isEmpty() ? "A1" : payload.cefrLevels().get(0),
-                    payload.languageDisplayName() + " " +
-                            (payload.cefrLevels().isEmpty() ? "A1" : payload.cefrLevels().get(0)),
-                    "Parse failed: " + e.getMessage(),
+            log.error("{}: failed to parse blueprint JSON — {}", agentType(), e.getMessage());
+            return new CurriculumBlueprint(
+                    payload.languageDisplayName() + " Curriculum",
+                    payload.languageCode(),
                     List.of()
             );
         }
@@ -115,3 +113,4 @@ public class CurriculumBlueprintAgent implements Agent<BlueprintInput, LevelBlue
         return t;
     }
 }
+

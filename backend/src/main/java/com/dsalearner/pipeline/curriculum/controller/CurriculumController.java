@@ -80,7 +80,8 @@ public class CurriculumController {
             @AuthenticationPrincipal UserDetails user) {
         CfCurriculum curriculum = orchestrator.applyTransition(
                 id, "BLUEPRINT_PENDING", "start_blueprint", actorFrom(user), null, null);
-        // Enqueue blueprint generation job for each level
+        // One job per CEFR level — each generates its LevelBlueprint independently.
+        // The last job to complete assembles and persists the full CurriculumBlueprint.
         List<CfCurriculumLevel> levels = curriculumService.getLevels(id);
         for (CfCurriculumLevel level : levels) {
             jobWorker.enqueue(CfCurriculumPipelineJob.builder()
@@ -88,8 +89,12 @@ public class CurriculumController {
                     .levelId(level.getId())
                     .jobType("CURRICULUM_BLUEPRINT")
                     .payload(Map.of(
-                            "cefrLevel", level.getCefrLevel(),
-                            "languageCode", curriculum.getLanguageCode()
+                            "cefrLevel",           level.getCefrLevel(),
+                            "languageCode",        curriculum.getLanguageCode(),
+                            "languageDisplayName", curriculum.getDisplayName(),
+                            "script",              "Latin",
+                            "domainCode",          curriculum.getDomainCode(),
+                            "curriculumGoals",     ""
                     ))
                     .build());
         }

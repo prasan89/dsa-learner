@@ -6,7 +6,7 @@ import {
   Home, Code2, Coffee, Layout, Bot, Dumbbell,
   RotateCcw, BarChart2, Users, CreditCard, ChevronRight,
   Zap, LogOut, Lock, Terminal, Cpu, Braces, Globe, MessageSquare,
-  BookOpen, Mic, GraduationCap, FlaskConical,
+  BookOpen, Mic, GraduationCap, FlaskConical, GanttChart,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { authApi } from "@/lib/api/auth";
@@ -62,7 +62,8 @@ const LANG_PROGRESS = [
 ];
 
 const LANG_ADMIN = [
-  { href: "/content-factory/german-a1", label: "Content Factory", icon: FlaskConical },
+  { href: "/content-factory/german-a1",  label: "Content Factory", icon: FlaskConical },
+  { href: "/content-factory/curriculum", label: "Curriculum",       icon: GanttChart   },
 ];
 
 const SECTION_OTHER = [

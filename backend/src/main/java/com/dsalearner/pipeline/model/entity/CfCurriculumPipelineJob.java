@@ -45,7 +45,7 @@ public class CfCurriculumPipelineJob {
     @Builder.Default
     private Map<String, Object> payload = java.util.Map.of();
 
-    @Column(length = 200)
+    @Column(columnDefinition = "text")
     private String resultReference;
 
     @Column(columnDefinition = "text")

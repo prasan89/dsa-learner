@@ -7,15 +7,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
  * Polls the curriculum job queue (separate Redis key from lesson jobs)
  * and executes curriculum pipeline jobs: blueprint generation, level QA, coherence QA.
+ *
+ * All @Modifying / @Transactional operations are delegated to CurriculumJobStore so
+ * Spring AOP proxy intercepts them correctly (self-calls in the same class are not
+ * intercepted).
  */
 @Component
 @RequiredArgsConstructor
@@ -24,6 +26,7 @@ public class CurriculumJobWorker {
 
     static final String QUEUE_KEY = "cf:curriculum:jobs";
 
+    private final CurriculumJobStore jobStore;
     private final CfCurriculumPipelineJobRepository jobRepository;
     private final StringRedisTemplate redisTemplate;
     private final CurriculumBlueprintOrchestrator blueprintOrchestrator;
@@ -43,7 +46,7 @@ public class CurriculumJobWorker {
             return;
         }
 
-        Optional<CfCurriculumPipelineJob> maybeClaimed = claim(jobId);
+        Optional<CfCurriculumPipelineJob> maybeClaimed = jobStore.claim(jobId);
         if (maybeClaimed.isEmpty()) {
             log.info("CurriculumJobWorker: jobId={} claim failed — already owned or completed", jobId);
             return;
@@ -61,39 +64,17 @@ public class CurriculumJobWorker {
             return;
         }
 
-        markSucceeded(jobId, resultRef);
+        jobStore.markSucceeded(jobId, resultRef);
         log.info("CurriculumJobWorker: SUCCEEDED jobId={}", jobId);
     }
 
     private String dispatch(CfCurriculumPipelineJob job) {
         return switch (job.getJobType()) {
-            case "CURRICULUM_BLUEPRINT"  -> blueprintOrchestrator.execute(job);
-            case "CURRICULUM_LEVEL_QA"  -> levelQaOrchestrator.execute(job);
+            case "CURRICULUM_BLUEPRINT"    -> blueprintOrchestrator.execute(job);
+            case "CURRICULUM_LEVEL_QA"     -> levelQaOrchestrator.execute(job);
             case "CURRICULUM_COHERENCE_QA" -> coherenceQaOrchestrator.execute(job);
             default -> throw new IllegalArgumentException("Unknown curriculum job type: " + job.getJobType());
         };
-    }
-
-    @Transactional
-    public Optional<CfCurriculumPipelineJob> claim(UUID jobId) {
-        int claimed = jobRepository.claimJob(jobId);
-        if (claimed == 0) return Optional.empty();
-        CfCurriculumPipelineJob job = jobRepository.findById(jobId).orElse(null);
-        if (job != null) {
-            job.setStartedAt(Instant.now());
-            jobRepository.save(job);
-        }
-        return Optional.ofNullable(job);
-    }
-
-    @Transactional
-    public void markSucceeded(UUID jobId, String resultRef) {
-        jobRepository.markSucceeded(jobId, resultRef);
-    }
-
-    @Transactional
-    public void markFailed(UUID jobId, String error) {
-        jobRepository.markFailed(jobId, abbreviate(error, 2000));
     }
 
     private void handleFailure(CfCurriculumPipelineJob job, Exception e) {
@@ -102,36 +83,21 @@ public class CurriculumJobWorker {
                 job.getId(), job.getAttempt(), e.getMessage(), e);
 
         if (canRetry) {
-            markRetrying(job.getId(), abbreviate(e.getMessage(), 500));
+            jobStore.markRetrying(job.getId(), e.getMessage());
             redisTemplate.opsForList().rightPush(QUEUE_KEY, job.getId().toString());
             log.info("CurriculumJobWorker: jobId={} RETRYING ({}/{})",
                     job.getId(), job.getAttempt(), job.getMaxAttempts());
         } else {
-            markFailed(job.getId(), abbreviate(e.getMessage(), 2000));
+            jobStore.markFailed(job.getId(), e.getMessage());
         }
     }
 
-    @Transactional
-    public void markRetrying(UUID jobId, String error) {
-        jobRepository.markRetrying(jobId, error);
-    }
-
     /**
-     * Enqueue a new curriculum job and push its ID to Redis.
-     * Returns the saved job.
+     * Enqueue a new curriculum job. Delegates to CurriculumJobStore for the
+     * @Transactional boundary.
      */
-    @Transactional
     public CfCurriculumPipelineJob enqueue(CfCurriculumPipelineJob job) {
-        CfCurriculumPipelineJob saved = jobRepository.save(job);
-        redisTemplate.opsForList().rightPush(QUEUE_KEY, saved.getId().toString());
-        log.info("CurriculumJobWorker: enqueued jobId={} curriculumId={} type={}",
-                saved.getId(), saved.getCurriculumId(), saved.getJobType());
-        return saved;
-    }
-
-    private String abbreviate(String msg, int max) {
-        if (msg == null) return "unknown error";
-        return msg.length() > max ? msg.substring(0, max) + "..." : msg;
+        return jobStore.enqueue(job);
     }
 
     /** Expose repository for scheduler queries. */
