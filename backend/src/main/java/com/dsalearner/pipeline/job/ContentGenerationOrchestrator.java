@@ -10,6 +10,7 @@ import com.dsalearner.pipeline.model.entity.CfLessonVersion;
 import com.dsalearner.pipeline.model.entity.CfPipelineJob;
 import com.dsalearner.pipeline.repository.CfLessonRepository;
 import com.dsalearner.pipeline.repository.CfLessonVersionRepository;
+import com.dsalearner.pipeline.service.PipelineJobService;
 import com.dsalearner.pipeline.statemachine.WorkflowOrchestrator;
 import com.dsalearner.pipeline.validation.DeterministicValidator;
 import com.dsalearner.pipeline.validation.ValidationResult;
@@ -46,6 +47,7 @@ public class ContentGenerationOrchestrator {
     private final WorkflowOrchestrator workflowOrchestrator;
     private final CfLessonRepository lessonRepository;
     private final CfLessonVersionRepository lessonVersionRepository;
+    private final PipelineJobService pipelineJobService;
 
     /**
      * Executes content generation for the given job.
@@ -130,6 +132,12 @@ public class ContentGenerationOrchestrator {
                     "agent:validator", null,
                     Map.of("issueCount", validation.issues().size()));
             log.info("ContentGenerationOrchestrator: lessonId={} reached QA_PENDING", lessonId);
+            try {
+                pipelineJobService.submitQaContent(lessonId, version, Map.of(), "orchestrator:content");
+            } catch (Exception e) {
+                log.warn("ContentGenerationOrchestrator: could not auto-submit QA for lessonId={} — {}",
+                        lessonId, e.getMessage());
+            }
         } else {
             workflowOrchestrator.applyContentTransition(
                     lessonId, ContentStatus.VALIDATION_FAILED, "VALIDATION_FAILED",

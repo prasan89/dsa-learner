@@ -3,6 +3,7 @@ package com.dsalearner.pipeline.curriculum.job;
 import com.dsalearner.pipeline.curriculum.service.CurriculumDependencyService;
 import com.dsalearner.pipeline.curriculum.service.CurriculumLevelService;
 import com.dsalearner.pipeline.curriculum.service.CurriculumService;
+import com.dsalearner.pipeline.domain.ContentStatus;
 import com.dsalearner.pipeline.model.entity.CfCurriculum;
 import com.dsalearner.pipeline.model.entity.CfCurriculumLevel;
 import com.dsalearner.pipeline.model.entity.CfCurriculumLessonPlan;
@@ -10,6 +11,7 @@ import com.dsalearner.pipeline.model.entity.CfCurriculumPipelineJob;
 import com.dsalearner.pipeline.repository.CfCurriculumLessonPlanRepository;
 import com.dsalearner.pipeline.repository.CfCurriculumPipelineJobRepository;
 import com.dsalearner.pipeline.repository.CfLessonRepository;
+import com.dsalearner.pipeline.repository.CfPipelineJobRepository;
 import com.dsalearner.pipeline.service.PipelineJobService;
 import com.dsalearner.pipeline.service.PipelineService;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,7 @@ public class CurriculumBatchProcessor {
     private final CfCurriculumLessonPlanRepository lessonPlanRepository;
     private final CfCurriculumPipelineJobRepository jobRepository;
     private final CfLessonRepository lessonRepository;
+    private final CfPipelineJobRepository pipelineJobRepository;
     private final CurriculumService curriculumService;
     private final CurriculumLevelService levelService;
     private final CurriculumDependencyService dependencyService;
@@ -62,6 +65,7 @@ public class CurriculumBatchProcessor {
 
         for (CfCurriculumLevel level : generatingLevels) {
             dispatchBatch(curriculum, level, batchSize);
+            sweepQaPending(curriculum, level);
             checkLevelCompletion(curriculum, level);
         }
 
@@ -146,6 +150,35 @@ public class CurriculumBatchProcessor {
             sb.append("Vocabulary targets: ").append(String.join(", ", plan.getVocabTargets())).append("\n");
         }
         return sb.toString();
+    }
+
+    /**
+     * Sweeps QA_PENDING lessons that have no active QA_CONTENT job and submits one.
+     * Covers lessons that reached QA_PENDING before the auto-submit was added to
+     * ContentGenerationOrchestrator, and acts as a safety net for any future gaps.
+     */
+    private void sweepQaPending(CfCurriculum curriculum, CfCurriculumLevel level) {
+        lessonRepository.findByLanguageCodeAndContentStatus(curriculum.getLanguageCode(), ContentStatus.QA_PENDING)
+                .stream()
+                .filter(l -> {
+                    var plan = lessonPlanRepository.findByLessonId(l.getId());
+                    if (plan.isEmpty() || !level.getId().equals(plan.get().getLevelId())) return false;
+                    boolean activeQa = pipelineJobRepository
+                            .findByLessonIdAndJobTypeAndStatusIn(l.getId(), "QA_CONTENT",
+                                    List.of("QUEUED", "RUNNING"))
+                            .isPresent();
+                    return !activeQa;
+                })
+                .forEach(l -> {
+                    try {
+                        pipelineJobService.submitQaContent(l.getId(), l.getCurrentVersion(), Map.of(),
+                                "batch_scheduler:sweep");
+                        log.info("CurriculumBatchProcessor: submitted QA sweep for lessonId={}", l.getId());
+                    } catch (Exception e) {
+                        log.warn("CurriculumBatchProcessor: QA sweep skip lessonId={} — {}",
+                                l.getId(), e.getMessage());
+                    }
+                });
     }
 
     private void checkLevelCompletion(CfCurriculum curriculum, CfCurriculumLevel level) {
