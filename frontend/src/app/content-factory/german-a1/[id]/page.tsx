@@ -225,19 +225,21 @@ export default function LessonDetailPage() {
   const exercises = (versionData?.exercises as { items?: Exercise[] } | null)?.items ?? [];
   const qaRuns = agentRuns.filter((r) => r.agentType in QA_AGENT_LABELS);
 
-  // Compute QA overall decision from runs
-  const hasQaErrors = qaRuns.some((r) => {
-    const out = r.output as { issues?: Array<{ error: boolean }> } | null;
-    return r.status === "FAILED" || (out?.issues ?? []).some((i) => i.error);
-  });
-  const hasQaWarnings = qaRuns.some((r) => {
-    const out = r.output as { issues?: Array<{ error: boolean }> } | null;
-    return (out?.issues ?? []).some((i) => !i.error);
-  });
+  // Use only the latest run per agent type to avoid old failed attempts poisoning the display
+  const latestQaRuns = Object.values(
+    qaRuns.reduce<Record<string, typeof qaRuns[0]>>((acc, r) => {
+      if (!acc[r.agentType] || r.createdAt > acc[r.agentType].createdAt) acc[r.agentType] = r;
+      return acc;
+    }, {})
+  );
+
+  // Prefer lesson.contentStatus as the authoritative source for QA decision
   const qaDecision =
-    qaRuns.length === 0 ? "—"
-    : hasQaErrors ? "FAIL"
-    : hasQaWarnings ? "PASS_WITH_WARNINGS"
+    lesson.contentStatus === "QA_PASSED" ? "PASS"
+    : lesson.contentStatus === "QA_FAILED" ? "FAIL"
+    : latestQaRuns.length === 0 ? "—"
+    : latestQaRuns.some((r) => r.status === "FAILED" || (r.output as { issues?: Array<{ error: boolean }> } | null)?.issues?.some((i) => i.error)) ? "FAIL"
+    : latestQaRuns.some((r) => (r.output as { issues?: Array<{ error: boolean }> } | null)?.issues?.some((i) => !i.error)) ? "PASS_WITH_WARNINGS"
     : "PASS";
 
   return (
@@ -310,7 +312,7 @@ export default function LessonDetailPage() {
               { label: "Version", value: `v${selectedVersion ?? lesson.currentVersion}` },
               { label: "Parent Version", value: versionData?.parentVersion ? `v${versionData.parentVersion}` : "—" },
               { label: "Revision Count", value: String(lesson.revisionCount) },
-              { label: "Content Status", value: (versionData?.contentStatus ?? lesson.contentStatus).replace(/_/g, " ") },
+              { label: "Content Status", value: lesson.contentStatus.replace(/_/g, " ") },
               { label: "QA Decision", value: qaDecision.replace(/_/g, " ") },
               { label: "Max Revisions", value: String(lesson.maxRevisionAttempts) },
             ].map(({ label, value }) => (
