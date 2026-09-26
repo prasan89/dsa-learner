@@ -1,6 +1,7 @@
 package com.dsalearner.pipeline.service;
 
 import com.dsalearner.exception.ConflictException;
+import com.dsalearner.pipeline.curriculum.service.CurriculumPublishingGateService;
 import com.dsalearner.exception.NotFoundException;
 import com.dsalearner.pipeline.domain.ContentStatus;
 import com.dsalearner.pipeline.domain.DomainRegistry;
@@ -36,10 +37,11 @@ class PipelineServiceTest {
     @Mock WorkflowOrchestrator orchestrator;
     @Mock DeterministicValidator validator;
     @Mock DomainRegistry domainRegistry;
+    @Mock CurriculumPublishingGateService publishingGateService;
 
     private PipelineService service() {
         return new PipelineService(lessonRepo, versionRepo, eventRepo,
-                orchestrator, validator, domainRegistry);
+                orchestrator, validator, domainRegistry, publishingGateService);
     }
 
     @Test

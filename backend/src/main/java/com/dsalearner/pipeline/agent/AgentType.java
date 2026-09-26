@@ -21,6 +21,12 @@ public final class AgentType {
     // Revision
     public static final String REVISION_GENERATOR   = "revision_generator";
 
+    // Curriculum agents (language-agnostic)
+    public static final String CURRICULUM_BLUEPRINT_GENERATOR  = "curriculum_blueprint_generator";
+    public static final String CURRICULUM_BLUEPRINT_VALIDATOR  = "curriculum_blueprint_validator";
+    public static final String CURRICULUM_LEVEL_QA             = "curriculum_level_qa";
+    public static final String CURRICULUM_COHERENCE_QA         = "curriculum_coherence_qa";
+
     // Post-QA
     public static final String EDITOR                = "editor";
     public static final String FINAL_GATE            = "final_gate";

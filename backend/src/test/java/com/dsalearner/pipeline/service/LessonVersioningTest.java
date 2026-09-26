@@ -1,6 +1,7 @@
 package com.dsalearner.pipeline.service;
 
 import com.dsalearner.exception.NotFoundException;
+import com.dsalearner.pipeline.curriculum.service.CurriculumPublishingGateService;
 import com.dsalearner.pipeline.domain.ContentStatus;
 import com.dsalearner.pipeline.exception.FrozenVersionException;
 import com.dsalearner.pipeline.model.entity.CfLesson;
@@ -41,10 +42,11 @@ class LessonVersioningTest {
     @Mock com.dsalearner.pipeline.validation.DeterministicValidator validator;
     @Mock com.dsalearner.pipeline.domain.DomainRegistry domainRegistry;
     @Mock com.dsalearner.pipeline.repository.CfWorkflowEventRepository eventRepo;
+    @Mock CurriculumPublishingGateService publishingGateService;
 
     private PipelineService service() {
         return new PipelineService(lessonRepo, versionRepo, eventRepo,
-                orchestrator, validator, domainRegistry);
+                orchestrator, validator, domainRegistry, publishingGateService);
     }
 
     // ─── Freeze ───────────────────────────────────────────────────────────

@@ -44,6 +44,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/health").permitAll()
                 .requestMatchers("/api/v1/pipeline/health").permitAll()
+                .requestMatchers("/api/v1/curriculum/health").permitAll()
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())

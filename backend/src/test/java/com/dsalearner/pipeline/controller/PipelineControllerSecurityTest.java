@@ -1,6 +1,8 @@
 package com.dsalearner.pipeline.controller;
 
 import com.dsalearner.config.SecurityConfig;
+import com.dsalearner.pipeline.curriculum.service.CurriculumPublishingGateService;
+import com.dsalearner.pipeline.repository.CfLessonVersionRepository;
 import com.dsalearner.pipeline.repository.CfWorkflowEventRepository;
 import com.dsalearner.pipeline.service.AgentRunService;
 import com.dsalearner.pipeline.service.CostLedgerService;
@@ -46,6 +48,8 @@ class PipelineControllerSecurityTest {
     @MockBean CostLedgerService costLedgerService;
     @MockBean CfWorkflowEventRepository workflowEventRepository;
     @MockBean PipelineJobService pipelineJobService;
+    @MockBean CfLessonVersionRepository lessonVersionRepository;
+    @MockBean CurriculumPublishingGateService curriculumPublishingGateService;
 
     // Mocked dependencies of JwtAuthFilter — real filter stays active.
     @MockBean JwtService jwtService;

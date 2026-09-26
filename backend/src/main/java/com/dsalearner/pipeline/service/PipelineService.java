@@ -1,6 +1,7 @@
 package com.dsalearner.pipeline.service;
 
 import com.dsalearner.exception.NotFoundException;
+import com.dsalearner.pipeline.curriculum.service.CurriculumPublishingGateService;
 import com.dsalearner.pipeline.domain.ContentStatus;
 import com.dsalearner.pipeline.domain.DomainRegistry;
 import com.dsalearner.pipeline.domain.LanguageProfile;
@@ -41,6 +42,7 @@ public class PipelineService {
     private final WorkflowOrchestrator orchestrator;
     private final DeterministicValidator validator;
     private final DomainRegistry domainRegistry;
+    private final CurriculumPublishingGateService publishingGateService;
 
     // Used only for deep-copying JSONB map fields during version creation.
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -158,6 +160,7 @@ public class PipelineService {
 
     @Transactional
     public CfLesson approve(UUID lessonId, String actor) {
+        publishingGateService.assertPublishGateOpen(lessonId);
         return orchestrator.applyContentTransition(lessonId, ContentStatus.APPROVED,
                 "APPROVE", actor, null, null);
     }
