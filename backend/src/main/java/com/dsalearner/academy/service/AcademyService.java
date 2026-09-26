@@ -277,8 +277,28 @@ public class AcademyService {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    // Maps human-readable route names (e.g. "german") to ISO 639-1 codes (e.g. "de")
+    private static final Map<String, String> LANGUAGE_NAME_TO_CODE = Map.of(
+            "german", "de",
+            "french", "fr",
+            "spanish", "es",
+            "korean", "ko",
+            "japanese", "ja",
+            "chinese", "zh",
+            "italian", "it",
+            "portuguese", "pt"
+    );
+
     private CfCurriculum resolveCurriculum(String languageCode) {
+        // Try exact match first (handles ISO codes like "de" directly)
         List<CfCurriculum> curricula = curriculumRepo.findByLanguageCode(languageCode);
+        if (curricula.isEmpty()) {
+            // Fall back to name→code mapping for human-readable route params like "german"
+            String isoCode = LANGUAGE_NAME_TO_CODE.get(languageCode.toLowerCase());
+            if (isoCode != null) {
+                curricula = curriculumRepo.findByLanguageCode(isoCode);
+            }
+        }
         return curricula.stream()
                 .filter(c -> !"ARCHIVED".equals(c.getCurriculumStatus()))
                 .findFirst()
