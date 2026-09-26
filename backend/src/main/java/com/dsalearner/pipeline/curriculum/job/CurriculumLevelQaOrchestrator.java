@@ -34,6 +34,7 @@ public class CurriculumLevelQaOrchestrator {
     private final PromptRegistry promptRegistry;
     private final ModelRouter modelRouter;
     private final CurriculumLevelService levelService;
+    private final CurriculumWorkflowOrchestrator orchestrator;
     private final CfCurriculumLevelRepository levelRepository;
     private final CfCurriculumLessonPlanRepository lessonPlanRepository;
 
@@ -76,6 +77,9 @@ public class CurriculumLevelQaOrchestrator {
         CurriculumQaResult result = output.output();
         boolean passed = result != null && result.passed();
 
+        // State machine requires GENERATION_IN_PROGRESS → LEVEL_QA_PENDING → LEVEL_QA_PASSED/FAILED
+        orchestrator.applyLevelTransition(levelId, "LEVEL_QA_PENDING",
+                "level_qa_started", "system", null, null);
         levelService.applyQaResult(levelId, passed, runId, "system");
         log.info("Level QA for {} {} — decision={}", languageCode, level.getCefrLevel(),
                 result != null ? result.decision() : "null");
