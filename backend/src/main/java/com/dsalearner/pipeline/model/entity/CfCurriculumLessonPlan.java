@@ -70,6 +70,9 @@ public class CfCurriculumLessonPlan {
 
     private UUID lessonId;
 
+    @Column(length = 200)
+    private String unitDisplayName;
+
     @Column(nullable = false)
     @Builder.Default
     private int generationAttempt = 0;

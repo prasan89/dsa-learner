@@ -98,6 +98,27 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(409, "Frozen version", ex.getMessage(), Instant.now()));
     }
 
+    @ExceptionHandler(com.dsalearner.academy.exception.LessonNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleLessonNotFound(
+            com.dsalearner.academy.exception.LessonNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(404, "Not found", ex.getMessage(), Instant.now()));
+    }
+
+    @ExceptionHandler(com.dsalearner.academy.exception.LevelLockedException.class)
+    public ResponseEntity<ErrorResponse> handleLevelLocked(
+            com.dsalearner.academy.exception.LevelLockedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse(403, "Level locked", ex.getMessage(), Instant.now()));
+    }
+
+    @ExceptionHandler(com.dsalearner.academy.exception.IneligibleLessonException.class)
+    public ResponseEntity<ErrorResponse> handleIneligibleLesson(
+            com.dsalearner.academy.exception.IneligibleLessonException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(new ErrorResponse(422, "Ineligible lesson", ex.getMessage(), Instant.now()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
