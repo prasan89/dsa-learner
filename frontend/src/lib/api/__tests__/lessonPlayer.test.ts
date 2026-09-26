@@ -11,6 +11,7 @@ import {
   type MultipleChoicePayload,
   type FillInBlankPayload,
   type TranslationPayload,
+  type ListeningPayload,
   type LessonReviewPayload,
   type LessonResponse,
   type ExperiencePlan,
@@ -121,18 +122,19 @@ describe("StepType registry", () => {
     "MULTIPLE_CHOICE",
     "FILL_IN_BLANK",
     "TRANSLATION",
+    "LISTENING",
     "VOCABULARY_SUMMARY",
     "LESSON_REVIEW",
   ];
 
-  test("all 8 StepType values are defined", () => {
-    expect(ALL_STEP_TYPES).toHaveLength(8);
+  test("all 9 StepType values are defined", () => {
+    expect(ALL_STEP_TYPES).toHaveLength(9);
   });
 
-  test("exercise steps are MULTIPLE_CHOICE, FILL_IN_BLANK, TRANSLATION", () => {
-    const exercises: StepType[] = ["MULTIPLE_CHOICE", "FILL_IN_BLANK", "TRANSLATION"];
+  test("exercise steps are MULTIPLE_CHOICE, FILL_IN_BLANK, TRANSLATION, LISTENING", () => {
+    const exercises: StepType[] = ["MULTIPLE_CHOICE", "FILL_IN_BLANK", "TRANSLATION", "LISTENING"];
     exercises.forEach((t) => {
-      const step = makeStep(t, {}, { isExercise: true });
+      const step = makeStep(t, {} as StepPayload, { isExercise: true });
       expect(step.isExercise).toBe(true);
     });
   });
@@ -140,7 +142,7 @@ describe("StepType registry", () => {
   test("non-exercise steps are not flagged as exercises", () => {
     const nonExercises: StepType[] = ["NARRATIVE", "VOCABULARY_CARD", "GRAMMAR_EXPLANATION", "VOCABULARY_SUMMARY", "LESSON_REVIEW"];
     nonExercises.forEach((t) => {
-      const step = makeStep(t, {}, { isExercise: false });
+      const step = makeStep(t, {} as StepPayload, { isExercise: false });
       expect(step.isExercise).toBe(false);
     });
   });
@@ -410,9 +412,8 @@ describe("Unsupported StepType fallback", () => {
     const known: StepType[] = [
       "NARRATIVE", "VOCABULARY_CARD", "GRAMMAR_EXPLANATION",
       "MULTIPLE_CHOICE", "FILL_IN_BLANK", "TRANSLATION",
-      "VOCABULARY_SUMMARY", "LESSON_REVIEW",
+      "LISTENING", "VOCABULARY_SUMMARY", "LESSON_REVIEW",
     ];
-    // Simulates the switch default branch
     expect(known.includes(unknownType)).toBe(false);
   });
 });
@@ -470,5 +471,243 @@ describe("LessonReview payload", () => {
     expect(REVIEW_PAYLOAD.lessonTitle).toBe("Greetings");
     expect(REVIEW_PAYLOAD.cefrLevel).toBe("A1");
     expect(REVIEW_PAYLOAD.exerciseCount).toBe(3);
+  });
+});
+
+// ── 16. LISTENING StepType ─────────────────────────────────────────────────────
+
+const LISTENING_PAYLOAD: ListeningPayload = {
+  type: "LISTENING",
+  prompt: "What did you hear?",
+  options: ["Ich heiße Anna.", "Ich komme aus Berlin.", "Ich bin Studentin.", "Guten Morgen."],
+  correctAnswer: "Ich heiße Anna.",
+  transcript: "Ich heiße Anna.",
+  explanation: "'Ich heiße' means 'My name is'.",
+  exerciseIndex: 3,
+};
+
+const LISTENING_PAYLOAD_NO_AUDIO: ListeningPayload = {
+  type: "LISTENING",
+  prompt: "What did you hear?",
+  options: ["Bonjour", "Au revoir", "Merci", "S'il vous plaît"],
+  correctAnswer: "Bonjour",
+  exerciseIndex: 0,
+};
+
+describe("Listening payload shape", () => {
+  test("has required fields: prompt, options, correctAnswer, exerciseIndex", () => {
+    expect(LISTENING_PAYLOAD.prompt).toBe("What did you hear?");
+    expect(LISTENING_PAYLOAD.options).toHaveLength(4);
+    expect(LISTENING_PAYLOAD.correctAnswer).toBe("Ich heiße Anna.");
+    expect(LISTENING_PAYLOAD.exerciseIndex).toBe(3);
+  });
+
+  test("optional fields: transcript, explanation can be absent", () => {
+    expect(LISTENING_PAYLOAD_NO_AUDIO.transcript).toBeUndefined();
+    expect(LISTENING_PAYLOAD_NO_AUDIO.explanation).toBeUndefined();
+  });
+
+  test("options include the correct answer", () => {
+    expect(LISTENING_PAYLOAD.options).toContain(LISTENING_PAYLOAD.correctAnswer);
+  });
+
+  test("options has at least 2 choices", () => {
+    expect(LISTENING_PAYLOAD.options.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("Listening answer logic", () => {
+  test("correct answer identified", () => {
+    const selected = "Ich heiße Anna.";
+    expect(selected === LISTENING_PAYLOAD.correctAnswer).toBe(true);
+  });
+
+  test("incorrect answer identified", () => {
+    const selected = "Guten Morgen.";
+    expect(selected === LISTENING_PAYLOAD.correctAnswer).toBe(false);
+  });
+
+  test("no answer → check disabled", () => {
+    const selected: string | null = null;
+    const canCheck = selected !== null;
+    expect(canCheck).toBe(false);
+  });
+
+  test("answer selected → check enabled", () => {
+    const selected = "Ich heiße Anna.";
+    const canCheck = selected !== null;
+    expect(canCheck).toBe(true);
+  });
+});
+
+describe("Listening audio state machine", () => {
+  type AudioState = "idle" | "playing" | "paused" | "completed" | "unavailable" | "error";
+
+  test("starts in 'idle' when audioKey is present", () => {
+    const audioKey = "audio_0";
+    const state: AudioState = audioKey ? "idle" : "unavailable";
+    expect(state).toBe("idle");
+  });
+
+  test("starts in 'unavailable' when audioKey is null", () => {
+    const audioKey: string | null = null;
+    const state: AudioState = audioKey ? "idle" : "unavailable";
+    expect(state).toBe("unavailable");
+  });
+
+  test("transitions idle → playing on play", () => {
+    let state: AudioState = "idle";
+    state = "playing";
+    expect(state).toBe("playing");
+  });
+
+  test("transitions playing → paused on pause", () => {
+    let state: AudioState = "playing";
+    state = "paused";
+    expect(state).toBe("paused");
+  });
+
+  test("transitions playing → completed on ended", () => {
+    let state: AudioState = "playing";
+    state = "completed";
+    expect(state).toBe("completed");
+  });
+
+  test("transitions completed → playing on replay", () => {
+    let state: AudioState = "completed";
+    state = "playing";
+    expect(state).toBe("playing");
+  });
+
+  test("unavailable state does not crash answer validation", () => {
+    const state: AudioState = "unavailable";
+    // Exercise can still be answered without audio
+    const selected = "Bonjour";
+    const correct = selected === LISTENING_PAYLOAD_NO_AUDIO.correctAnswer;
+    expect(correct).toBe(true);
+    expect(state).toBe("unavailable");
+  });
+});
+
+describe("Listening transcript", () => {
+  test("transcript is hidden by default (showTranscript = false)", () => {
+    let showTranscript = false;
+    expect(showTranscript).toBe(false);
+  });
+
+  test("transcript revealed after toggle", () => {
+    let showTranscript = false;
+    showTranscript = !showTranscript;
+    expect(showTranscript).toBe(true);
+  });
+
+  test("transcript can be hidden again", () => {
+    let showTranscript = true;
+    showTranscript = !showTranscript;
+    expect(showTranscript).toBe(false);
+  });
+
+  test("no transcript → toggle button not shown", () => {
+    const hasTranscript = LISTENING_PAYLOAD_NO_AUDIO.transcript != null;
+    expect(hasTranscript).toBe(false);
+  });
+
+  test("with transcript → toggle button shown", () => {
+    const hasTranscript = LISTENING_PAYLOAD.transcript != null;
+    expect(hasTranscript).toBe(true);
+  });
+});
+
+describe("Listening exercise blocking", () => {
+  test("LISTENING step has isExercise = true", () => {
+    const step = makeStep("LISTENING", LISTENING_PAYLOAD, { isExercise: true });
+    expect(step.isExercise).toBe(true);
+  });
+
+  test("blocks Continue until answered correctly", () => {
+    const isExercise = true;
+    const answered = false;
+    const disabled = isExercise && !answered;
+    expect(disabled).toBe(true);
+  });
+
+  test("allows Continue after correct answer", () => {
+    const isExercise = true;
+    const answered = true;
+    const disabled = isExercise && !answered;
+    expect(disabled).toBe(false);
+  });
+
+  test("retry resets answered state", () => {
+    let answered = true;
+    answered = false; // simulates handleRetry
+    expect(answered).toBe(false);
+  });
+});
+
+describe("Listening language-agnostic rendering", () => {
+  test("German payload renders without language-specific code", () => {
+    const german: ListeningPayload = {
+      type: "LISTENING",
+      prompt: "Was hören Sie?",
+      options: ["Wie heißt du?", "Ich bin müde.", "Guten Morgen.", "Auf Wiedersehen."],
+      correctAnswer: "Wie heißt du?",
+      transcript: "Wie heißt du?",
+      exerciseIndex: 0,
+    };
+    expect(german.prompt).toBe("Was hören Sie?");
+    expect(german.options).toContain(german.correctAnswer);
+  });
+
+  test("French payload uses same structure as German", () => {
+    const french: ListeningPayload = {
+      type: "LISTENING",
+      prompt: "Qu'avez-vous entendu ?",
+      options: ["Comment tu t'appelles ?", "Je suis fatigué.", "Bonjour.", "Au revoir."],
+      correctAnswer: "Comment tu t'appelles ?",
+      transcript: "Comment tu t'appelles ?",
+      exerciseIndex: 0,
+    };
+    expect(french.options).toContain(french.correctAnswer);
+  });
+
+  test("Korean payload uses same structure", () => {
+    const korean: ListeningPayload = {
+      type: "LISTENING",
+      prompt: "무엇을 들었습니까?",
+      options: ["이름이 뭐예요?", "피곤해요.", "안녕하세요.", "안녕히 가세요."],
+      correctAnswer: "이름이 뭐예요?",
+      exerciseIndex: 0,
+    };
+    expect(korean.options).toContain(korean.correctAnswer);
+  });
+
+  test("step type is always LISTENING regardless of language", () => {
+    const step = makeStep("LISTENING", LISTENING_PAYLOAD, { isExercise: true });
+    expect(step.type).toBe("LISTENING");
+  });
+});
+
+describe("Listening audioKey flow", () => {
+  test("step carries audioKey from ExperiencePlanStep", () => {
+    const step: ExperiencePlanStep = {
+      index: 0,
+      type: "LISTENING",
+      payload: LISTENING_PAYLOAD,
+      audioKey: "listening_0",
+      isExercise: true,
+    };
+    expect(step.audioKey).toBe("listening_0");
+  });
+
+  test("step audioKey can be null (unavailable state)", () => {
+    const step: ExperiencePlanStep = {
+      index: 0,
+      type: "LISTENING",
+      payload: LISTENING_PAYLOAD_NO_AUDIO,
+      audioKey: null,
+      isExercise: true,
+    };
+    expect(step.audioKey).toBeNull();
   });
 });

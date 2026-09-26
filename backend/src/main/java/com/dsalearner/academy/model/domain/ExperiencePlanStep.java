@@ -38,6 +38,7 @@ public record ExperiencePlanStep(
     public boolean isExercise() {
         return type == StepType.MULTIPLE_CHOICE
                 || type == StepType.FILL_IN_BLANK
-                || type == StepType.TRANSLATION;
+                || type == StepType.TRANSLATION
+                || type == StepType.LISTENING;
     }
 }

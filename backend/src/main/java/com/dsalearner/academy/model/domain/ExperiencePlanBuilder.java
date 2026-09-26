@@ -195,6 +195,7 @@ public class ExperiencePlanBuilder {
             case "MULTIPLE_CHOICE" -> StepType.MULTIPLE_CHOICE;
             case "FILL_IN_BLANK"   -> StepType.FILL_IN_BLANK;
             case "TRANSLATION"     -> StepType.TRANSLATION;
+            case "LISTENING"       -> StepType.LISTENING;
             default -> StepType.MULTIPLE_CHOICE;
         };
     }

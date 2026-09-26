@@ -17,6 +17,8 @@ public enum StepType {
     FILL_IN_BLANK,
     /** Translation exercise (L1 → L2 or L2 → L1). */
     TRANSLATION,
+    /** Listening comprehension exercise — play audio, answer a question. */
+    LISTENING,
     /** A mid-lesson summary card consolidating vocabulary introduced so far. */
     VOCABULARY_SUMMARY,
     /** End-of-lesson review card with score and recommendations. */

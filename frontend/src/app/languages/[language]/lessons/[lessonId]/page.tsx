@@ -10,6 +10,10 @@ import {
   XCircle,
   ChevronRight,
   BookOpen,
+  Volume2,
+  VolumeX,
+  RotateCcw,
+  Pause,
 } from "lucide-react";
 import {
   academyApi,
@@ -21,6 +25,7 @@ import {
   type MultipleChoicePayload,
   type FillInBlankPayload,
   type TranslationPayload,
+  type ListeningPayload,
   type LessonReviewPayload,
 } from "@/lib/api/academy";
 import { cn } from "@/lib/utils";
@@ -572,6 +577,233 @@ function LessonReviewStep({
   );
 }
 
+// ── Audio playback states ─────────────────────────────────────────────────────
+type AudioState = "idle" | "playing" | "paused" | "completed" | "unavailable" | "error";
+
+// LISTENING
+function ListeningStep({
+  audioKey,
+  payload,
+  onAnswer,
+}: {
+  audioKey: string | null;
+  payload: ListeningPayload;
+  onAnswer: (correct: boolean) => void;
+}) {
+  const [audioState, setAudioState] = useState<AudioState>(audioKey ? "idle" : "unavailable");
+  const [selected, setSelected] = useState<string | null>(null);
+  const [answerState, setAnswerState] = useState<"idle" | "correct" | "incorrect">("idle");
+  const [showTranscript, setShowTranscript] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // audioKey resolves to a URL via a future Audio Service; for now no URL → unavailable
+  const audioUrl: string | null = null;
+
+  useEffect(() => {
+    if (!audioKey || !audioUrl) {
+      setAudioState("unavailable");
+      return;
+    }
+    const el = new Audio(audioUrl);
+    el.onended = () => setAudioState("completed");
+    el.onerror = () => setAudioState("error");
+    audioRef.current = el;
+    return () => {
+      el.pause();
+      audioRef.current = null;
+    };
+  }, [audioKey, audioUrl]);
+
+  function handlePlay() {
+    if (!audioRef.current) return;
+    audioRef.current.play().catch(() => setAudioState("error"));
+    setAudioState("playing");
+  }
+
+  function handlePause() {
+    if (!audioRef.current) return;
+    audioRef.current.pause();
+    setAudioState("paused");
+  }
+
+  function handleReplay() {
+    if (!audioRef.current) return;
+    audioRef.current.currentTime = 0;
+    audioRef.current.play().catch(() => setAudioState("error"));
+    setAudioState("playing");
+  }
+
+  function handleCheck() {
+    if (!selected || answerState !== "idle") return;
+    const correct = selected === payload.correctAnswer;
+    setAnswerState(correct ? "correct" : "incorrect");
+    onAnswer(correct);
+  }
+
+  function handleRetry() {
+    setSelected(null);
+    setAnswerState("idle");
+    onAnswer(false);
+  }
+
+  return (
+    <div className="space-y-5 py-4">
+      <p className="text-xs font-semibold text-brand-600 uppercase tracking-wide">Listening</p>
+
+      {/* Audio player */}
+      <div className="rounded-2xl border border-gray-100 bg-gray-50 px-6 py-6 flex flex-col items-center gap-4">
+        {audioState === "unavailable" ? (
+          <div className="flex flex-col items-center gap-2 text-center">
+            <VolumeX size={28} className="text-gray-300" aria-hidden="true" />
+            <p className="text-sm text-gray-500 font-medium">Audio is not available yet.</p>
+            <p className="text-xs text-gray-400">You can still answer the question below.</p>
+          </div>
+        ) : audioState === "error" ? (
+          <div className="flex flex-col items-center gap-2 text-center">
+            <VolumeX size={28} className="text-red-300" aria-hidden="true" />
+            <p className="text-sm text-red-500 font-medium">Audio failed to load.</p>
+          </div>
+        ) : (
+          <>
+            <div className="w-16 h-16 rounded-full bg-brand-100 flex items-center justify-center">
+              <Volume2 size={28} className="text-brand-600" aria-hidden="true" />
+            </div>
+
+            {audioState === "idle" && (
+              <button
+                onClick={handlePlay}
+                aria-label="Play audio"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-600 text-white font-semibold text-sm hover:bg-brand-700 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+              >
+                <Volume2 size={16} aria-hidden="true" />
+                Play
+              </button>
+            )}
+
+            {audioState === "playing" && (
+              <button
+                onClick={handlePause}
+                aria-label="Pause audio"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-600 text-white font-semibold text-sm hover:bg-brand-700 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+              >
+                <Pause size={16} aria-hidden="true" />
+                Playing…
+              </button>
+            )}
+
+            {audioState === "paused" && (
+              <button
+                onClick={handlePlay}
+                aria-label="Resume audio"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-600 text-white font-semibold text-sm hover:bg-brand-700 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+              >
+                <Volume2 size={16} aria-hidden="true" />
+                Resume
+              </button>
+            )}
+
+            {audioState === "completed" && (
+              <button
+                onClick={handleReplay}
+                aria-label="Replay audio"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl border border-brand-300 text-brand-700 font-semibold text-sm hover:bg-brand-50 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+              >
+                <RotateCcw size={14} aria-hidden="true" />
+                Replay
+              </button>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Question */}
+      <p className="text-base font-semibold text-gray-900">{payload.prompt}</p>
+
+      {/* Options */}
+      <fieldset className="space-y-3" aria-label="Answer choices">
+        <legend className="sr-only">Select an answer</legend>
+        {payload.options.map((option) => (
+          <label
+            key={option}
+            className={cn(
+              "flex items-center gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-colors",
+              answerState === "idle" && selected === option && "border-brand-500 bg-brand-50 text-brand-800",
+              answerState === "idle" && selected !== option && "border-gray-200 hover:border-brand-300 hover:bg-brand-50/50",
+              answerState !== "idle" && "cursor-default",
+              answerState === "correct" && option === payload.correctAnswer && "border-green-400 bg-green-50 text-green-800",
+              answerState === "incorrect" && option === selected && selected !== payload.correctAnswer && "border-red-300 bg-red-50 text-red-700",
+              answerState === "incorrect" && option !== selected && option === payload.correctAnswer && "border-green-300 bg-green-50/60 text-green-700",
+            )}
+          >
+            <input
+              type="radio"
+              name={`listening-${payload.exerciseIndex}`}
+              value={option}
+              checked={selected === option}
+              onChange={() => answerState === "idle" && setSelected(option)}
+              disabled={answerState !== "idle"}
+              className="accent-brand-600 w-4 h-4 shrink-0"
+            />
+            <span className="text-sm font-medium">{option}</span>
+          </label>
+        ))}
+      </fieldset>
+
+      {/* Optional transcript */}
+      {payload.transcript && (
+        <button
+          onClick={() => setShowTranscript((v) => !v)}
+          aria-expanded={showTranscript}
+          className="text-sm text-brand-600 underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+        >
+          {showTranscript ? "Hide transcript" : "Show transcript"}
+        </button>
+      )}
+      {showTranscript && payload.transcript && (
+        <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" aria-live="polite">
+          <p className="text-sm text-gray-700 italic">&ldquo;{payload.transcript}&rdquo;</p>
+        </div>
+      )}
+
+      {/* Check / feedback */}
+      {answerState === "idle" && (
+        <button
+          onClick={handleCheck}
+          disabled={!selected}
+          className="w-full py-3 rounded-xl bg-brand-600 text-white font-semibold text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-brand-700 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+        >
+          Check answer
+        </button>
+      )}
+
+      {answerState === "correct" && (
+        <div className="rounded-xl border border-green-200 bg-green-50 px-5 py-4" role="alert" aria-live="polite">
+          <p className="flex items-center gap-2 font-semibold text-green-800">
+            <CheckCircle2 size={16} aria-hidden="true" /> Correct!
+          </p>
+          {payload.explanation && (
+            <p className="text-xs text-green-700 mt-1">{payload.explanation}</p>
+          )}
+        </div>
+      )}
+
+      {answerState === "incorrect" && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 space-y-2" role="alert" aria-live="polite">
+          <p className="flex items-center gap-2 font-semibold text-red-700">
+            <XCircle size={16} aria-hidden="true" /> Not quite — try again.
+          </p>
+          <button
+            onClick={handleRetry}
+            className="text-sm font-semibold text-red-700 underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // UNSUPPORTED fallback
 function UnsupportedStep({ type }: { type: StepType }) {
   return (
@@ -627,6 +859,16 @@ function StepRenderer({ step, vocabCount, language, onAnswered, onComplete, comp
         <TranslationStep
           key={step.index}
           payload={p as unknown as TranslationPayload}
+          onAnswer={onAnswered}
+        />
+      );
+
+    case "LISTENING":
+      return (
+        <ListeningStep
+          key={step.index}
+          audioKey={step.audioKey}
+          payload={p as unknown as ListeningPayload}
           onAnswer={onAnswered}
         />
       );

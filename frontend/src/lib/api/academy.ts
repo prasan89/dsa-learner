@@ -10,6 +10,7 @@ export type StepType =
   | "MULTIPLE_CHOICE"
   | "FILL_IN_BLANK"
   | "TRANSLATION"
+  | "LISTENING"
   | "VOCABULARY_SUMMARY"
   | "LESSON_REVIEW";
 
@@ -53,6 +54,16 @@ export interface TranslationPayload {
   exerciseIndex: number;
 }
 
+export interface ListeningPayload {
+  type: "LISTENING";
+  prompt: string;
+  options: string[];
+  correctAnswer: string;
+  transcript?: string | null;
+  explanation?: string | null;
+  exerciseIndex: number;
+}
+
 export interface NarrativePayload {
   sectionIndex: number;
   [key: string]: unknown;
@@ -75,6 +86,7 @@ export type StepPayload =
   | MultipleChoicePayload
   | FillInBlankPayload
   | TranslationPayload
+  | ListeningPayload
   | NarrativePayload
   | GrammarExplanationPayload
   | LessonReviewPayload
