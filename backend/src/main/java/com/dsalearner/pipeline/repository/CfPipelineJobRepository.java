@@ -40,4 +40,22 @@ public interface CfPipelineJobRepository extends JpaRepository<CfPipelineJob, UU
      */
     @Query("SELECT j FROM CfPipelineJob j WHERE j.status = 'QUEUED' AND j.createdAt < :threshold")
     List<CfPipelineJob> findStaleQueuedJobs(@Param("threshold") Instant threshold);
+
+    /**
+     * Finds jobs stuck in RUNNING state past the timeout threshold.
+     * These are jobs whose worker thread died (OOM, timeout, crash) without
+     * marking the job FAILED/RETRYING — they will never complete on their own.
+     */
+    @Modifying
+    @Query("""
+            UPDATE CfPipelineJob j
+            SET j.status = 'QUEUED',
+                j.attempt = j.attempt - 1,
+                j.startedAt = null,
+                j.error = 'recovered: stuck in RUNNING past timeout'
+            WHERE j.status = 'RUNNING'
+              AND j.startedAt < :threshold
+              AND j.attempt < j.maxAttempts
+            """)
+    int resetStuckRunningJobs(@Param("threshold") Instant threshold);
 }
