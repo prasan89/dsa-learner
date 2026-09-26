@@ -50,6 +50,7 @@ class ContentGenerationOrchestratorTest {
     @Mock WorkflowOrchestrator workflowOrchestrator;
     @Mock CfLessonRepository lessonRepository;
     @Mock CfLessonVersionRepository lessonVersionRepository;
+    @Mock com.dsalearner.pipeline.service.PipelineJobService pipelineJobService;
 
     ContentGenerationOrchestrator orchestrator;
 
@@ -60,7 +61,8 @@ class ContentGenerationOrchestratorTest {
     void setup() {
         orchestrator = new ContentGenerationOrchestrator(
                 agentRunner, contentAgent, promptRegistry, modelRouter, domainRegistry,
-                validator, workflowOrchestrator, lessonRepository, lessonVersionRepository);
+                validator, workflowOrchestrator, lessonRepository, lessonVersionRepository,
+                pipelineJobService);
 
         when(contentAgent.agentType()).thenReturn(AgentType.CONTENT_GENERATOR);
 
@@ -274,7 +276,8 @@ class ContentGenerationOrchestratorTest {
                 new SchemaRequiredFieldsRule(), new CefrEnumRule(), new WordCountRule()));
         ContentGenerationOrchestrator realOrch = new ContentGenerationOrchestrator(
                 agentRunner, contentAgent, promptRegistry, modelRouter, domainRegistry,
-                realValidator, workflowOrchestrator, lessonRepository, lessonVersionRepository);
+                realValidator, workflowOrchestrator, lessonRepository, lessonVersionRepository,
+                pipelineJobService);
 
         String resultRef = realOrch.execute(buildJob());
         assertNotNull(resultRef);
