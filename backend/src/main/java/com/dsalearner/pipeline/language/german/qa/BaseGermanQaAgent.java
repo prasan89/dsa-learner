@@ -127,9 +127,11 @@ public abstract class BaseGermanQaAgent implements Agent<QaInput, QaResult> {
             return new QaResult(overallAssessment, issues, new ArrayList<>(recommendations));
 
         } catch (Exception e) {
-            throw new IllegalStateException(
+            // Treat parse failures as retryable — they typically come from truncated/partial
+            // LLM responses caused by upstream timeouts, not deterministic bad input.
+            throw new com.dsalearner.pipeline.provider.LlmProviderException(
                     agentType() + ": failed to parse QA response for lessonId=" + lessonId
-                    + ". Snippet: " + raw.substring(0, Math.min(200, raw.length())), e);
+                    + ". Snippet: " + raw.substring(0, Math.min(200, raw.length())), true, e);
         }
     }
 
