@@ -64,12 +64,33 @@ public class CurriculumBatchProcessor {
                 .toList();
 
         for (CfCurriculumLevel level : generatingLevels) {
+            syncPlanStatuses(level);
             dispatchBatch(curriculum, level, batchSize);
             sweepQaPending(curriculum, level);
             checkLevelCompletion(curriculum, level);
         }
 
         checkCurriculumCompletion(curriculum);
+    }
+
+    /**
+     * Syncs plan_status from the lesson's content_status for all GENERATING plans.
+     * QaOrchestrator updates cf_lessons.content_status but has no curriculum context,
+     * so this bridge keeps plan_status in step — required for isLevelGenerationComplete.
+     */
+    private void syncPlanStatuses(CfCurriculumLevel level) {
+        lessonPlanRepository.findByLevelIdAndPlanStatusOrderByPosition(level.getId(), "GENERATING")
+                .forEach(plan -> {
+                    if (plan.getLessonId() == null) return;
+                    lessonRepository.findById(plan.getLessonId()).ifPresent(lesson -> {
+                        String cs = lesson.getContentStatus().name();
+                        if ("QA_PASSED".equals(cs) || "APPROVED".equals(cs) || "PUBLISHED".equals(cs)) {
+                            lessonPlanRepository.compareAndSetStatus(plan.getId(), "GENERATING", cs);
+                        } else if ("QA_FAILED".equals(cs) || "REVISION_FAILED".equals(cs)) {
+                            lessonPlanRepository.compareAndSetStatus(plan.getId(), "GENERATING", "FAILED");
+                        }
+                    });
+                });
     }
 
     private void dispatchBatch(CfCurriculum curriculum, CfCurriculumLevel level, int batchSize) {
