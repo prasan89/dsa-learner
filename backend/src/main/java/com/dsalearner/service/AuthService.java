@@ -14,6 +14,7 @@ import com.dsalearner.repository.RefreshTokenRepository;
 import com.dsalearner.repository.UserRepository;
 import com.dsalearner.security.JwtService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbc;
 
     @Transactional
     public AuthResponse register(RegisterRequest req) {
@@ -42,6 +44,10 @@ public class AuthService {
                 .passwordHash(passwordEncoder.encode(req.password()))
                 .build();
         userRepository.save(user);
+        jdbc.update(
+            "INSERT INTO user_learning_domains (user_id, domain_code, is_active) VALUES (?::uuid, 'dsa', true) ON CONFLICT DO NOTHING",
+            user.getId().toString()
+        );
 
         return issueTokens(user);
     }
