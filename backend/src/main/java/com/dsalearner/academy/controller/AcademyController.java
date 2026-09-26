@@ -3,6 +3,7 @@ package com.dsalearner.academy.controller;
 import com.dsalearner.academy.dto.*;
 import com.dsalearner.academy.security.CurrentUserProvider;
 import com.dsalearner.academy.service.AcademyService;
+import com.dsalearner.security.DomainAuthorizationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,11 +19,13 @@ public class AcademyController {
 
     private final AcademyService academyService;
     private final CurrentUserProvider currentUserProvider;
+    private final DomainAuthorizationService domainAuthService;
 
     @GetMapping("/curriculum")
     public ResponseEntity<AcademyCurriculumResponse> getCurriculum(
             @PathVariable String language,
             Authentication authentication) {
+        domainAuthService.requireDomain(authentication, "language");
         UUID userId = currentUserProvider.getUserId(authentication);
         return ResponseEntity.ok(academyService.getCurriculum(language, userId));
     }
@@ -32,6 +35,7 @@ public class AcademyController {
             @PathVariable String language,
             @PathVariable UUID lessonId,
             Authentication authentication) {
+        domainAuthService.requireDomain(authentication, "language");
         UUID userId = currentUserProvider.getUserId(authentication);
         return ResponseEntity.ok(academyService.getLesson(language, lessonId, userId));
     }
@@ -42,6 +46,7 @@ public class AcademyController {
             @PathVariable UUID lessonId,
             @Valid @RequestBody UpdateStepRequest request,
             Authentication authentication) {
+        domainAuthService.requireDomain(authentication, "language");
         UUID userId = currentUserProvider.getUserId(authentication);
         return ResponseEntity.ok(academyService.updateStepProgress(language, lessonId, userId, request.stepIndex()));
     }
@@ -52,6 +57,7 @@ public class AcademyController {
             @PathVariable UUID lessonId,
             @Valid @RequestBody CompleteLessonRequest request,
             Authentication authentication) {
+        domainAuthService.requireDomain(authentication, "language");
         UUID userId = currentUserProvider.getUserId(authentication);
         return ResponseEntity.ok(academyService.completeLesson(language, lessonId, userId, request.score()));
     }
@@ -60,6 +66,7 @@ public class AcademyController {
     public ResponseEntity<AcademyProgressResponse> getProgress(
             @PathVariable String language,
             Authentication authentication) {
+        domainAuthService.requireDomain(authentication, "language");
         UUID userId = currentUserProvider.getUserId(authentication);
         return ResponseEntity.ok(academyService.getProgress(language, userId));
     }

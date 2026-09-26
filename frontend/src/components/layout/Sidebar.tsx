@@ -6,12 +6,11 @@ import {
   Home, Code2, Coffee, Layout, Bot, Dumbbell,
   RotateCcw, BarChart2, Users, CreditCard, ChevronRight,
   Zap, LogOut, Lock, Terminal, Cpu, Braces, Globe, MessageSquare,
-  BookOpen, Mic, GraduationCap, FlaskConical, GanttChart,
+  BookOpen, GraduationCap, FlaskConical, GanttChart,
 } from "lucide-react";
-import { useState, useEffect } from "react";
 import { authApi } from "@/lib/api/auth";
 import { useSubscription } from "@/lib/useSubscription";
-import { getLearningPath, setLearningPath, type LearningPath } from "@/lib/learningPath";
+import { useDomain } from "@/lib/DomainContext";
 
 // ── DSA sections ────────────────────────────────────────────────────────────
 
@@ -48,13 +47,12 @@ const LANG_LEARN = [
 ];
 
 const LANG_PRACTICE = [
-  { href: "/languages/speaking",    label: "Speaking",    icon: Mic },
   { href: "/languages/vocabulary",  label: "Vocabulary",  icon: BookOpen },
   { href: "/languages/grammar",     label: "Grammar",     icon: GraduationCap },
 ];
 
 const LANG_AI = [
-  { href: "/languages/ai-tutor", label: "AI Tutor",      icon: MessageSquare },
+  { href: "/languages/ai-tutor", label: "AI Tutor", icon: MessageSquare },
 ];
 
 const LANG_PROGRESS = [
@@ -97,24 +95,15 @@ export default function Sidebar() {
   const path   = usePathname();
   const router = useRouter();
   const { pro } = useSubscription();
-  const [activePath, setActivePath] = useState<LearningPath>("dsa");
-
-  useEffect(() => {
-    const saved = getLearningPath();
-    if (saved) setActivePath(saved);
-  }, []);
-
-  function switchPath(p: LearningPath) {
-    setActivePath(p);
-    setLearningPath(p);
-  }
+  const { activeDomain, loading } = useDomain();
 
   async function handleSignOut() {
     try { await authApi.logout(); } catch {}
     router.push("/login");
   }
 
-  const isDSA = activePath === "dsa";
+  const isDSA = activeDomain === "dsa";
+  const isLanguage = activeDomain === "language";
 
   return (
     <aside className="fixed top-0 left-0 h-screen bg-white border-r border-gray-200 flex flex-col z-40"
@@ -131,25 +120,16 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Path switcher tabs */}
-      <div className="px-3 pt-3 pb-1">
-        <div className="flex rounded-lg bg-gray-100 p-0.5 gap-0.5">
-          <button
-            onClick={() => switchPath("dsa")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-all
-              ${isDSA ? "bg-white text-brand-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-          >
-            <span>💻</span> DSA
-          </button>
-          <button
-            onClick={() => switchPath("languages")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-all
-              ${!isDSA ? "bg-white text-emerald-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-          >
-            <span>🌍</span> Languages
-          </button>
+      {/* Domain badge */}
+      {!loading && activeDomain && (
+        <div className="px-3 pt-3 pb-1">
+          <div className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold
+            ${isDSA ? "bg-brand-50 text-brand-700" : "bg-emerald-50 text-emerald-700"}`}>
+            <span>{isDSA ? "💻" : "🌍"}</span>
+            <span>{isDSA ? "DSA" : "Languages"}</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Home */}
       <div className="px-3 pt-2">
@@ -159,16 +139,17 @@ export default function Sidebar() {
         </Link>
       </div>
 
-      {/* Nav sections — switch based on path */}
+      {/* Nav sections — based on server domain */}
       <nav className="flex-1 overflow-y-auto px-3 pb-2">
-        {isDSA ? (
+        {isDSA && (
           <>
             <NavSection title="Learn"    items={DSA_LEARN}    path={path} />
             <NavSection title="Practice" items={DSA_PRACTICE} path={path} />
             <NavSection title="AI"       items={DSA_AI}       path={path} />
             <NavSection title="Progress" items={DSA_PROGRESS} path={path} />
           </>
-        ) : (
+        )}
+        {isLanguage && (
           <>
             <NavSection title="Languages" items={LANG_LEARN}     path={path} />
             <NavSection title="Practice"  items={LANG_PRACTICE}  path={path} />

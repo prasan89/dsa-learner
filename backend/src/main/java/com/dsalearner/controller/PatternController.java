@@ -2,10 +2,12 @@ package com.dsalearner.controller;
 
 import com.dsalearner.dto.response.PatternMasteryResponse;
 import com.dsalearner.dto.response.PatternResponse;
+import com.dsalearner.security.DomainAuthorizationService;
 import com.dsalearner.service.PatternMasteryService;
 import com.dsalearner.service.PatternService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -21,11 +23,14 @@ public class PatternController {
 
     private final PatternService patternService;
     private final PatternMasteryService masteryService;
+    private final DomainAuthorizationService domainAuthService;
 
     @GetMapping
     public ResponseEntity<List<PatternResponse>> list(
             @RequestParam(required = false) String category,
+            Authentication authentication,
             @AuthenticationPrincipal UserDetails userDetails) {
+        domainAuthService.requireDomain(authentication, "dsa");
         if (userDetails != null) {
             UUID userId = UUID.fromString(userDetails.getUsername());
             if (category != null && !category.isBlank()) {
@@ -42,7 +47,9 @@ public class PatternController {
     @GetMapping("/{slug}")
     public ResponseEntity<PatternResponse> get(
             @PathVariable String slug,
+            Authentication authentication,
             @AuthenticationPrincipal UserDetails userDetails) {
+        domainAuthService.requireDomain(authentication, "dsa");
         if (userDetails != null) {
             UUID userId = UUID.fromString(userDetails.getUsername());
             return ResponseEntity.ok(patternService.findBySlugForUser(slug, userId));
@@ -52,7 +59,9 @@ public class PatternController {
 
     @GetMapping("/mastery")
     public ResponseEntity<List<PatternMasteryResponse>> getMastery(
+            Authentication authentication,
             @AuthenticationPrincipal UserDetails userDetails) {
+        domainAuthService.requireDomain(authentication, "dsa");
         UUID userId = UUID.fromString(userDetails.getUsername());
         return ResponseEntity.ok(masteryService.getAllForUser(userId));
     }
@@ -61,7 +70,9 @@ public class PatternController {
     public ResponseEntity<PatternMasteryResponse> updateMastery(
             @PathVariable String slug,
             @RequestBody Map<String, String> body,
+            Authentication authentication,
             @AuthenticationPrincipal UserDetails userDetails) {
+        domainAuthService.requireDomain(authentication, "dsa");
         UUID userId = UUID.fromString(userDetails.getUsername());
         String status = body.get("status");
         return ResponseEntity.ok(masteryService.updateMastery(slug, userId, status));

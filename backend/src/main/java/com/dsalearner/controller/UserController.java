@@ -5,12 +5,14 @@ import com.dsalearner.dto.response.SubmissionResponse;
 import com.dsalearner.dto.response.UserProgressResponse;
 import com.dsalearner.model.entity.UserSubscription;
 import com.dsalearner.repository.UserSubscriptionRepository;
+import com.dsalearner.security.DomainAuthorizationService;
 import com.dsalearner.service.DashboardService;
 import com.dsalearner.service.SpacedRepetitionService;
 import com.dsalearner.service.SubmissionService;
 import com.dsalearner.service.UserProgressService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -29,17 +31,22 @@ public class UserController {
     private final SpacedRepetitionService    spacedRepetitionService;
     private final DashboardService           dashboardService;
     private final UserSubscriptionRepository userSubscriptionRepository;
+    private final DomainAuthorizationService domainAuthService;
 
     @GetMapping("/dashboard")
     public ResponseEntity<DashboardResponse> dashboard(
+            Authentication authentication,
             @AuthenticationPrincipal UserDetails userDetails) {
+        domainAuthService.requireDomain(authentication, "dsa");
         UUID userId = UUID.fromString(userDetails.getUsername());
         return ResponseEntity.ok(dashboardService.getDashboard(userId));
     }
 
     @GetMapping("/subscription")
     public ResponseEntity<Map<String, Object>> subscription(
+            Authentication authentication,
             @AuthenticationPrincipal UserDetails userDetails) {
+        domainAuthService.requireDomain(authentication, "dsa");
         UUID userId = UUID.fromString(userDetails.getUsername());
         UserSubscription sub = userSubscriptionRepository.findByUserId(userId).orElse(null);
         String plan = sub != null ? sub.getPlan().name() : "FREE";
@@ -49,21 +56,27 @@ public class UserController {
 
     @GetMapping("/progress")
     public ResponseEntity<UserProgressResponse> progress(
+            Authentication authentication,
             @AuthenticationPrincipal UserDetails userDetails) {
+        domainAuthService.requireDomain(authentication, "dsa");
         UUID userId = UUID.fromString(userDetails.getUsername());
         return ResponseEntity.ok(userProgressService.getProgress(userId));
     }
 
     @GetMapping("/submissions")
     public ResponseEntity<List<SubmissionResponse>> recentSubmissions(
+            Authentication authentication,
             @AuthenticationPrincipal UserDetails userDetails) {
+        domainAuthService.requireDomain(authentication, "dsa");
         UUID userId = UUID.fromString(userDetails.getUsername());
         return ResponseEntity.ok(submissionService.listForUser(userId));
     }
 
     @GetMapping("/reviews/today")
     public ResponseEntity<List<SpacedRepetitionService.ReviewItem>> todayReviews(
+            Authentication authentication,
             @AuthenticationPrincipal UserDetails userDetails) {
+        domainAuthService.requireDomain(authentication, "dsa");
         UUID userId = UUID.fromString(userDetails.getUsername());
         return ResponseEntity.ok(spacedRepetitionService.getTodayReviews(userId));
     }
@@ -72,11 +85,12 @@ public class UserController {
     public ResponseEntity<Void> completeReview(
             @PathVariable UUID problemId,
             @RequestParam(defaultValue = "4") int quality,
+            Authentication authentication,
             @AuthenticationPrincipal UserDetails userDetails) {
+        domainAuthService.requireDomain(authentication, "dsa");
         UUID userId = UUID.fromString(userDetails.getUsername());
         spacedRepetitionService.completeReview(userId, problemId, quality);
         dashboardService.recordActivity(userId);
         return ResponseEntity.ok().build();
     }
 }
-

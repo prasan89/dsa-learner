@@ -9,11 +9,13 @@ import com.dsalearner.dto.response.PatternDetectResponse;
 import com.dsalearner.exception.NotFoundException;
 import com.dsalearner.model.entity.Problem;
 import com.dsalearner.repository.ProblemRepository;
+import com.dsalearner.security.DomainAuthorizationService;
 import com.dsalearner.service.AiService;
 import com.dsalearner.service.CreditService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -29,11 +31,14 @@ public class AiController {
     private final AiService aiService;
     private final CreditService creditService;
     private final ProblemRepository problemRepository;
+    private final DomainAuthorizationService domainAuthService;
 
     @PostMapping("/mentor")
     public ResponseEntity<AiMentorResponse> mentor(
             @RequestBody AiMentorRequest request,
+            Authentication authentication,
             @AuthenticationPrincipal UserDetails userDetails) {
+        domainAuthService.requireDomain(authentication, "dsa");
         UUID userId = UUID.fromString(userDetails.getUsername());
 
         if (creditService.getWallet(userId).totalCredits() < 1) {
@@ -56,10 +61,10 @@ public class AiController {
     @PostMapping("/review")
     public ResponseEntity<AiReviewResponse> review(
             @RequestBody AiReviewRequest request,
+            Authentication authentication,
             @AuthenticationPrincipal UserDetails userDetails) {
+        domainAuthService.requireDomain(authentication, "dsa");
         UUID userId = UUID.fromString(userDetails.getUsername());
-
-        // Check credit balance without deducting yet
         if (creditService.getWallet(userId).totalCredits() < 1) {
             throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED,
                     "Insufficient AI credits. Please purchase more credits.");
@@ -87,7 +92,9 @@ public class AiController {
     @PostMapping("/detect-pattern")
     public ResponseEntity<PatternDetectResponse> detectPattern(
             @RequestBody PatternDetectRequest request,
+            Authentication authentication,
             @AuthenticationPrincipal UserDetails userDetails) {
+        domainAuthService.requireDomain(authentication, "dsa");
         UUID userId = UUID.fromString(userDetails.getUsername());
         creditService.deductForDetect(userId);
         return ResponseEntity.ok(aiService.detectPattern(request.code()));
@@ -95,7 +102,9 @@ public class AiController {
 
     @GetMapping("/wallet")
     public ResponseEntity<CreditService.WalletResponse> wallet(
+            Authentication authentication,
             @AuthenticationPrincipal UserDetails userDetails) {
+        domainAuthService.requireDomain(authentication, "dsa");
         UUID userId = UUID.fromString(userDetails.getUsername());
         return ResponseEntity.ok(creditService.getWallet(userId));
     }

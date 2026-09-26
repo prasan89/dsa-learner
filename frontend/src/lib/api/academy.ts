@@ -78,6 +78,7 @@ export interface LessonReviewPayload {
   lessonTitle: string;
   cefrLevel: string;
   exerciseCount: number;
+  objectives?: string[];
 }
 
 export type StepPayload =

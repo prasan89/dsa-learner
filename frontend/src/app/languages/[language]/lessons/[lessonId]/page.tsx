@@ -453,16 +453,24 @@ function NarrativeStep({ payload }: { payload: Record<string, unknown> }) {
   const title = (payload.title ?? payload.heading) as string | undefined;
   const body = (payload.body ?? payload.text ?? payload.content) as string | undefined;
   const objectives = payload.objectives as string[] | undefined;
-  const intro = typeof payload.intro === "object" && payload.intro !== null
-    ? (payload.intro as { text?: string }).text
-    : undefined;
+  // intro may be a plain string (from buildIntroPayload) or an object with a .text field
+  const intro =
+    typeof payload.intro === "string"
+      ? payload.intro
+      : typeof payload.intro === "object" && payload.intro !== null
+        ? (payload.intro as { text?: string }).text
+        : undefined;
+  const culturalNote = payload.culturalNote as string | undefined;
+  const examples = payload.examples as Array<{ german?: string; english?: string; context?: string }> | undefined;
 
   return (
     <div className="space-y-5 py-6">
       {title && <h2 className="text-2xl font-bold text-gray-900 text-center leading-snug">{title}</h2>}
-      {(body ?? intro) && (
-        <p className="text-base text-gray-700 text-center leading-relaxed">{body ?? intro}</p>
+
+      {(intro ?? body) && (
+        <p className="text-base text-gray-700 text-center leading-relaxed">{intro ?? body}</p>
       )}
+
       {objectives && objectives.length > 0 && (
         <div className="rounded-xl border border-brand-100 bg-brand-50 px-5 py-4 space-y-2">
           <p className="text-xs font-semibold text-brand-600 uppercase tracking-wide">In this lesson</p>
@@ -474,6 +482,26 @@ function NarrativeStep({ payload }: { payload: Record<string, unknown> }) {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {culturalNote && (
+        <div className="rounded-xl border border-amber-100 bg-amber-50 px-5 py-4">
+          <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-1">Cultural note</p>
+          <p className="text-sm text-amber-900 leading-relaxed">{culturalNote}</p>
+        </div>
+      )}
+
+      {examples && examples.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">In conversation</p>
+          {examples.map((ex, i) => (
+            <div key={i} className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 space-y-1">
+              <p className="font-semibold text-gray-900 text-sm">{ex.german}</p>
+              <p className="text-sm text-gray-500">{ex.english}</p>
+              {ex.context && <p className="text-xs text-gray-400 italic mt-0.5">{ex.context}</p>}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -536,20 +564,34 @@ function LessonReviewStep({
         <p className="text-sm text-gray-500 mt-1">{payload.lessonTitle}</p>
       </div>
 
-      <ul className="w-full max-w-xs text-left space-y-2">
-        {vocabCount > 0 && (
-          <li className="flex items-center gap-3 text-sm text-gray-700">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" aria-hidden="true" />
-            {vocabCount} vocabulary word{vocabCount !== 1 ? "s" : ""}
-          </li>
-        )}
-        {payload.exerciseCount > 0 && (
-          <li className="flex items-center gap-3 text-sm text-gray-700">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" aria-hidden="true" />
-            {payload.exerciseCount} practice exercise{payload.exerciseCount !== 1 ? "s" : ""}
-          </li>
-        )}
-      </ul>
+      {payload.objectives && payload.objectives.length > 0 ? (
+        <div className="w-full max-w-xs rounded-xl border border-green-100 bg-green-50 px-5 py-4 text-left space-y-2">
+          <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">You can now</p>
+          <ul className="space-y-1.5">
+            {payload.objectives.map((obj, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-green-800">
+                <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-green-500" aria-hidden="true" />
+                {obj}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <ul className="w-full max-w-xs text-left space-y-2">
+          {vocabCount > 0 && (
+            <li className="flex items-center gap-3 text-sm text-gray-700">
+              <span className="w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" aria-hidden="true" />
+              {vocabCount} vocabulary word{vocabCount !== 1 ? "s" : ""}
+            </li>
+          )}
+          {payload.exerciseCount > 0 && (
+            <li className="flex items-center gap-3 text-sm text-gray-700">
+              <span className="w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" aria-hidden="true" />
+              {payload.exerciseCount} practice exercise{payload.exerciseCount !== 1 ? "s" : ""}
+            </li>
+          )}
+        </ul>
+      )}
 
       <div className="w-full max-w-xs space-y-3 pt-2">
         <button
