@@ -88,6 +88,18 @@ public class CurriculumBatchProcessor {
                             lessonPlanRepository.compareAndSetStatus(plan.getId(), "GENERATING", cs);
                         } else if ("QA_FAILED".equals(cs) || "REVISION_FAILED".equals(cs)) {
                             lessonPlanRepository.compareAndSetStatus(plan.getId(), "GENERATING", "FAILED");
+                        } else if ("GENERATING".equals(cs) || "PLANNED".equals(cs)) {
+                            // If lesson is stuck GENERATING/PLANNED with no active job and retries exhausted,
+                            // mark plan FAILED so level completion check doesn't wait forever.
+                            boolean noActiveJob = pipelineJobRepository
+                                    .findByLessonIdAndJobTypeAndStatusIn(lesson.getId(), "CONTENT_GENERATION",
+                                            List.of("QUEUED", "RUNNING", "RETRYING"))
+                                    .isEmpty();
+                            if (noActiveJob && pipelineJobRepository.hasExhaustedJob(lesson.getId(), "CONTENT_GENERATION")) {
+                                log.warn("CurriculumBatchProcessor: lessonId={} stuck {} with exhausted job — marking plan FAILED",
+                                        lesson.getId(), cs);
+                                lessonPlanRepository.compareAndSetStatus(plan.getId(), "GENERATING", "FAILED");
+                            }
                         }
                     });
                 });

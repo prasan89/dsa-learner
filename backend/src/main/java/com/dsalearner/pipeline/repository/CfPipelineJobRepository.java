@@ -58,4 +58,17 @@ public interface CfPipelineJobRepository extends JpaRepository<CfPipelineJob, UU
               AND j.attempt < j.maxAttempts
             """)
     int resetStuckRunningJobs(@Param("threshold") Instant threshold);
+
+    /**
+     * Returns true if the lesson has a FAILED CONTENT_GENERATION job that has
+     * exhausted all retry attempts — i.e. there is no path to automatic recovery.
+     */
+    @Query("""
+            SELECT COUNT(j) > 0 FROM CfPipelineJob j
+            WHERE j.lessonId = :lessonId
+              AND j.jobType = :jobType
+              AND j.status = 'FAILED'
+              AND j.attempt >= j.maxAttempts
+            """)
+    boolean hasExhaustedJob(@Param("lessonId") UUID lessonId, @Param("jobType") String jobType);
 }
