@@ -43,7 +43,7 @@ public class AuthService {
                 .email(req.email())
                 .passwordHash(passwordEncoder.encode(req.password()))
                 .build();
-        userRepository.save(user);
+        userRepository.saveAndFlush(user);
         jdbc.update(
             "INSERT INTO user_learning_domains (user_id, domain_code, is_active) VALUES (?::uuid, 'dsa', true) ON CONFLICT DO NOTHING",
             user.getId().toString()
