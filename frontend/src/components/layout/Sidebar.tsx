@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Home, Code2, Coffee, Layout, Bot, Dumbbell,
   RotateCcw, BarChart2, ChevronRight,
-  Zap, LogOut, Lock, Terminal, Cpu, Braces, Globe, MessageSquare,
+  Zap, LogOut, Lock, Terminal, Cpu, Braces, Globe,
   BookOpen, GraduationCap, FlaskConical,
 } from "lucide-react";
 import { authApi } from "@/lib/api/auth";
@@ -41,19 +41,6 @@ const DSA_PROGRESS = [
 
 const LANG_LEARN = [
   { href: "/languages/german",  label: "German",   icon: Globe },
-];
-
-const LANG_PRACTICE = [
-  { href: "/languages/vocabulary",  label: "Vocabulary",  icon: BookOpen },
-  { href: "/languages/grammar",     label: "Grammar",     icon: GraduationCap },
-];
-
-const LANG_AI = [
-  { href: "/languages/ai-tutor", label: "AI Tutor", icon: MessageSquare },
-];
-
-const LANG_PROGRESS = [
-  { href: "/progress", label: "Progress", icon: BarChart2 },
 ];
 
 const LANG_ADMIN = [
@@ -145,11 +132,8 @@ export default function Sidebar() {
         )}
         {showLang && (
           <>
-            <NavSection title="Languages" items={LANG_LEARN}     path={path} />
-            <NavSection title="Practice"  items={LANG_PRACTICE}  path={path} />
-            <NavSection title="AI"        items={LANG_AI}        path={path} />
-            <NavSection title="Progress"  items={LANG_PROGRESS}  path={path} />
-            <NavSection title="Admin"     items={LANG_ADMIN}     path={path} />
+            <NavSection title="Languages" items={LANG_LEARN}  path={path} />
+            <NavSection title="Admin"     items={LANG_ADMIN}  path={path} />
           </>
         )}
       </nav>

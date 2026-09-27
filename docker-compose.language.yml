@@ -18,6 +18,17 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: language_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
@@ -30,9 +41,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/dsa_learner
       SPRING_DATASOURCE_USERNAME: dsa_user
       SPRING_DATASOURCE_PASSWORD: dsa_password
-      SPRING_AUTOCONFIGURE_EXCLUDE: >-
-        org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,
-        org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
       ANTHROPIC_BASE_URL: http://host.docker.internal:6655/anthropic
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       CORS_ALLOWED_ORIGINS: http://localhost:3000
@@ -40,6 +50,8 @@ services:
       - "host.docker.internal:host-gateway"
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   frontend:

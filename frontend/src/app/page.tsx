@@ -1,10 +1,16 @@
+import LanguvaHomePage from "@/components/languva/LanguvaHomePage";
 import Link from "next/link";
 import {
   Code2, BookOpen, Cpu, BarChart3, Users, FileText, Layers, TrendingUp,
   Check, ArrowRight, Github, Linkedin, Twitter, Youtube, Share2, Trophy
 } from "lucide-react";
 
+const APP_MODE = process.env.NEXT_PUBLIC_APP_MODE ?? "all";
+
 export default function HomePage() {
+  if (APP_MODE === "language") {
+    return <LanguvaHomePage />;
+  }
   return (
     <div className="min-h-screen bg-white text-gray-900">
 
