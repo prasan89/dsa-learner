@@ -61,36 +61,25 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* Right — illustration */}
+          {/* Right — hero artwork */}
           <div className="order-1 lg:order-2 relative flex items-center justify-center">
-            <div className="relative w-full max-w-xl mx-auto">
-              {/* Globe background */}
-              <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-sky-100 via-blue-50 to-indigo-100 aspect-[16/8.5] flex items-end justify-center">
-                {/* Globe SVG */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-30">
-                  <GlobeSvg />
-                </div>
-                {/* Learner illustration placeholder */}
-                <div className="relative z-10 flex items-end justify-center w-full h-full">
-                  <LearnerIllustration />
-                </div>
+            <div className="relative w-full max-w-2xl mx-auto">
+              <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-sky-100 via-blue-50 to-indigo-100 shadow-[0_24px_70px_rgba(79,70,229,0.16)]">
+                <img
+                  src="/images/languva-hero.webp"
+                  alt="Languva learner exploring languages around the world"
+                  className="block w-full h-auto object-cover"
+                />
 
-                {/* Floating speech bubbles */}
-                <SpeechBubble text="Hallo!" flag="🇩🇪" className="absolute top-[12%] left-[8%] rotate-[-3deg]" />
-                <SpeechBubble text="Hallo!" flag="🇫🇷" label="Hallo!" className="absolute top-[5%] right-[18%] rotate-[2deg]" text2="Bonjour!" />
-                <SpeechBubble text="こんにちは!" flag="🇯🇵" className="absolute top-[38%] left-[3%] rotate-[-2deg]" />
-                <SpeechBubble text="नमस्ते!" flag="🇮🇳" className="absolute top-[18%] right-[5%] rotate-[3deg]" />
-                <SpeechBubble text="안녕하세요!" flag="🇰🇷" className="absolute bottom-[32%] left-[10%] rotate-[-1deg]" />
-              </div>
-
-              {/* Watch demo pill */}
-              <div className="absolute bottom-4 right-4 flex items-center gap-2.5 bg-white/90 backdrop-blur-sm shadow-lg rounded-full px-3.5 py-2 border border-white/80">
-                <div className="w-7 h-7 rounded-full bg-languva-600 flex items-center justify-center shrink-0">
-                  <Play size={11} className="text-white ml-0.5" fill="white" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-gray-900 leading-none">Watch How Languva Works</p>
-                  <p className="text-[10px] text-gray-400 leading-none mt-0.5">2 min</p>
+                {/* Demo CTA intentionally overlays the artwork, matching the reference composition. */}
+                <div className="absolute bottom-5 right-5 flex items-center gap-3 bg-white/95 backdrop-blur-md shadow-xl rounded-2xl px-4 py-3 border border-white/80">
+                  <div className="w-9 h-9 rounded-full bg-languva-600 flex items-center justify-center shrink-0">
+                    <Play size={14} className="text-white ml-0.5" fill="white" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-900 leading-tight">Watch How Languva Works</p>
+                    <p className="text-[10px] text-gray-400 leading-tight mt-0.5">2 min</p>
+                  </div>
                 </div>
               </div>
             </div>
