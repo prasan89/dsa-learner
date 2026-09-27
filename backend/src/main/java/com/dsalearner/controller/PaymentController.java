@@ -7,8 +7,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import java.util.UUID;
 
+@ConditionalOnExpression("'${application.mode}' == 'dsa' or '${application.mode}' == 'all'")
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor

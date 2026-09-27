@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Home, Code2, Coffee, Layout, Bot, Dumbbell,
-  RotateCcw, BarChart2, Users, CreditCard, ChevronRight,
+  RotateCcw, BarChart2, ChevronRight,
   Zap, LogOut, Lock, Terminal, Cpu, Braces, Globe, MessageSquare,
-  BookOpen, GraduationCap, FlaskConical, GanttChart,
+  BookOpen, GraduationCap, FlaskConical,
 } from "lucide-react";
 import { authApi } from "@/lib/api/auth";
 import { useSubscription } from "@/lib/useSubscription";
@@ -41,9 +41,6 @@ const DSA_PROGRESS = [
 
 const LANG_LEARN = [
   { href: "/languages/german",  label: "German",   icon: Globe },
-  { href: "/languages/french",  label: "French",   icon: Globe },
-  { href: "/languages/korean",  label: "Korean",   icon: Globe },
-  { href: "/languages/spanish", label: "Spanish",  icon: Globe },
 ];
 
 const LANG_PRACTICE = [
@@ -61,12 +58,6 @@ const LANG_PROGRESS = [
 
 const LANG_ADMIN = [
   { href: "/content-factory/german-a1",  label: "Content Factory", icon: FlaskConical },
-  { href: "/content-factory/curriculum", label: "Curriculum",       icon: GanttChart   },
-];
-
-const SECTION_OTHER = [
-  { href: "/community", label: "Community", icon: Users },
-  { href: "/wallet",    label: "Billing",   icon: CreditCard },
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -102,8 +93,11 @@ export default function Sidebar() {
     router.push("/login");
   }
 
+  const APP_MODE = process.env.NEXT_PUBLIC_APP_MODE ?? "all";
   const isDSA = activeDomain === "dsa";
   const isLanguage = activeDomain === "language";
+  const showDSA = isDSA && (APP_MODE === "all" || APP_MODE === "dsa");
+  const showLang = isLanguage && (APP_MODE === "all" || APP_MODE === "language");
 
   return (
     <aside className="fixed top-0 left-0 h-screen bg-white border-r border-gray-200 flex flex-col z-40"
@@ -141,7 +135,7 @@ export default function Sidebar() {
 
       {/* Nav sections — based on server domain */}
       <nav className="flex-1 overflow-y-auto px-3 pb-2">
-        {isDSA && (
+        {showDSA && (
           <>
             <NavSection title="Learn"    items={DSA_LEARN}    path={path} />
             <NavSection title="Practice" items={DSA_PRACTICE} path={path} />
@@ -149,7 +143,7 @@ export default function Sidebar() {
             <NavSection title="Progress" items={DSA_PROGRESS} path={path} />
           </>
         )}
-        {isLanguage && (
+        {showLang && (
           <>
             <NavSection title="Languages" items={LANG_LEARN}     path={path} />
             <NavSection title="Practice"  items={LANG_PRACTICE}  path={path} />
@@ -158,7 +152,6 @@ export default function Sidebar() {
             <NavSection title="Admin"     items={LANG_ADMIN}     path={path} />
           </>
         )}
-        <NavSection title="" items={SECTION_OTHER} path={path} />
       </nav>
 
       {/* Sign out */}

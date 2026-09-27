@@ -14,8 +14,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import java.util.UUID;
 
+@ConditionalOnExpression("'${application.mode}' == 'dsa' or '${application.mode}' == 'all'")
 @RestController
 @RequestMapping("/api/patterns")
 @RequiredArgsConstructor

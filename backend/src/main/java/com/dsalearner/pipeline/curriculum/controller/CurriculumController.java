@@ -22,8 +22,10 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import java.util.UUID;
 
+@ConditionalOnExpression("'${application.mode}' == 'language' or '${application.mode}' == 'all'")
 @RestController
 @RequestMapping("/api/v1/curriculum")
 @RequiredArgsConstructor

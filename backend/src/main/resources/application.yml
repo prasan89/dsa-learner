@@ -61,3 +61,6 @@ app:
 razorpay:
   key-id: ${RAZORPAY_KEY_ID:rzp_test_placeholder}
   key-secret: ${RAZORPAY_KEY_SECRET:placeholder_secret}
+
+application:
+  mode: ${APPLICATION_MODE:all}

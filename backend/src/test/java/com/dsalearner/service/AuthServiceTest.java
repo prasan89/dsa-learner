@@ -15,15 +15,19 @@ import java.time.Instant;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
  @Mock UserRepository users; @Mock RefreshTokenRepository tokens; @Mock JwtService jwt; @Mock PasswordEncoder encoder; @Mock JdbcTemplate jdbc;
  @Test void registerSuccessAndDuplicate(){
    AuthService s=new AuthService(users,tokens,jwt,encoder,jdbc);
+   s.applicationMode="dsa";
+   UUID regId=UUID.randomUUID();
    when(users.existsByEmail("a@b.com")).thenReturn(false); when(encoder.encode("Pass1")).thenReturn("hash");
-   when(jwt.generateAccessToken(isNull(),eq("a@b.com"))).thenReturn("access"); when(jwt.generateRefreshToken(isNull())).thenReturn("refresh"); when(jwt.getRefreshTokenExpiryMs()).thenReturn(1000L);
-   when(jdbc.update(anyString(),anyString())).thenReturn(1);
+   doAnswer(inv->{ User u=inv.getArgument(0); java.lang.reflect.Field f=User.class.getDeclaredField("id"); f.setAccessible(true); f.set(u,regId); return u; }).when(users).saveAndFlush(any(User.class));
+   when(jwt.generateAccessToken(eq(regId),eq("a@b.com"))).thenReturn("access"); when(jwt.generateRefreshToken(eq(regId))).thenReturn("refresh"); when(jwt.getRefreshTokenExpiryMs()).thenReturn(1000L);
+   when(jdbc.update(anyString(),anyString(),anyString())).thenReturn(1);
    assertEquals("access",s.register(new RegisterRequest("A","a@b.com","Pass1")).accessToken());
    verify(tokens).save(any(RefreshToken.class));
    when(users.existsByEmail("a@b.com")).thenReturn(true);

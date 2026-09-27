@@ -21,8 +21,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import java.util.UUID;
 
+@ConditionalOnExpression("'${application.mode}' == 'dsa' or '${application.mode}' == 'all'")
 @RestController
 @RequestMapping("/api/ai")
 @RequiredArgsConstructor

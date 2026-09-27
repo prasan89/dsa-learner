@@ -14,6 +14,7 @@ import com.dsalearner.repository.RefreshTokenRepository;
 import com.dsalearner.repository.UserRepository;
 import com.dsalearner.security.JwtService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,6 +33,9 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbc;
 
+    @Value("${application.mode:all}")
+    String applicationMode;
+
     @Transactional
     public AuthResponse register(RegisterRequest req) {
         if (userRepository.existsByEmail(req.email())) {
@@ -44,9 +48,10 @@ public class AuthService {
                 .passwordHash(passwordEncoder.encode(req.password()))
                 .build();
         userRepository.saveAndFlush(user);
+        String domainCode = "language".equals(applicationMode) ? "language" : "dsa";
         jdbc.update(
-            "INSERT INTO user_learning_domains (user_id, domain_code, is_active) VALUES (?::uuid, 'dsa', true) ON CONFLICT DO NOTHING",
-            user.getId().toString()
+            "INSERT INTO user_learning_domains (user_id, domain_code, is_active) VALUES (?::uuid, ?, true) ON CONFLICT DO NOTHING",
+            user.getId().toString(), domainCode
         );
 
         return issueTokens(user);

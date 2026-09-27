@@ -9,6 +9,8 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ARG NEXT_PUBLIC_APP_MODE=all
+ENV NEXT_PUBLIC_APP_MODE=$NEXT_PUBLIC_APP_MODE
 RUN npm run build
 
 FROM base AS runner

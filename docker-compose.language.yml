@@ -1,0 +1,60 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: language_postgres
+    environment:
+      POSTGRES_DB: dsa_learner
+      POSTGRES_USER: dsa_user
+      POSTGRES_PASSWORD: dsa_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dsa_user -d dsa_learner"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: language_backend
+    ports:
+      - "8080:8080"
+    environment:
+      APPLICATION_MODE: language
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/dsa_learner
+      SPRING_DATASOURCE_USERNAME: dsa_user
+      SPRING_DATASOURCE_PASSWORD: dsa_password
+      SPRING_AUTOCONFIGURE_EXCLUDE: >-
+        org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,
+        org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+      ANTHROPIC_BASE_URL: http://host.docker.internal:6655/anthropic
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      CORS_ALLOWED_ORIGINS: http://localhost:3000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_MODE: language
+    container_name: language_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

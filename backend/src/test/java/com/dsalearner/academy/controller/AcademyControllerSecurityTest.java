@@ -3,6 +3,7 @@ package com.dsalearner.academy.controller;
 import com.dsalearner.academy.security.CurrentUserProvider;
 import com.dsalearner.academy.service.AcademyService;
 import com.dsalearner.config.SecurityConfig;
+import com.dsalearner.security.DomainAuthorizationService;
 import com.dsalearner.security.JwtService;
 import com.dsalearner.security.UserDetailsServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,7 @@ class AcademyControllerSecurityTest {
 
     @MockBean AcademyService academyService;
     @MockBean CurrentUserProvider currentUserProvider;
+    @MockBean DomainAuthorizationService domainAuthService;
 
     // JwtAuthFilter dependencies
     @MockBean JwtService jwtService;
