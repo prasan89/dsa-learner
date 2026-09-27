@@ -6,35 +6,35 @@ const AVATARS = ["🧑🏻", "👩🏽", "🧑🏿", "👩🏼", "🧑🏾"];
 
 export default function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-languva-50/30 pt-10 pb-6 md:pt-14 md:pb-10">
+    <section className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-languva-50/30 pt-6 pb-5 md:pt-8 md:pb-7">
       {/* Background blobs */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-languva-100/40 blur-[120px] pointer-events-none -translate-y-1/3 translate-x-1/4" />
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-blue-100/40 blur-[100px] pointer-events-none translate-y-1/3 -translate-x-1/4" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-center">
 
           {/* Left — text */}
           <div className="order-2 lg:order-1">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-languva-50 text-languva-700 text-xs font-semibold px-3 py-1.5 rounded-full border border-languva-200 mb-5">
+            <div className="inline-flex items-center gap-2 bg-languva-50 text-languva-700 text-xs font-semibold px-3 py-1.5 rounded-full border border-languva-200 mb-4">
               <span className="text-base">🌍</span>
               Learn 14 Languages. Explore the World.
             </div>
 
             {/* Headline */}
-            <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black text-gray-900 leading-[1.08] tracking-tight mb-4">
+            <h1 className="text-4xl sm:text-5xl xl:text-[3.5rem] font-black text-gray-900 leading-[1.08] tracking-tight mb-4">
               Speak. Connect.<br />
               <span className="text-languva-600">Go Further.</span>
             </h1>
 
-            <p className="text-base sm:text-lg text-gray-500 leading-relaxed max-w-md mb-7">
+            <p className="text-base sm:text-lg text-gray-500 leading-relaxed max-w-md mb-5">
               Learn 5 Indian and 9 global languages with AI-powered lessons, real
               conversations and personalized learning paths — from A1 to C2.
             </p>
 
             {/* CTAs */}
-            <div className="flex flex-wrap gap-3 mb-7">
+            <div className="flex flex-wrap gap-3 mb-5">
               <Link href="/register"
                 className="inline-flex items-center gap-2 bg-languva-600 hover:bg-languva-700 text-white font-bold px-6 py-3.5 rounded-xl text-sm transition-all shadow-lg shadow-languva-200">
                 Start Learning Free <ArrowRight size={16} />
@@ -65,7 +65,7 @@ export default function HeroSection() {
           <div className="order-1 lg:order-2 relative flex items-center justify-center">
             <div className="relative w-full max-w-lg mx-auto">
               {/* Globe background */}
-              <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-sky-100 via-blue-50 to-indigo-100 aspect-[4/3] flex items-end justify-center">
+              <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-sky-100 via-blue-50 to-indigo-100 aspect-[16/10] flex items-end justify-center">
                 {/* Globe SVG */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-30">
                   <GlobeSvg />
@@ -116,7 +116,7 @@ function SpeechBubble({
 
 function GlobeSvg() {
   return (
-    <svg viewBox="0 0 200 200" className="w-72 h-72 text-blue-300" fill="none" stroke="currentColor" strokeWidth="1">
+    <svg viewBox="0 0 200 200" className="w-60 h-60 sm:w-64 sm:h-64 text-blue-300" fill="none" stroke="currentColor" strokeWidth="1">
       <circle cx="100" cy="100" r="90" />
       <ellipse cx="100" cy="100" rx="40" ry="90" />
       <ellipse cx="100" cy="100" rx="70" ry="90" />
@@ -132,7 +132,7 @@ function LearnerIllustration() {
   return (
     <div className="w-full h-full flex items-end justify-center pb-0">
       {/* Stylized traveler figure with backpack */}
-      <svg viewBox="0 0 220 280" className="w-48 h-60 sm:w-56 sm:h-72" fill="none">
+      <svg viewBox="0 0 220 280" className="w-44 h-56 sm:w-48 sm:h-60" fill="none">
         {/* Body */}
         <ellipse cx="110" cy="210" rx="35" ry="50" fill="#a78bfa" opacity="0.9" />
         {/* Head */}
