@@ -20,12 +20,14 @@ import java.util.Map;
  * - Deterministic: same inputs always produce the same plan.
  *
  * Step construction order:
- *   1. NARRATIVE  (from content.sections[] — each section becomes one step)
- *   2. VOCABULARY_CARD  (one per vocabulary.items[] entry, interleaved with narrative)
- *   3. GRAMMAR_EXPLANATION  (one per grammar.rules[] entry)
- *   4. VOCABULARY_SUMMARY  (if >= 3 vocabulary items)
- *   5. MULTIPLE_CHOICE / FILL_IN_BLANK / TRANSLATION  (from exercises.items[])
- *   6. LESSON_REVIEW  (always last)
+ *   1. NARRATIVE        (intro: content.objectives + content.explanation.{intro,culturalNote})
+ *   2. VOCABULARY_CARD  (one per vocabulary.items[] entry)
+ *   3. GRAMMAR_EXPLANATION  (from grammar.{title,pattern,explanation,examples} — not grammar.rules[])
+ *   4. NARRATIVE        (context: content.examples[] as dialogue cards)
+ *   5. MULTIPLE_CHOICE / FILL_IN_BLANK  (first two exercises — practice before summary)
+ *   6. VOCABULARY_SUMMARY  (if >= 3 vocabulary items)
+ *   7. TRANSLATION / remaining exercises
+ *   8. LESSON_REVIEW    (always last)
  */
 @Component
 public class ExperiencePlanBuilder {
@@ -50,68 +52,62 @@ public class ExperiencePlanBuilder {
         Map<String, Object> exercises  = version.getExercises();
         Map<String, Object> audio      = version.getAudioManifest();
 
-        // 1. Narrative sections — each section card
-        List<Map<String, Object>> sections = extractList(content, "sections");
-        List<Map<String, Object>> vocabItems = extractList(vocabulary, "items");
-        List<Map<String, Object>> grammarRules = extractList(grammar, "rules");
+        List<Map<String, Object>> vocabItems    = extractList(vocabulary, "items");
         List<Map<String, Object>> exerciseItems = extractList(exercises, "items");
+        List<Map<String, Object>> contextExamples = extractList(content, "examples");
 
-        int vocabPerSection = sections.isEmpty() ? 0 : Math.max(1, vocabItems.size() / Math.max(1, sections.size()));
-        int vocabOffset = 0;
-
-        for (int si = 0; si < sections.size(); si++) {
-            Map<String, Object> section = sections.get(si);
-            String audioKey = audioKeyFor(audio, "section_" + si);
-            steps.add(ExperiencePlanStep.withAudio(
-                    steps.size(), StepType.NARRATIVE, buildNarrativePayload(section, si), audioKey));
-
-            // Interleave vocabulary cards after each narrative section
-            int limit = (si == sections.size() - 1)
-                    ? vocabItems.size()
-                    : Math.min(vocabOffset + vocabPerSection, vocabItems.size());
-            while (vocabOffset < limit) {
-                Map<String, Object> item = vocabItems.get(vocabOffset);
-                String vocabAudioKey = audioKeyFor(audio, "vocab_" + vocabOffset);
-                steps.add(ExperiencePlanStep.withAudio(
-                        steps.size(), StepType.VOCABULARY_CARD, buildVocabPayload(item, vocabOffset), vocabAudioKey));
-                vocabOffset++;
-            }
+        // 1. Lesson intro — objectives + welcome text from content.objectives / content.explanation
+        Map<String, Object> introPayload = buildIntroPayload(content);
+        if (!introPayload.isEmpty()) {
+            steps.add(ExperiencePlanStep.of(steps.size(), StepType.NARRATIVE, introPayload));
         }
 
-        // 2. Any remaining vocabulary items not yet placed (if sections list is empty)
-        while (vocabOffset < vocabItems.size()) {
-            Map<String, Object> item = vocabItems.get(vocabOffset);
-            String vocabAudioKey = audioKeyFor(audio, "vocab_" + vocabOffset);
+        // 2. Vocabulary cards
+        for (int vi = 0; vi < vocabItems.size(); vi++) {
+            Map<String, Object> item = vocabItems.get(vi);
+            String vocabAudioKey = audioKeyFor(audio, "vocab_" + vi);
             steps.add(ExperiencePlanStep.withAudio(
-                    steps.size(), StepType.VOCABULARY_CARD, buildVocabPayload(item, vocabOffset), vocabAudioKey));
-            vocabOffset++;
+                    steps.size(), StepType.VOCABULARY_CARD, buildVocabPayload(item, vi), vocabAudioKey));
         }
 
-        // 3. Grammar explanations
-        for (int gi = 0; gi < grammarRules.size(); gi++) {
+        // 3. Grammar explanation — read directly from grammar object (not grammar.rules[])
+        if (grammar != null && !grammar.isEmpty()) {
             steps.add(ExperiencePlanStep.of(
                     steps.size(), StepType.GRAMMAR_EXPLANATION,
-                    buildGrammarPayload(grammarRules.get(gi), gi)));
+                    buildGrammarFromObject(grammar)));
         }
 
-        // 4. Vocabulary summary (when >= 3 items were presented)
+        // 4. Context examples as a narrative step (conversational usage)
+        if (!contextExamples.isEmpty()) {
+            steps.add(ExperiencePlanStep.of(
+                    steps.size(), StepType.NARRATIVE,
+                    buildContextPayload(contextExamples)));
+        }
+
+        // 5. First two exercises (practice before summary)
+        int splitAt = Math.min(2, exerciseItems.size());
+        for (int ei = 0; ei < splitAt; ei++) {
+            Map<String, Object> ex = exerciseItems.get(ei);
+            steps.add(ExperiencePlanStep.of(steps.size(), resolveExerciseType(ex), buildExercisePayload(ex, ei)));
+        }
+
+        // 6. Vocabulary summary (when >= 3 items were presented)
         if (vocabItems.size() >= 3) {
             steps.add(ExperiencePlanStep.of(
                     steps.size(), StepType.VOCABULARY_SUMMARY,
                     buildVocabSummaryPayload(vocabItems)));
         }
 
-        // 5. Exercises
-        for (int ei = 0; ei < exerciseItems.size(); ei++) {
+        // 7. Remaining exercises (recall after summary)
+        for (int ei = splitAt; ei < exerciseItems.size(); ei++) {
             Map<String, Object> ex = exerciseItems.get(ei);
-            StepType exType = resolveExerciseType(ex);
-            steps.add(ExperiencePlanStep.of(steps.size(), exType, buildExercisePayload(ex, ei)));
+            steps.add(ExperiencePlanStep.of(steps.size(), resolveExerciseType(ex), buildExercisePayload(ex, ei)));
         }
 
-        // 6. Lesson review — always last
+        // 8. Lesson review — always last
         steps.add(ExperiencePlanStep.of(
                 steps.size(), StepType.LESSON_REVIEW,
-                buildReviewPayload(lesson, exerciseItems.size())));
+                buildReviewPayload(lesson, content, exerciseItems.size())));
 
         return new ExperiencePlan(
                 lesson.getId(),
@@ -150,21 +146,38 @@ public class ExperiencePlanBuilder {
         return List.of();
     }
 
-    private Map<String, Object> buildNarrativePayload(Map<String, Object> section, int index) {
-        Map<String, Object> p = new HashMap<>(section);
-        p.put("sectionIndex", index);
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> buildIntroPayload(Map<String, Object> content) {
+        Map<String, Object> p = new HashMap<>();
+        Object objectives = content.get("objectives");
+        if (objectives != null) p.put("objectives", objectives);
+        Object explanation = content.get("explanation");
+        if (explanation instanceof Map<?,?> expMap) {
+            Object intro = expMap.get("intro");
+            if (intro != null) p.put("intro", intro);
+            Object culturalNote = expMap.get("culturalNote");
+            if (culturalNote != null) p.put("culturalNote", culturalNote);
+        }
+        p.put("sectionIndex", 0);
+        return p;
+    }
+
+    private Map<String, Object> buildGrammarFromObject(Map<String, Object> grammar) {
+        Map<String, Object> p = new HashMap<>(grammar);
+        p.put("ruleIndex", 0);
+        return p;
+    }
+
+    private Map<String, Object> buildContextPayload(List<Map<String, Object>> examples) {
+        Map<String, Object> p = new HashMap<>();
+        p.put("examples", examples);
+        p.put("sectionIndex", 1);
         return p;
     }
 
     private Map<String, Object> buildVocabPayload(Map<String, Object> item, int index) {
         Map<String, Object> p = new HashMap<>(item);
         p.put("vocabIndex", index);
-        return p;
-    }
-
-    private Map<String, Object> buildGrammarPayload(Map<String, Object> rule, int index) {
-        Map<String, Object> p = new HashMap<>(rule);
-        p.put("ruleIndex", index);
         return p;
     }
 
@@ -181,11 +194,13 @@ public class ExperiencePlanBuilder {
         return p;
     }
 
-    private Map<String, Object> buildReviewPayload(CfLesson lesson, int exerciseCount) {
+    private Map<String, Object> buildReviewPayload(CfLesson lesson, Map<String, Object> content, int exerciseCount) {
         Map<String, Object> p = new HashMap<>();
         p.put("lessonTitle", lesson.getTitle());
         p.put("cefrLevel", lesson.getCefrLevel());
         p.put("exerciseCount", exerciseCount);
+        Object objectives = content.get("objectives");
+        if (objectives != null) p.put("objectives", objectives);
         return p;
     }
 
