@@ -12,10 +12,10 @@ export default function LanguageSelector() {
   const displayed = activeTab === "indian" ? INDIAN_LANGUAGES : GLOBAL_LANGUAGES;
 
   return (
-    <section id="languages" className="py-9 md:py-11 bg-white">
+    <section id="languages" className="pt-6 pb-8 md:pt-7 md:pb-10 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-3">
           <h2 className="text-2xl sm:text-3xl font-black text-gray-900">
             Choose Your Language
           </h2>
@@ -63,9 +63,9 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
 function LanguageCard({ lang }: { lang: Language }) {
   return (
     <Link href={lang.route}
-      className="snap-start shrink-0 w-[126px] sm:w-[138px] group cursor-pointer">
+      className="snap-start shrink-0 w-[145px] sm:w-[155px] group cursor-pointer">
       {/* Image area */}
-      <div className="w-full aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-br from-languva-100 to-blue-100 mb-2 relative border border-gray-100 group-hover:shadow-md transition-shadow">
+      <div className="w-full aspect-[16/10] rounded-xl overflow-hidden bg-gradient-to-br from-languva-100 to-blue-100 mb-2 relative border border-gray-100 group-hover:shadow-md transition-shadow">
         {/* Placeholder gradient with landmark icon */}
         <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-60">
           {getLandmarkEmoji(lang.code)}
