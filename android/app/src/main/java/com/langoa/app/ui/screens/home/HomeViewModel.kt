@@ -55,6 +55,7 @@ class HomeViewModel @Inject constructor(
     fun loadData(languageCode: String) {
         viewModelScope.launch {
             getCivilizationUseCase(languageCode).collect { civ ->
+                if (civ == null) return@collect
                 _uiState.value = _uiState.value.copy(
                     civilization = civ,
                     isLoading = false,

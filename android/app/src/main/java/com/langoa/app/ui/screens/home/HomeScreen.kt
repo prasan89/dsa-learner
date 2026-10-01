@@ -307,7 +307,7 @@ private fun CityView(
                     .padding(horizontal = 10.dp, vertical = 5.dp)
             ) {
                 Text(
-                    text = "${civilization?.name ?: "My Civilization"} • Village Lv ${civilization?.level ?: 1}",
+                    text = "${civilization?.name ?: "My Civilization"} • Village Lv ${civilization?.tierLevel ?: 1}",
                     style = MaterialTheme.typography.labelMedium,
                     color = LangoaAmberLight
                 )
