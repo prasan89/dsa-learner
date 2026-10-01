@@ -30,6 +30,21 @@ sealed class Exercise(open val id: String, val type: ExerciseType) {
         val wordBankItems: List<String>,
         val correctAnswer: String
     ) : Exercise(id, ExerciseType.SENTENCE_CONSTRUCT)
+
+    data class TranslateChoiceExercise(
+        override val id: String,
+        val prompt: String,
+        val choices: List<String>,
+        val correctAnswer: String,
+        val literalHelp: String = ""
+    ) : Exercise(id, ExerciseType.TRANSLATE_TO_TARGET)
+
+    data class ListenChooseExercise(
+        override val id: String,
+        val audioText: String,
+        val choices: List<String>,
+        val correctAnswer: String
+    ) : Exercise(id, ExerciseType.LISTEN_CHOOSE)
 }
 
 enum class ExerciseType {

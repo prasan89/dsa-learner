@@ -18,12 +18,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -34,6 +37,9 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -221,6 +227,9 @@ fun LessonScreen(
                             is Exercise.VocabularyExercise -> answer.trim().equals(currentExercise.correctAnswer.trim(), ignoreCase = true)
                             is Exercise.MultipleChoiceExercise -> answer.trim().equals(currentExercise.correctAnswer.trim(), ignoreCase = true)
                             is Exercise.TranslateToTargetExercise -> answer.trim().equals(currentExercise.correctAnswer.trim(), ignoreCase = true)
+                            is Exercise.TranslateChoiceExercise -> answer.trim().equals(currentExercise.correctAnswer.trim(), ignoreCase = true)
+                            is Exercise.SentenceConstructExercise -> answer.trim().equals(currentExercise.correctAnswer.trim(), ignoreCase = true)
+                            is Exercise.ListenChooseExercise -> answer.trim().equals(currentExercise.correctAnswer.trim(), ignoreCase = true)
                             else -> false
                         }
                         localLessonState = localLessonState.copy(
@@ -409,11 +418,23 @@ private fun ExerciseContent(
             exerciseState = exerciseState,
             onAnswer = onAnswer
         )
+        is Exercise.TranslateChoiceExercise -> TranslateChoiceExerciseView(
+            exercise = exercise,
+            exerciseState = exerciseState,
+            onAnswer = onAnswer
+        )
+        is Exercise.SentenceConstructExercise -> SentenceBuilderView(
+            exercise = exercise,
+            exerciseState = exerciseState,
+            onAnswer = onAnswer
+        )
+        is Exercise.ListenChooseExercise -> ListenChooseExerciseView(
+            exercise = exercise,
+            exerciseState = exerciseState,
+            onAnswer = onAnswer
+        )
         else -> GenericExerciseView(
-            question = when (exercise) {
-                is Exercise.SentenceConstructExercise -> exercise.prompt
-                else -> "Answer this question"
-            },
+            question = "Answer this question",
             onAnswer = onAnswer
         )
     }
@@ -650,6 +671,214 @@ private fun GenericExerciseView(
 }
 
 @Composable
+private fun TranslateChoiceExerciseView(
+    exercise: Exercise.TranslateChoiceExercise,
+    exerciseState: ExerciseState,
+    onAnswer: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = LangoaSurface),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text(
+                    "Translate to target language",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = LangoaAmber
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    exercise.prompt,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = LangoaOnBackground,
+                    fontWeight = FontWeight.Bold
+                )
+                if (exercise.literalHelp.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        exercise.literalHelp,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = LangoaOnBackground.copy(alpha = 0.6f)
+                    )
+                }
+            }
+        }
+        exercise.choices.forEach { choice ->
+            OptionButton(
+                text = choice,
+                exerciseState = exerciseState,
+                correctAnswer = exercise.correctAnswer,
+                onAnswer = onAnswer
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SentenceBuilderView(
+    exercise: Exercise.SentenceConstructExercise,
+    exerciseState: ExerciseState,
+    onAnswer: (String) -> Unit
+) {
+    var trayWords by remember { mutableStateOf(listOf<String>()) }
+    var bankWords by remember { mutableStateOf(exercise.wordBankItems.toList()) }
+    val answered = exerciseState as? ExerciseState.Answered
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = LangoaSurface),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text(
+                    "Build the sentence",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = LangoaAmber
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    exercise.prompt,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = LangoaOnBackground,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+        // Sentence tray
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .defaultMinSize(minHeight = 52.dp),
+            colors = CardDefaults.cardColors(containerColor = LangoaSurface.copy(alpha = 0.5f)),
+            shape = RoundedCornerShape(14.dp)
+        ) {
+            FlowRow(
+                modifier = Modifier.padding(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                trayWords.forEach { word ->
+                    if (answered == null) {
+                        AssistChip(
+                            onClick = {
+                                trayWords = trayWords - word
+                                bankWords = bankWords + word
+                            },
+                            label = { Text(word) }
+                        )
+                    } else {
+                        SuggestionChip(onClick = {}, label = { Text(word) })
+                    }
+                }
+                if (trayWords.isEmpty()) {
+                    Text(
+                        "Tap words below to build the sentence",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = LangoaOnBackground.copy(alpha = 0.4f),
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+            }
+        }
+        // Word bank
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            bankWords.forEach { word ->
+                if (answered == null) {
+                    AssistChip(
+                        onClick = {
+                            bankWords = bankWords - word
+                            trayWords = trayWords + word
+                        },
+                        label = { Text(word) }
+                    )
+                } else {
+                    SuggestionChip(onClick = {}, label = { Text(word) })
+                }
+            }
+        }
+        if (answered == null) {
+            Button(
+                onClick = { if (trayWords.isNotEmpty()) onAnswer(trayWords.joinToString(" ")) },
+                enabled = trayWords.isNotEmpty(),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = LangoaAmber)
+            ) {
+                Text("CHECK", fontWeight = FontWeight.ExtraBold, letterSpacing = 2.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ListenChooseExerciseView(
+    exercise: Exercise.ListenChooseExercise,
+    exerciseState: ExerciseState,
+    onAnswer: (String) -> Unit
+) {
+    var audioRevealed by remember { mutableStateOf(false) }
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = LangoaSurface),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    "Listen and choose",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = LangoaAmber
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedButton(
+                    onClick = { audioRevealed = true },
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier.size(72.dp)
+                ) {
+                    Text("▶", style = MaterialTheme.typography.headlineMedium)
+                }
+                if (audioRevealed) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        exercise.audioText,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = LangoaOnBackground,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+        exercise.choices.forEach { choice ->
+            OptionButton(
+                text = choice,
+                exerciseState = exerciseState,
+                correctAnswer = exercise.correctAnswer,
+                onAnswer = onAnswer
+            )
+        }
+    }
+}
+
+@Composable
 private fun OptionButton(
     text: String,
     exerciseState: ExerciseState,
@@ -803,7 +1032,9 @@ private fun correctAnswerFor(exercise: Exercise): String = when (exercise) {
     is Exercise.VocabularyExercise -> exercise.correctAnswer
     is Exercise.MultipleChoiceExercise -> exercise.correctAnswer
     is Exercise.TranslateToTargetExercise -> exercise.correctAnswer
+    is Exercise.TranslateChoiceExercise -> exercise.correctAnswer
     is Exercise.SentenceConstructExercise -> exercise.correctAnswer
+    is Exercise.ListenChooseExercise -> exercise.correctAnswer
     else -> ""
 }
 

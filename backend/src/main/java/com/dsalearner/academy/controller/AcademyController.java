@@ -42,6 +42,16 @@ public class AcademyController {
         return ResponseEntity.ok(academyService.getLesson(language, lessonId, userId));
     }
 
+    @GetMapping("/lessons/{lessonId}/overview")
+    public ResponseEntity<LessonOverviewDto> getLessonOverview(
+            @PathVariable String language,
+            @PathVariable UUID lessonId,
+            Authentication authentication) {
+        domainAuthService.requireDomain(authentication, "language");
+        UUID userId = currentUserProvider.getUserId(authentication);
+        return ResponseEntity.ok(academyService.getLessonOverview(language, lessonId, userId));
+    }
+
     @PatchMapping("/lessons/{lessonId}/step")
     public ResponseEntity<LessonProgressDto> updateStepProgress(
             @PathVariable String language,

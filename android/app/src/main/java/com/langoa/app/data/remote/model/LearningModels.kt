@@ -51,3 +51,19 @@ data class ExerciseDto(
 data class LessonCompletionRequest(
     val score: Int
 )
+
+data class LessonOverviewDto(
+    val lessonId: String,
+    val stableRef: String,
+    val title: String,
+    val cefrLevel: String,
+    val languageCode: String,
+    val unitDisplayName: String?,
+    val estimatedMinutes: Int,
+    val canDo: String,
+    val objectives: List<String>,
+    val skillFocus: List<String>,
+    val xpReward: Long,
+    val coinsReward: Long,
+    val exerciseCount: Int
+)

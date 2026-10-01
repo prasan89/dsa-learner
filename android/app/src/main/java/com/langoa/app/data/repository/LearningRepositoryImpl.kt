@@ -4,6 +4,7 @@ import com.langoa.app.data.local.dao.CachedLessonDao
 import com.langoa.app.data.local.entity.CachedLesson
 import com.langoa.app.data.remote.api.LearningApi
 import com.langoa.app.data.remote.model.LessonCompletionRequest
+import com.langoa.app.data.remote.model.LessonOverviewDto
 import com.langoa.app.domain.model.Exercise
 import com.langoa.app.domain.model.ExerciseType
 import com.langoa.app.domain.model.Lesson
@@ -45,11 +46,30 @@ class LearningRepositoryImpl @Inject constructor(
                         correctAnswer = exerciseDto.correctAnswer,
                         explanation = exerciseDto.explanation ?: ""
                     )
-                    ExerciseType.TRANSLATE_TO_TARGET -> Exercise.TranslateToTargetExercise(
+                    ExerciseType.TRANSLATE_TO_TARGET -> {
+                        val options = exerciseDto.options
+                        if (!options.isNullOrEmpty()) {
+                            Exercise.TranslateChoiceExercise(
+                                id = exerciseDto.id,
+                                prompt = exerciseDto.prompt ?: exerciseDto.question,
+                                choices = options,
+                                correctAnswer = exerciseDto.correctAnswer,
+                                literalHelp = exerciseDto.hint ?: ""
+                            )
+                        } else {
+                            Exercise.TranslateToTargetExercise(
+                                id = exerciseDto.id,
+                                question = exerciseDto.question,
+                                correctAnswer = exerciseDto.correctAnswer,
+                                hint = exerciseDto.hint ?: ""
+                            )
+                        }
+                    }
+                    ExerciseType.LISTEN_CHOOSE -> Exercise.ListenChooseExercise(
                         id = exerciseDto.id,
-                        question = exerciseDto.question,
-                        correctAnswer = exerciseDto.correctAnswer,
-                        hint = exerciseDto.hint ?: ""
+                        audioText = exerciseDto.question,
+                        choices = exerciseDto.options ?: emptyList(),
+                        correctAnswer = exerciseDto.correctAnswer
                     )
                     ExerciseType.SENTENCE_CONSTRUCT -> Exercise.SentenceConstructExercise(
                         id = exerciseDto.id,
@@ -76,6 +96,14 @@ class LearningRepositoryImpl @Inject constructor(
                 exerciseCount = exercises.size
             )
             Result.success(lesson)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getLessonOverview(languageCode: String, lessonId: String): Result<LessonOverviewDto> {
+        return try {
+            Result.success(learningApi.getLessonOverview(languageCode, lessonId))
         } catch (e: Exception) {
             Result.failure(e)
         }

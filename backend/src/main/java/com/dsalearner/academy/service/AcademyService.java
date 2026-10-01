@@ -285,6 +285,21 @@ public class AcademyService {
         );
     }
 
+    // ── GET /lessons/{lessonId}/overview ─────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public LessonOverviewDto getLessonOverview(String languageCode, UUID lessonId, UUID userId) {
+        resolveCurriculum(languageCode);
+        CfLesson lesson = lessonRepo.findById(lessonId)
+                .orElseThrow(() -> new LessonNotFoundException("Lesson not found: " + lessonId));
+        assertEligible(lesson);
+
+        CfLessonVersion version = resolveActiveVersion(lesson);
+        CfCurriculumLessonPlan plan = lessonPlanRepo.findByLessonId(lessonId).orElse(null);
+
+        return LessonOverviewDto.from(lesson, version, plan);
+    }
+
     // ── GET /{language}/progress ──────────────────────────────────────────────
 
     @Transactional(readOnly = true)

@@ -28,6 +28,7 @@ import com.langoa.app.ui.screens.build.BuildScreen
 import com.langoa.app.ui.screens.home.HomeScreen
 import com.langoa.app.ui.screens.language.LanguagePickerScreen
 import com.langoa.app.ui.screens.learn.LearnScreen
+import com.langoa.app.ui.screens.learn.LessonOverviewScreen
 import com.langoa.app.ui.screens.learn.LessonScreen
 import com.langoa.app.ui.screens.learn.RewardScreen
 import com.langoa.app.ui.screens.profile.ProfileScreen
@@ -192,6 +193,25 @@ fun LangoaNavGraph() {
                 LearnScreen(
                     languageCode = languageCode,
                     onLessonClick = { lessonId ->
+                        navController.navigate(Screen.LessonOverview.createRoute(languageCode, lessonId))
+                    }
+                )
+            }
+
+            composable(
+                route = Screen.LessonOverview.route,
+                arguments = listOf(
+                    navArgument("languageCode") { type = NavType.StringType },
+                    navArgument("lessonId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val languageCode = backStackEntry.arguments?.getString("languageCode") ?: "de"
+                val lessonId = backStackEntry.arguments?.getString("lessonId") ?: ""
+                LessonOverviewScreen(
+                    languageCode = languageCode,
+                    lessonId = lessonId,
+                    onBack = { navController.popBackStack() },
+                    onStartLesson = {
                         navController.navigate(Screen.Lesson.createRoute(languageCode, lessonId))
                     }
                 )

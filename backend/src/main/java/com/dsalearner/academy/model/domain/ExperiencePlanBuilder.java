@@ -207,11 +207,18 @@ public class ExperiencePlanBuilder {
     private StepType resolveExerciseType(Map<String, Object> ex) {
         String typeStr = (String) ex.getOrDefault("type", "");
         return switch (typeStr.toUpperCase()) {
-            case "MULTIPLE_CHOICE" -> StepType.MULTIPLE_CHOICE;
-            case "FILL_IN_BLANK"   -> StepType.FILL_IN_BLANK;
-            case "TRANSLATION"     -> StepType.TRANSLATION;
-            case "LISTENING"       -> StepType.LISTENING;
-            default -> StepType.MULTIPLE_CHOICE;
+            case "MULTIPLE_CHOICE"                   -> StepType.MULTIPLE_CHOICE;
+            case "FILL_IN_BLANK"                     -> StepType.FILL_IN_BLANK;
+            case "TRANSLATION",
+                 "TRANSLATE_TO_TARGET",
+                 "TRANSLATE_TO_ENGLISH",
+                 "SENTENCE_CONSTRUCT",
+                 "REORDER"                           -> StepType.TRANSLATION;
+            case "LISTENING",
+                 "LISTEN_CHOOSE",
+                 "LISTEN_TYPE"                       -> StepType.LISTENING;
+            case "VOCABULARY"                        -> StepType.MULTIPLE_CHOICE;
+            default                                  -> StepType.MULTIPLE_CHOICE;
         };
     }
 
