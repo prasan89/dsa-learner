@@ -11,6 +11,7 @@ import com.dsalearner.civilization.model.entity.*;
 import com.dsalearner.civilization.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,7 +71,16 @@ public class CivilizationService {
     public LangoaCivilization getOrCreateCivilization(UUID userId, String languageCode) {
         String code = resolveLanguageCode(languageCode);
         return civilizationRepo.findByUserIdAndLanguageCode(userId, code)
-                .orElseGet(() -> createNewCivilization(userId, code));
+                .orElseGet(() -> {
+                    try {
+                        return createNewCivilization(userId, code);
+                    } catch (DataIntegrityViolationException e) {
+                        // Concurrent first-time request already created the row — just fetch it
+                        return civilizationRepo.findByUserIdAndLanguageCode(userId, code)
+                                .orElseThrow(() -> new IllegalStateException(
+                                        "Civilization disappeared after concurrent creation for user=" + userId));
+                    }
+                });
     }
 
     @Transactional(readOnly = true)
@@ -93,15 +103,16 @@ public class CivilizationService {
             UUID userId, String languageCode, UUID lessonId,
             String cefrLevel, String idempotencyKey) {
 
-        // Idempotency check — already rewarded, return empty response
-        if (transactionRepo.existsByIdempotencyKey(idempotencyKey)) {
+        String code = resolveLanguageCode(languageCode);
+
+        // Fast path: check before issuing all the locks (non-authoritative — race is resolved by the
+        // UNIQUE constraint on idempotency_key when the transaction actually commits)
+        if (idempotencyKey != null && transactionRepo.existsByIdempotencyKey(idempotencyKey)) {
             log.debug("Lesson reward already applied, idempotency_key={}", idempotencyKey);
-            String code = resolveLanguageCode(languageCode);
             Map<String, Long> currentBalances = buildBalanceMap(userId, code);
             return new LessonRewardResponse(0, 0, 0, 0, 0, currentBalances, null, false, List.of());
         }
 
-        String code = resolveLanguageCode(languageCode);
         LangoaCivilization civ = getOrCreateCivilization(userId, code);
 
         // Resolve reward definition; fall back to generic defaults
@@ -111,17 +122,24 @@ public class CivilizationService {
 
         String sourceRef = lessonId != null ? lessonId.toString() : "unknown";
 
-        // Apply each currency reward
-        updateBalance(userId, code, CurrencyType.XP,                 reward.getXpReward(),
-                TransactionType.LESSON_COMPLETION, sourceRef, idempotencyKey + "-XP");
-        updateBalance(userId, code, CurrencyType.COINS,              reward.getCoinReward(),
-                TransactionType.LESSON_COMPLETION, sourceRef, idempotencyKey + "-COINS");
-        updateBalance(userId, code, CurrencyType.FOOD,               reward.getFoodReward(),
-                TransactionType.LESSON_COMPLETION, sourceRef, idempotencyKey + "-FOOD");
-        updateBalance(userId, code, CurrencyType.MATERIALS,          reward.getMaterialReward(),
-                TransactionType.LESSON_COMPLETION, sourceRef, idempotencyKey + "-MATERIALS");
-        updateBalance(userId, code, CurrencyType.CIVILIZATION_POWER, reward.getCivilizationPowerReward(),
-                TransactionType.LESSON_COMPLETION, sourceRef, idempotencyKey + "-CIV_POWER");
+        try {
+            // Apply each currency reward — updateBalance uses SELECT FOR UPDATE on balance rows
+            updateBalance(userId, code, CurrencyType.XP,                 reward.getXpReward(),
+                    TransactionType.LESSON_COMPLETION, sourceRef, idempotencyKey + "-XP");
+            updateBalance(userId, code, CurrencyType.COINS,              reward.getCoinReward(),
+                    TransactionType.LESSON_COMPLETION, sourceRef, idempotencyKey + "-COINS");
+            updateBalance(userId, code, CurrencyType.FOOD,               reward.getFoodReward(),
+                    TransactionType.LESSON_COMPLETION, sourceRef, idempotencyKey + "-FOOD");
+            updateBalance(userId, code, CurrencyType.MATERIALS,          reward.getMaterialReward(),
+                    TransactionType.LESSON_COMPLETION, sourceRef, idempotencyKey + "-MATERIALS");
+            updateBalance(userId, code, CurrencyType.CIVILIZATION_POWER, reward.getCivilizationPowerReward(),
+                    TransactionType.LESSON_COMPLETION, sourceRef, idempotencyKey + "-CIV_POWER");
+        } catch (DataIntegrityViolationException e) {
+            // Idempotency_key UNIQUE constraint fired — concurrent duplicate request lost the race
+            log.debug("Duplicate lesson reward blocked by DB constraint, idempotency_key={}", idempotencyKey);
+            Map<String, Long> currentBalances = buildBalanceMap(userId, code);
+            return new LessonRewardResponse(0, 0, 0, 0, 0, currentBalances, null, false, List.of());
+        }
 
         // Update civilization stats
         civ.setTotalXp(civ.getTotalXp() + reward.getXpReward());
@@ -164,10 +182,10 @@ public class CivilizationService {
                 .orElseThrow(() -> new InsufficientResourcesException(
                         "Unknown building type: " + req.buildingType()));
 
-        // Verify resources
-        long coins     = getBalance(userId, code, CurrencyType.COINS);
-        long food      = getBalance(userId, code, CurrencyType.FOOD);
-        long materials = getBalance(userId, code, CurrencyType.MATERIALS);
+        // Verify resources — SELECT FOR UPDATE prevents concurrent builds from passing with the same balance
+        long coins     = getBalanceForUpdate(userId, code, CurrencyType.COINS);
+        long food      = getBalanceForUpdate(userId, code, CurrencyType.FOOD);
+        long materials = getBalanceForUpdate(userId, code, CurrencyType.MATERIALS);
 
         if (coins < config.getCoinCost()) {
             throw new InsufficientResourcesException(
@@ -260,8 +278,9 @@ public class CivilizationService {
 
     private void updateBalance(UUID userId, String languageCode, CurrencyType currencyType,
                                long delta, TransactionType txType, String sourceRef, String idempotencyKey) {
+        // SELECT FOR UPDATE prevents lost-update races when two transactions modify the same balance row
         LangoaCurrencyBalance bal = balanceRepo
-                .findByUserIdAndLanguageCodeAndCurrencyType(userId, languageCode, currencyType)
+                .findForUpdate(userId, languageCode, currencyType)
                 .orElseGet(() -> {
                     LangoaCurrencyBalance newBal = LangoaCurrencyBalance.builder()
                             .userId(userId)
@@ -296,6 +315,12 @@ public class CivilizationService {
 
     private long getBalance(UUID userId, String languageCode, CurrencyType currencyType) {
         return balanceRepo.findByUserIdAndLanguageCodeAndCurrencyType(userId, languageCode, currencyType)
+                .map(LangoaCurrencyBalance::getBalance)
+                .orElse(0L);
+    }
+
+    private long getBalanceForUpdate(UUID userId, String languageCode, CurrencyType currencyType) {
+        return balanceRepo.findForUpdate(userId, languageCode, currencyType)
                 .map(LangoaCurrencyBalance::getBalance)
                 .orElse(0L);
     }

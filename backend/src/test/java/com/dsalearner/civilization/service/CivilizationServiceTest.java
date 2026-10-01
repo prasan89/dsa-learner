@@ -87,8 +87,8 @@ class CivilizationServiceTest {
         when(rewardDefRepo.findByCefrLevelAndDifficultyTier("A1", DifficultyTier.STANDARD))
                 .thenReturn(Optional.of(rewardA1));
 
-        // Balance stubs: return a balance object with 0 for each currency
-        when(balanceRepo.findByUserIdAndLanguageCodeAndCurrencyType(eq(userId), eq("de"), any()))
+        // updateBalance now calls findForUpdate (SELECT FOR UPDATE) for writes
+        when(balanceRepo.findForUpdate(eq(userId), eq("de"), any()))
                 .thenAnswer(inv -> {
                     CurrencyType ct = inv.getArgument(2);
                     LangoaCurrencyBalance bal = LangoaCurrencyBalance.builder()
@@ -155,12 +155,12 @@ class CivilizationServiceTest {
         when(buildingLevelConfigRepo.findByBuildingTypeAndLevel("FARM", 1))
                 .thenReturn(Optional.of(farmCfg));
 
-        // Return sufficient balances
-        when(balanceRepo.findByUserIdAndLanguageCodeAndCurrencyType(userId, "de", CurrencyType.COINS))
+        // buildBuilding uses getBalanceForUpdate → findForUpdate for pre-check
+        when(balanceRepo.findForUpdate(userId, "de", CurrencyType.COINS))
                 .thenReturn(Optional.of(balanceOf(userId, CurrencyType.COINS, 200L)));
-        when(balanceRepo.findByUserIdAndLanguageCodeAndCurrencyType(userId, "de", CurrencyType.FOOD))
+        when(balanceRepo.findForUpdate(userId, "de", CurrencyType.FOOD))
                 .thenReturn(Optional.of(balanceOf(userId, CurrencyType.FOOD, 50L)));
-        when(balanceRepo.findByUserIdAndLanguageCodeAndCurrencyType(userId, "de", CurrencyType.MATERIALS))
+        when(balanceRepo.findForUpdate(userId, "de", CurrencyType.MATERIALS))
                 .thenReturn(Optional.of(balanceOf(userId, CurrencyType.MATERIALS, 30L)));
 
         when(balanceRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -203,13 +203,9 @@ class CivilizationServiceTest {
         when(buildingLevelConfigRepo.findByBuildingTypeAndLevel("FARM", 1))
                 .thenReturn(Optional.of(farmCfg));
 
-        // User has 0 coins — not enough
-        when(balanceRepo.findByUserIdAndLanguageCodeAndCurrencyType(userId, "de", CurrencyType.COINS))
+        // User has 0 coins — not enough; FOOD/MATERIALS are never checked so no stubs needed
+        when(balanceRepo.findForUpdate(userId, "de", CurrencyType.COINS))
                 .thenReturn(Optional.of(balanceOf(userId, CurrencyType.COINS, 0L)));
-        when(balanceRepo.findByUserIdAndLanguageCodeAndCurrencyType(userId, "de", CurrencyType.FOOD))
-                .thenReturn(Optional.of(balanceOf(userId, CurrencyType.FOOD, 50L)));
-        when(balanceRepo.findByUserIdAndLanguageCodeAndCurrencyType(userId, "de", CurrencyType.MATERIALS))
-                .thenReturn(Optional.of(balanceOf(userId, CurrencyType.MATERIALS, 30L)));
 
         BuildBuildingRequest req = new BuildBuildingRequest("FARM", 0, 0);
 
@@ -236,12 +232,12 @@ class CivilizationServiceTest {
         when(buildingLevelConfigRepo.findByBuildingTypeAndLevel("FARM", 1))
                 .thenReturn(Optional.of(farmCfg));
 
-        // User has plenty of coins and materials
-        when(balanceRepo.findByUserIdAndLanguageCodeAndCurrencyType(userId, "de", CurrencyType.COINS))
+        // User has plenty of coins and materials — fails on lesson count gate
+        when(balanceRepo.findForUpdate(userId, "de", CurrencyType.COINS))
                 .thenReturn(Optional.of(balanceOf(userId, CurrencyType.COINS, 500L)));
-        when(balanceRepo.findByUserIdAndLanguageCodeAndCurrencyType(userId, "de", CurrencyType.FOOD))
+        when(balanceRepo.findForUpdate(userId, "de", CurrencyType.FOOD))
                 .thenReturn(Optional.of(balanceOf(userId, CurrencyType.FOOD, 50L)));
-        when(balanceRepo.findByUserIdAndLanguageCodeAndCurrencyType(userId, "de", CurrencyType.MATERIALS))
+        when(balanceRepo.findForUpdate(userId, "de", CurrencyType.MATERIALS))
                 .thenReturn(Optional.of(balanceOf(userId, CurrencyType.MATERIALS, 30L)));
 
         BuildBuildingRequest req = new BuildBuildingRequest("FARM", 0, 0);
@@ -274,8 +270,8 @@ class CivilizationServiceTest {
                 .build();
         when(civilizationRepo.save(any())).thenReturn(savedCiv);
 
-        // Balance creation: return empty optional so new balances are created
-        when(balanceRepo.findByUserIdAndLanguageCodeAndCurrencyType(eq(userId), eq("de"), any()))
+        // Balance creation: return empty optional so new balances are created via findForUpdate (initial grant path)
+        when(balanceRepo.findForUpdate(eq(userId), eq("de"), any()))
                 .thenReturn(Optional.empty());
         when(balanceRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(transactionRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));

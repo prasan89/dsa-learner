@@ -245,16 +245,11 @@ public class AcademyService {
             }
         }
 
-        // Apply civilization rewards for lesson completion
-        LessonRewardResponse reward;
-        try {
-            String idempotencyKey = "lesson-" + lessonId + "-" + userId;
-            reward = civilizationService.applyLessonReward(
-                    userId, languageCode, lessonId, lesson.getCefrLevel(), idempotencyKey);
-        } catch (Exception e) {
-            log.warn("Civilization reward failed for lesson={} user={}: {}", lessonId, userId, e.getMessage());
-            reward = new LessonRewardResponse(0, 0, 0, 0, 0, Map.of(), null, false, List.of());
-        }
+        // Apply civilization rewards — runs in the same @Transactional scope so lesson completion
+        // and reward credit are atomic: either both commit or both roll back.
+        String idempotencyKey = "lesson-" + lessonId + "-" + userId;
+        LessonRewardResponse reward = civilizationService.applyLessonReward(
+                userId, languageCode, lessonId, lesson.getCefrLevel(), idempotencyKey);
 
         return new LessonCompletionResponse(
                 lessonId,
