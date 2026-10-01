@@ -48,6 +48,10 @@ public class LangoaRewardDefinition {
     @Builder.Default
     private long civilizationPowerReward = 100L;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private long woodReward = 5L;
+
     @Column(nullable = false, updatable = false)
     @Builder.Default
     private Instant createdAt = Instant.now();

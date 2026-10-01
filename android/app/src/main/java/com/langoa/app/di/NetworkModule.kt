@@ -1,5 +1,6 @@
 package com.langoa.app.di
 
+import com.google.gson.Gson
 import com.langoa.app.BuildConfig
 import com.langoa.app.data.local.TokenStorage
 import com.langoa.app.data.remote.api.AuthApi
@@ -49,6 +50,10 @@ object NetworkModule {
             .writeTimeout(30, TimeUnit.SECONDS)
             .build()
     }
+
+    @Provides
+    @Singleton
+    fun provideGson(): Gson = Gson()
 
     @Provides
     @Singleton

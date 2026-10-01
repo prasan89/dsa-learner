@@ -45,6 +45,10 @@ public class LangoaBuildingLevelConfig {
 
     @Column(nullable = false)
     @Builder.Default
+    private long woodCost = 0L;
+
+    @Column(nullable = false)
+    @Builder.Default
     private int requiredLessonsCompleted = 0;
 
     @Column(nullable = false)

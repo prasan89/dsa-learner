@@ -59,19 +59,14 @@ class HomeViewModel @Inject constructor(
                     civilization = civ,
                     isLoading = false,
                     civilizationName = civ.name,
-                    totalXp = civ.totalXp.toLong(),
-                    tierLevel = civ.level,
-                    balances = mapOf(
-                        "coins" to civ.coins.toLong(),
-                        "food" to civ.food.toLong(),
-                        "materials" to civ.materials.toLong(),
-                        "civPower" to civ.civPower.toLong()
-                    ),
+                    totalXp = civ.totalXp,
+                    tierLevel = civ.tierLevel,
+                    balances = civ.balances,
                     buildings = civ.buildings.map { b ->
                         BuildingUiModel(
                             id = b.id,
                             buildingType = b.buildingType,
-                            name = b.name,
+                            name = b.displayName,
                             level = b.level,
                             emoji = buildingEmoji(b.buildingType)
                         )

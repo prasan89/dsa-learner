@@ -1,23 +1,37 @@
 package com.langoa.app.data.remote.api
 
-import com.langoa.app.data.remote.model.AvailableBuildingsResponse
-import com.langoa.app.data.remote.model.BuildBuildingRequest
-import com.langoa.app.data.remote.model.CivilizationStateResponse
-import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.POST
-import retrofit2.http.Path
+import com.langoa.app.data.remote.model.*
+import retrofit2.http.*
 
 interface CivilizationApi {
-    @GET("api/civilization/{languageCode}")
-    suspend fun getCivilization(@Path("languageCode") languageCode: String): CivilizationStateResponse
+    @GET("api/v1/civilization/{language}")
+    suspend fun getCivilization(@Path("language") language: String): CivilizationStateResponse
 
-    @GET("api/civilization/{languageCode}/buildings/available")
-    suspend fun getAvailableBuildings(@Path("languageCode") languageCode: String): AvailableBuildingsResponse
+    @GET("api/v1/civilization/{language}/buildings/definitions")
+    suspend fun getBuildingDefinitions(@Path("language") language: String): List<BuildingDefinitionDto>
 
-    @POST("api/civilization/{languageCode}/buildings/build")
+    @POST("api/v1/civilization/{language}/buildings")
     suspend fun buildBuilding(
-        @Path("languageCode") languageCode: String,
+        @Path("language") language: String,
         @Body request: BuildBuildingRequest
     ): CivilizationStateResponse
+
+    @POST("api/v1/civilization/{language}/buildings/{id}/upgrade")
+    suspend fun upgradeBuilding(
+        @Path("language") language: String,
+        @Path("id") buildingId: String
+    ): CivilizationStateResponse
+
+    @PUT("api/v1/civilization/{language}/buildings/{id}/move")
+    suspend fun moveBuilding(
+        @Path("language") language: String,
+        @Path("id") buildingId: String,
+        @Body request: MoveBuildingRequest
+    ): CivilizationStateResponse
+
+    @GET("api/v1/civilization/{language}/quests")
+    suspend fun getQuests(@Path("language") language: String): List<QuestDto>
+
+    @GET("api/v1/civilization/{language}/achievements")
+    suspend fun getAchievements(@Path("language") language: String): List<AchievementDto>
 }

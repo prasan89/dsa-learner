@@ -2,11 +2,20 @@ package com.langoa.app.domain.model
 
 data class LessonReward(
     val lessonId: String,
-    val xpEarned: Int,
-    val coinsEarned: Int,
-    val foodEarned: Int,
-    val materialsEarned: Int,
-    val civPowerEarned: Int,
-    val isPerfect: Boolean = false,
-    val streakBonus: Boolean = false
+    val lessonStatus: String,
+    val score: Int,
+    val nextLevelUnlocked: Boolean = false,
+    val nextCefrLevel: String? = null,
+    val xpEarned: Long = 0,
+    val coinsEarned: Long = 0,
+    val foodEarned: Long = 0,
+    val materialsEarned: Long = 0,
+    val woodEarned: Long = 0,
+    val civilizationPowerEarned: Long = 0,
+    val newBalances: Map<String, Long> = emptyMap(),
+    val tierUpgraded: Boolean = false,
+    val newTier: String? = null,
+    val unlockedBuildingTypes: List<String> = emptyList(),
+    val completedQuestKeys: List<String> = emptyList(),
+    val unlockedAchievementKeys: List<String> = emptyList()
 )

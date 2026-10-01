@@ -49,23 +49,5 @@ data class ExerciseDto(
 )
 
 data class LessonCompletionRequest(
-    val lessonId: String,
-    val languageCode: String,
-    val score: Int,
-    val totalQuestions: Int,
-    val timeSpentSeconds: Int,
-    val isPerfect: Boolean
-)
-
-data class LessonCompletionResponse(
-    val lessonId: String,
-    val xpEarned: Int,
-    val coinsEarned: Int,
-    val foodEarned: Int,
-    val materialsEarned: Int,
-    val civPowerEarned: Int,
-    val isPerfect: Boolean,
-    val streakBonus: Boolean,
-    val newTotalXp: Int,
-    val newLevel: Int
+    val score: Int
 )

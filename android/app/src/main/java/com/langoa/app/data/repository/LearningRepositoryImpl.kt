@@ -90,25 +90,27 @@ class LearningRepositoryImpl @Inject constructor(
         isPerfect: Boolean
     ): Result<LessonReward> {
         return try {
-            val request = LessonCompletionRequest(
-                lessonId = lessonId,
-                languageCode = languageCode,
-                score = score,
-                totalQuestions = totalQuestions,
-                timeSpentSeconds = timeSpentSeconds,
-                isPerfect = isPerfect
-            )
+            val request = LessonCompletionRequest(score = score)
             val response = learningApi.completeLesson(languageCode, lessonId, request)
             cachedLessonDao.markLessonCompleted(lessonId)
             val reward = LessonReward(
                 lessonId = response.lessonId,
+                lessonStatus = response.lessonStatus,
+                score = response.score,
+                nextLevelUnlocked = response.nextLevelUnlocked,
+                nextCefrLevel = response.nextCefrLevel,
                 xpEarned = response.xpEarned,
                 coinsEarned = response.coinsEarned,
                 foodEarned = response.foodEarned,
                 materialsEarned = response.materialsEarned,
-                civPowerEarned = response.civPowerEarned,
-                isPerfect = response.isPerfect,
-                streakBonus = response.streakBonus
+                woodEarned = response.woodEarned,
+                civilizationPowerEarned = response.civilizationPowerEarned,
+                newBalances = response.newBalances,
+                tierUpgraded = response.tierUpgraded,
+                newTier = response.newTier,
+                unlockedBuildingTypes = response.unlockedBuildingTypes,
+                completedQuestKeys = response.completedQuestKeys,
+                unlockedAchievementKeys = response.unlockedAchievementKeys
             )
             Result.success(reward)
         } catch (e: Exception) {

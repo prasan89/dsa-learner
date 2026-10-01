@@ -44,6 +44,10 @@ class CivilizationServiceTest {
     @Mock LangoaBuildingLevelConfigRepository buildingLevelConfigRepo;
     @Mock LangoaBuildingInstanceRepository buildingInstanceRepo;
     @Mock LangoaRewardDefinitionRepository rewardDefRepo;
+    @Mock LangoaDecorationDefinitionRepository decorationDefRepo;
+    @Mock LangoaDecorationInstanceRepository decorationInstanceRepo;
+    @Mock LangoaCityExpansionDefinitionRepository expansionDefRepo;
+    @Mock LangoaCityExpansionInstanceRepository expansionInstanceRepo;
 
     @InjectMocks CivilizationService service;
 
@@ -108,11 +112,12 @@ class CivilizationServiceTest {
         assertThat(response.coinsEarned()).isEqualTo(50);
         assertThat(response.foodEarned()).isEqualTo(10);
         assertThat(response.materialsEarned()).isEqualTo(5);
+        assertThat(response.woodEarned()).isEqualTo(5); // field default on LangoaRewardDefinition is 5L
         assertThat(response.civilizationPowerEarned()).isEqualTo(100);
         assertThat(response.tierUpgraded()).isFalse();
 
-        // Verify transactions were persisted (one per currency = 5 calls)
-        verify(transactionRepo, times(5)).save(any(LangoaTransaction.class));
+        // Verify transactions were persisted (one per currency = 6 calls: XP, COINS, FOOD, MATERIALS, WOOD, CIV_POWER)
+        verify(transactionRepo, times(6)).save(any(LangoaTransaction.class));
         verify(civilizationRepo).save(any(LangoaCivilization.class));
     }
 
@@ -162,6 +167,8 @@ class CivilizationServiceTest {
                 .thenReturn(Optional.of(balanceOf(userId, CurrencyType.FOOD, 50L)));
         when(balanceRepo.findForUpdate(userId, "de", CurrencyType.MATERIALS))
                 .thenReturn(Optional.of(balanceOf(userId, CurrencyType.MATERIALS, 30L)));
+        when(balanceRepo.findForUpdate(userId, "de", CurrencyType.WOOD))
+                .thenReturn(Optional.of(balanceOf(userId, CurrencyType.WOOD, 20L)));
 
         when(balanceRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(transactionRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -169,6 +176,9 @@ class CivilizationServiceTest {
         when(buildingInstanceRepo.findByCivilizationId(civId)).thenReturn(List.of());
         when(buildingDefRepo.findByActiveTrueOrderByDisplayOrder()).thenReturn(List.of());
         when(balanceRepo.findByUserIdAndLanguageCode(userId, "de")).thenReturn(List.of());
+        when(decorationDefRepo.findByActiveTrueOrderByDisplayOrder()).thenReturn(List.of());
+        when(decorationInstanceRepo.findByCivilizationId(civId)).thenReturn(List.of());
+        when(expansionInstanceRepo.findByCivilizationId(civId)).thenReturn(List.of());
 
         BuildBuildingRequest req = new BuildBuildingRequest("FARM", 3, 4);
         CivilizationStateResponse state = service.buildBuilding(userId, "de", req);
@@ -239,6 +249,8 @@ class CivilizationServiceTest {
                 .thenReturn(Optional.of(balanceOf(userId, CurrencyType.FOOD, 50L)));
         when(balanceRepo.findForUpdate(userId, "de", CurrencyType.MATERIALS))
                 .thenReturn(Optional.of(balanceOf(userId, CurrencyType.MATERIALS, 30L)));
+        when(balanceRepo.findForUpdate(userId, "de", CurrencyType.WOOD))
+                .thenReturn(Optional.of(balanceOf(userId, CurrencyType.WOOD, 20L)));
 
         BuildBuildingRequest req = new BuildBuildingRequest("FARM", 0, 0);
 
@@ -287,8 +299,8 @@ class CivilizationServiceTest {
         // Civilization saved once
         verify(civilizationRepo).save(any(LangoaCivilization.class));
 
-        // 6 balance rows created (one per CurrencyType)
-        verify(balanceRepo, atLeast(6)).save(any(LangoaCurrencyBalance.class));
+        // 7 balance rows created (one per CurrencyType: COINS, GEMS, XP, FOOD, MATERIALS, WOOD, CIVILIZATION_POWER)
+        verify(balanceRepo, atLeast(7)).save(any(LangoaCurrencyBalance.class));
 
         // Initial grant transactions: COINS(200), FOOD(50), MATERIALS(30) = 3 calls minimum
         ArgumentCaptor<LangoaTransaction> txnCaptor =

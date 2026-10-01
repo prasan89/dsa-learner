@@ -8,5 +8,9 @@ public record BuildingInstanceDto(
         String displayName,
         int level,
         int positionX,
-        int positionY
+        int positionY,
+        String buildState,
+        int rotationDeg,
+        int widthTiles,
+        int heightTiles
 ) {}

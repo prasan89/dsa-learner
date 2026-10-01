@@ -8,6 +8,7 @@ public record LessonRewardResponse(
         long coinsEarned,
         long foodEarned,
         long materialsEarned,
+        long woodEarned,
         long civilizationPowerEarned,
         Map<String, Long> newBalances,
         String newTier,

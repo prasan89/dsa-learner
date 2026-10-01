@@ -3,7 +3,9 @@ package com.dsalearner.civilization.controller;
 import com.dsalearner.academy.security.CurrentUserProvider;
 import com.dsalearner.civilization.repository.LangoaBuildingDefinitionRepository;
 import com.dsalearner.civilization.repository.LangoaBuildingInstanceRepository;
+import com.dsalearner.civilization.service.AchievementService;
 import com.dsalearner.civilization.service.CivilizationService;
+import com.dsalearner.civilization.service.QuestService;
 import com.dsalearner.config.SecurityConfig;
 import com.dsalearner.security.DomainAuthorizationService;
 import com.dsalearner.security.JwtService;
@@ -45,6 +47,8 @@ class CivilizationControllerSecurityTest {
     @Autowired MockMvc mvc;
 
     @MockBean CivilizationService civilizationService;
+    @MockBean QuestService questService;
+    @MockBean AchievementService achievementService;
     @MockBean CurrentUserProvider currentUserProvider;
     @MockBean DomainAuthorizationService domainAuthService;
     @MockBean LangoaBuildingInstanceRepository buildingInstanceRepo;
@@ -85,7 +89,7 @@ class CivilizationControllerSecurityTest {
         // Stub the service to return a minimal response
         var stateResponse = new com.dsalearner.civilization.dto.CivilizationStateResponse(
                 UUID.randomUUID(), "de", "My Civ", "VILLAGE", 1, 0L, 0,
-                new java.util.LinkedHashMap<>(), List.of());
+                new java.util.LinkedHashMap<>(), List.of(), List.of(), List.of());
         when(civilizationService.getOrCreateAndGetState(any(), anyString()))
                 .thenReturn(stateResponse);
 
@@ -135,7 +139,7 @@ class CivilizationControllerSecurityTest {
         // Simulate User A building a building in "their" civilization
         var stateResponse = new com.dsalearner.civilization.dto.CivilizationStateResponse(
                 UUID.randomUUID(), "de", "User A Civ", "VILLAGE", 1, 0L, 0,
-                new java.util.LinkedHashMap<>(), List.of());
+                new java.util.LinkedHashMap<>(), List.of(), List.of(), List.of());
         when(civilizationService.buildBuilding(eq(userAId), anyString(), any()))
                 .thenReturn(stateResponse);
 

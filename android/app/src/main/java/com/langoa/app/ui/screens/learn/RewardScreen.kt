@@ -90,11 +90,13 @@ fun RewardScreen(
     // Stub reward if none provided
     val reward = uiState.reward ?: LessonReward(
         lessonId = lessonId,
+        lessonStatus = "COMPLETED",
+        score = 85,
         xpEarned = 15,
         coinsEarned = 10,
         foodEarned = 5,
         materialsEarned = 3,
-        civPowerEarned = 2
+        civilizationPowerEarned = 2
     )
 
     var rewardsVisible by remember { mutableStateOf(false) }
@@ -229,9 +231,13 @@ fun RewardScreen(
                         RewardRow(icon = "🪙", label = "Coins", value = "+${reward.coinsEarned}", color = LangoaCoins)
                         RewardRow(icon = "🌾", label = "Food", value = "+${reward.foodEarned}", color = LangoaFood)
                         RewardRow(icon = "🧱", label = "Materials", value = "+${reward.materialsEarned}", color = LangoaMaterials)
-                        RewardRow(icon = "🏰", label = "Civilization Power", value = "+${reward.civPowerEarned}", color = LangoaCivPower)
+                        RewardRow(icon = "🏰", label = "Civilization Power", value = "+${reward.civilizationPowerEarned}", color = LangoaCivPower)
 
-                        if (reward.isPerfect) {
+                        if (reward.woodEarned > 0) {
+                            RewardRow(icon = "🪵", label = "Wood", value = "+${reward.woodEarned}", color = LangoaAmberLight)
+                        }
+
+                        if (reward.tierUpgraded) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -240,15 +246,105 @@ fun RewardScreen(
                                     .padding(12.dp)
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("⚡", fontSize = 20.sp)
+                                    Text("🏆", fontSize = 20.sp)
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "PERFECT SCORE! Bonus XP earned!",
+                                        text = "TIER UP! ${reward.newTier ?: ""}",
                                         style = MaterialTheme.typography.labelMedium,
                                         color = LangoaAmber,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Quest completions
+            if (reward.completedQuestKeys.isNotEmpty()) {
+                AnimatedVisibility(
+                    visible = buttonVisible,
+                    enter = fadeIn(tween(600)) + slideInVertically(tween(600)) { 60 }
+                ) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = LangoaGreen.copy(alpha = 0.15f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                text = "✅ QUESTS COMPLETED",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = LangoaGreen,
+                                fontWeight = FontWeight.Bold
+                            )
+                            reward.completedQuestKeys.forEach { key ->
+                                Text(
+                                    text = "• ${key.replace('_', ' ').uppercase()}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = LangoaOnBackground.copy(alpha = 0.75f)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Achievement unlocks
+            if (reward.unlockedAchievementKeys.isNotEmpty()) {
+                AnimatedVisibility(
+                    visible = buttonVisible,
+                    enter = fadeIn(tween(700)) + slideInVertically(tween(700)) { 60 }
+                ) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = LangoaAmber.copy(alpha = 0.15f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                text = "🏆 ACHIEVEMENTS UNLOCKED",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = LangoaAmber,
+                                fontWeight = FontWeight.Bold
+                            )
+                            reward.unlockedAchievementKeys.forEach { key ->
+                                Text(
+                                    text = "• ${key.replace('_', ' ').uppercase()}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = LangoaOnBackground.copy(alpha = 0.75f)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Newly unlocked buildings
+            if (reward.unlockedBuildingTypes.isNotEmpty()) {
+                AnimatedVisibility(
+                    visible = buttonVisible,
+                    enter = fadeIn(tween(800)) + slideInVertically(tween(800)) { 60 }
+                ) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = LangoaAmberLight.copy(alpha = 0.12f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                text = "🏗 NEW BUILDINGS UNLOCKED",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = LangoaAmberLight,
+                                fontWeight = FontWeight.Bold
+                            )
+                            reward.unlockedBuildingTypes.forEach { type ->
+                                Text(
+                                    text = "• ${type.replace('_', ' ')}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = LangoaOnBackground.copy(alpha = 0.75f)
+                                )
                             }
                         }
                     }

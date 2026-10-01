@@ -6,16 +6,15 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "cached_civilizations")
 data class CachedCivilization(
     @PrimaryKey val id: String,
-    val userId: String,
     val languageCode: String,
     val name: String,
-    val totalXp: Int,
-    val level: Int,
-    val coins: Int,
-    val food: Int,
-    val materials: Int,
-    val civPower: Int,
-    val population: Int,
-    val buildingsJson: String = "",
+    val civilizationTier: String,
+    val tierLevel: Int,
+    val totalXp: Long,
+    val totalLessonsCompleted: Int,
+    val balancesJson: String = "{}",
+    val buildingsJson: String = "[]",
+    val decorationsJson: String = "[]",
+    val unlockedExpansionSlotsJson: String = "[]",
     val cachedAt: Long = System.currentTimeMillis()
 )

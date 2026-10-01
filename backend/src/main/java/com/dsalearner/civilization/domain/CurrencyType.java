@@ -6,5 +6,6 @@ public enum CurrencyType {
     XP,
     FOOD,
     MATERIALS,
+    WOOD,
     CIVILIZATION_POWER
 }

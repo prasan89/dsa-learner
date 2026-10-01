@@ -9,7 +9,9 @@ import com.dsalearner.academy.model.domain.ExperiencePlanBuilder;
 import com.dsalearner.academy.model.entity.LearnerLessonProgress;
 import com.dsalearner.academy.model.entity.LearnerLevelProgress;
 import com.dsalearner.civilization.dto.LessonRewardResponse;
+import com.dsalearner.civilization.service.AchievementService;
 import com.dsalearner.civilization.service.CivilizationService;
+import com.dsalearner.civilization.service.QuestService;
 import com.dsalearner.pipeline.domain.ContentStatus;
 import com.dsalearner.pipeline.model.entity.*;
 import com.dsalearner.pipeline.repository.*;
@@ -40,6 +42,8 @@ public class AcademyService {
     private final LearnerLevelProgressService levelProgressService;
     private final ExperiencePlanBuilder experiencePlanBuilder;
     private final CivilizationService civilizationService;
+    private final QuestService questService;
+    private final AchievementService achievementService;
 
     // ── GET /{language}/curriculum ────────────────────────────────────────────
 
@@ -251,6 +255,14 @@ public class AcademyService {
         LessonRewardResponse reward = civilizationService.applyLessonReward(
                 userId, languageCode, lessonId, lesson.getCefrLevel(), idempotencyKey);
 
+        // Progress quests for lesson completion
+        List<String> completedQuestKeys = questService.progressQuests(userId, languageCode, "LESSONS_COMPLETED", 1);
+
+        // Check achievements for lessons completed milestone
+        int totalLessonsCompleted = (int) lessonProgressService.countCompleted(userId);
+        List<String> unlockedAchievementKeys = achievementService.checkAchievements(
+                userId, languageCode, "LESSONS_COMPLETED", totalLessonsCompleted);
+
         return new LessonCompletionResponse(
                 lessonId,
                 progress.getStatus(),
@@ -262,10 +274,14 @@ public class AcademyService {
                 reward.coinsEarned(),
                 reward.foodEarned(),
                 reward.materialsEarned(),
+                reward.woodEarned(),
                 reward.civilizationPowerEarned(),
                 reward.newBalances(),
                 reward.tierUpgraded(),
-                reward.newTier()
+                reward.newTier(),
+                reward.unlockedBuildingTypes(),
+                completedQuestKeys,
+                unlockedAchievementKeys
         );
     }
 

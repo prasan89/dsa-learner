@@ -9,7 +9,7 @@ import com.langoa.app.data.local.entity.CachedLesson
 
 @Database(
     entities = [CachedLesson::class, CachedCivilization::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class LangoaDatabase : RoomDatabase() {

@@ -8,10 +8,14 @@ import com.dsalearner.academy.model.domain.ExperiencePlanBuilder;
 import com.dsalearner.academy.model.domain.ExperiencePlanStep;
 import com.dsalearner.academy.model.domain.StepType;
 import com.dsalearner.academy.model.entity.LearnerLessonProgress;
+import com.dsalearner.civilization.dto.LessonRewardResponse;
 import com.dsalearner.academy.model.entity.LearnerLevelProgress;
 import com.dsalearner.pipeline.domain.ContentStatus;
 import com.dsalearner.pipeline.model.entity.*;
 import com.dsalearner.pipeline.repository.*;
+import com.dsalearner.civilization.service.CivilizationService;
+import com.dsalearner.civilization.service.QuestService;
+import com.dsalearner.civilization.service.AchievementService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +44,9 @@ class AcademyServiceTest {
     @Mock LearnerLessonProgressService lessonProgressService;
     @Mock LearnerLevelProgressService levelProgressService;
     @Mock ExperiencePlanBuilder experiencePlanBuilder;
+    @Mock CivilizationService civilizationService;
+    @Mock QuestService questService;
+    @Mock AchievementService achievementService;
 
     @InjectMocks AcademyService service;
 
@@ -242,6 +249,11 @@ class AcademyServiceTest {
                 .status("IN_PROGRESS").lessonsTotal(5).lessonsCompleted(3).build();
         when(levelProgressService.recordLessonCompletion(any(), any(), eq("A1"), anyInt(), eq(85)))
                 .thenReturn(levelProg);
+        when(civilizationService.applyLessonReward(any(), any(), any(), any(), any()))
+                .thenReturn(new LessonRewardResponse(0, 0, 0, 0, 0, 0, Map.of(), null, false, List.of()));
+        when(questService.progressQuests(any(), any(), any(), anyInt())).thenReturn(List.of());
+        when(lessonProgressService.countCompleted(userId)).thenReturn(1L);
+        when(achievementService.checkAchievements(any(), any(), any(), anyInt())).thenReturn(List.of());
 
         var response = service.completeLesson("de", lessonId, userId, 85);
 
@@ -275,6 +287,11 @@ class AcademyServiceTest {
         when(levelRepo.findByCurriculumIdAndOrdinal(curriculumId, 2)).thenReturn(Optional.of(levelA2));
         when(levelProgressService.unlock(any(), any(), eq("A2"), anyInt()))
                 .thenReturn(LearnerLevelProgress.builder().status("IN_PROGRESS").build());
+        when(civilizationService.applyLessonReward(any(), any(), any(), any(), any()))
+                .thenReturn(new LessonRewardResponse(0, 0, 0, 0, 0, 0, Map.of(), null, false, List.of()));
+        when(questService.progressQuests(any(), any(), any(), anyInt())).thenReturn(List.of());
+        when(lessonProgressService.countCompleted(userId)).thenReturn(1L);
+        when(achievementService.checkAchievements(any(), any(), any(), anyInt())).thenReturn(List.of());
 
         var response = service.completeLesson("de", lessonId, userId, 100);
 
@@ -297,6 +314,11 @@ class AcademyServiceTest {
         when(lessonProgressService.complete(userId, lessonId, 70)).thenReturn(alreadyCompleted);
         when(levelProgressService.recordLessonCompletion(any(), any(), any(), anyInt(), anyInt()))
                 .thenReturn(LearnerLevelProgress.builder().status("IN_PROGRESS").build());
+        when(civilizationService.applyLessonReward(any(), any(), any(), any(), any()))
+                .thenReturn(new LessonRewardResponse(0, 0, 0, 0, 0, 0, Map.of(), null, false, List.of()));
+        when(questService.progressQuests(any(), any(), any(), anyInt())).thenReturn(List.of());
+        when(lessonProgressService.countCompleted(userId)).thenReturn(1L);
+        when(achievementService.checkAchievements(any(), any(), any(), anyInt())).thenReturn(List.of());
 
         var response = service.completeLesson("de", lessonId, userId, 70);
         assertThat(response.score()).isEqualTo(70); // score from request, not stored

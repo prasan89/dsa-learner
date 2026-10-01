@@ -7,7 +7,12 @@ import javax.inject.Inject
 class BuildBuildingUseCase @Inject constructor(
     private val civilizationRepository: CivilizationRepository
 ) {
-    suspend operator fun invoke(languageCode: String, buildingType: String): Result<Civilization> {
-        return civilizationRepository.buildBuilding(languageCode, buildingType)
+    suspend operator fun invoke(
+        languageCode: String,
+        buildingType: String,
+        positionX: Int = 0,
+        positionY: Int = 0
+    ): Result<Civilization> {
+        return civilizationRepository.buildBuilding(languageCode, buildingType, positionX, positionY)
     }
 }

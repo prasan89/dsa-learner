@@ -53,11 +53,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.langoa.app.domain.model.Building
+import com.langoa.app.domain.model.BuildingDefinition
 import com.langoa.app.domain.model.Civilization
 import com.langoa.app.ui.components.LoadingScreen
 import com.langoa.app.ui.theme.LangoaAmber
@@ -80,7 +80,8 @@ fun BuildScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    var buildingToBuild by remember { mutableStateOf<Building?>(null) }
+    var buildingToBuild by remember { mutableStateOf<BuildingDefinition?>(null) }
+    var buildingToUpgrade by remember { mutableStateOf<Pair<String, BuildingDefinition>?>(null) } // buildingId to def
     var visible by remember { mutableStateOf(false) }
 
     LaunchedEffect(languageCode) {
@@ -89,7 +90,17 @@ fun BuildScreen(
     }
 
     LaunchedEffect(uiState.error) {
-        uiState.error?.let { snackbarHostState.showSnackbar(it) }
+        uiState.error?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearMessages()
+        }
+    }
+
+    LaunchedEffect(uiState.successMessage) {
+        uiState.successMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearMessages()
+        }
     }
 
     if (uiState.isLoading && uiState.civilization == null) {
@@ -97,14 +108,15 @@ fun BuildScreen(
         return
     }
 
-    // Confirmation dialog
-    buildingToBuild?.let { building ->
+    // Build confirmation dialog
+    buildingToBuild?.let { def ->
+        val nextCfg = def.nextLevelConfig
         AlertDialog(
             onDismissRequest = { buildingToBuild = null },
             containerColor = LangoaSurface,
             title = {
                 Text(
-                    text = "Build ${building.name}?",
+                    text = "Build ${def.displayName}?",
                     color = LangoaOnBackground,
                     fontWeight = FontWeight.Bold
                 )
@@ -112,21 +124,26 @@ fun BuildScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("This will cost:", color = LangoaOnBackground.copy(alpha = 0.7f))
-                    if (building.coinCost > 0) CostRow("🪙", "${building.coinCost} Coins", LangoaCoins)
-                    if (building.foodCost > 0) CostRow("🌾", "${building.foodCost} Food", LangoaFood)
-                    if (building.materialsCost > 0) CostRow("🧱", "${building.materialsCost} Materials", LangoaMaterials)
-                    Text(
-                        text = "Grants +${building.civPowerGrant} Civilization Power",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = LangoaGreenLight,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
+                    if (nextCfg != null) {
+                        if (nextCfg.coinCost > 0) CostRow("🪙", "${nextCfg.coinCost} Coins", LangoaCoins)
+                        if (nextCfg.foodCost > 0) CostRow("🌾", "${nextCfg.foodCost} Food", LangoaFood)
+                        if (nextCfg.materialCost > 0) CostRow("🧱", "${nextCfg.materialCost} Materials", LangoaMaterials)
+                        if (nextCfg.woodCost > 0) CostRow("🪵", "${nextCfg.woodCost} Wood", LangoaAmberLight)
+                        if (nextCfg.requiredLessonsCompleted > 0) {
+                            Text(
+                                text = "Requires ${nextCfg.requiredLessonsCompleted} lessons",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = LangoaXP,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.buildBuilding(languageCode, building.buildingType)
+                        viewModel.buildBuilding(languageCode, def.buildingType)
                         buildingToBuild = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = LangoaAmber)
@@ -136,6 +153,53 @@ fun BuildScreen(
             },
             dismissButton = {
                 TextButton(onClick = { buildingToBuild = null }) {
+                    Text("Cancel", color = LangoaOnBackground.copy(alpha = 0.6f))
+                }
+            }
+        )
+    }
+
+    // Upgrade confirmation dialog
+    buildingToUpgrade?.let { (buildingId, def) ->
+        val nextCfg = def.nextLevelConfig
+        AlertDialog(
+            onDismissRequest = { buildingToUpgrade = null },
+            containerColor = LangoaSurface,
+            title = {
+                Text(
+                    text = "Upgrade ${def.displayName} to Lv ${(def.currentLevel) + 1}?",
+                    color = LangoaOnBackground,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Upgrade cost:", color = LangoaOnBackground.copy(alpha = 0.7f))
+                    if (nextCfg != null) {
+                        if (nextCfg.coinCost > 0) CostRow("🪙", "${nextCfg.coinCost} Coins", LangoaCoins)
+                        if (nextCfg.foodCost > 0) CostRow("🌾", "${nextCfg.foodCost} Food", LangoaFood)
+                        if (nextCfg.materialCost > 0) CostRow("🧱", "${nextCfg.materialCost} Materials", LangoaMaterials)
+                        if (nextCfg.woodCost > 0) CostRow("🪵", "${nextCfg.woodCost} Wood", LangoaAmberLight)
+                    } else {
+                        Text("Max level reached!", color = LangoaGreenLight)
+                    }
+                }
+            },
+            confirmButton = {
+                if (nextCfg != null) {
+                    Button(
+                        onClick = {
+                            viewModel.upgradeBuilding(languageCode, buildingId)
+                            buildingToUpgrade = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = LangoaGreen)
+                    ) {
+                        Text("UPGRADE", fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { buildingToUpgrade = null }) {
                     Text("Cancel", color = LangoaOnBackground.copy(alpha = 0.6f))
                 }
             }
@@ -183,6 +247,7 @@ fun BuildScreen(
                             ResourcePill("🪙", civ.coins.toString(), LangoaCoins)
                             ResourcePill("🌾", civ.food.toString(), LangoaFood)
                             ResourcePill("🧱", civ.materials.toString(), LangoaMaterials)
+                            ResourcePill("🪵", civ.wood.toString(), LangoaAmberLight)
                         }
                     }
                 }
@@ -190,42 +255,49 @@ fun BuildScreen(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            uiState.civilization?.let { civ ->
-                if (civ.buildings.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text("🏗", fontSize = 56.sp)
-                            Text(
-                                text = "Complete lessons to unlock buildings!",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = LangoaOnBackground.copy(alpha = 0.55f),
-                                textAlign = TextAlign.Center
-                            )
-                        }
+            val definitions = uiState.buildingDefinitions
+            if (definitions.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("🏗", fontSize = 56.sp)
+                        Text(
+                            text = "Complete lessons to unlock buildings!",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = LangoaOnBackground.copy(alpha = 0.55f),
+                            textAlign = TextAlign.Center
+                        )
                     }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp)
-                    ) {
-                        items(civ.buildings) { building ->
-                            AnimatedVisibility(
-                                visible = visible,
-                                enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { 40 }
-                            ) {
-                                BuildingCard(
-                                    building = building,
-                                    onBuild = { buildingToBuild = building },
-                                    onUpgrade = { viewModel.buildBuilding(languageCode, building.buildingType) },
-                                    isBuildingInProgress = uiState.isBuildingInProgress
-                                )
-                            }
+                }
+            } else {
+                // Find instance IDs for buildings that are already built
+                val builtInstances = uiState.civilization?.buildings ?: emptyList()
+                val instanceByType = builtInstances.groupBy { it.buildingType }
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp)
+                ) {
+                    items(definitions) { def ->
+                        AnimatedVisibility(
+                            visible = visible,
+                            enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { 40 }
+                        ) {
+                            val instances = instanceByType[def.buildingType] ?: emptyList()
+                            val firstInstance = instances.firstOrNull()
+                            BuildingCard(
+                                definition = def,
+                                instanceId = firstInstance?.id,
+                                instanceCount = instances.size,
+                                onBuild = { buildingToBuild = def },
+                                onUpgrade = { id -> buildingToUpgrade = id to def },
+                                isBuildingInProgress = uiState.isBuildingInProgress
+                            )
                         }
                     }
                 }
@@ -236,28 +308,35 @@ fun BuildScreen(
 
 @Composable
 private fun BuildingCard(
-    building: Building,
+    definition: BuildingDefinition,
+    instanceId: String?,
+    instanceCount: Int,
     onBuild: () -> Unit,
-    onUpgrade: () -> Unit,
+    onUpgrade: (String) -> Unit,
     isBuildingInProgress: Boolean
 ) {
-    val buildingEmoji = when (building.buildingType.uppercase()) {
+    val buildingEmoji = when (definition.buildingType.uppercase()) {
         "HOUSE", "RESIDENTIAL" -> "🏠"
         "FARM" -> "🌾"
         "LEARNING_CENTER", "ACADEMY" -> "🏫"
         "MARKET" -> "🏪"
         "BARRACKS" -> "⚔"
         "LIBRARY" -> "📚"
+        "WORKSHOP" -> "🔨"
+        "SCHOOL" -> "🎒"
+        "PARK" -> "🌳"
         else -> "🏛"
     }
 
-    val isBuilt = building.isUnlocked
-    val isLocked = building.xpRequirement > 0 // simplified lock check
+    val isBuilt = definition.currentLevel > 0
+    val isLocked = !definition.isUnlocked
+    val isMaxLevel = definition.currentLevel >= definition.maxLevel
+    val nextCfg = definition.nextLevelConfig
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .alpha(if (isLocked && !isBuilt) 0.5f else 1f),
+            .alpha(if (isLocked) 0.5f else 1f),
         colors = CardDefaults.cardColors(
             containerColor = if (isBuilt) LangoaGreen.copy(alpha = 0.12f) else LangoaSurface
         ),
@@ -267,7 +346,6 @@ private fun BuildingCard(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Building emoji icon
             Box(
                 modifier = Modifier
                     .size(56.dp)
@@ -286,7 +364,7 @@ private fun BuildingCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = building.name,
+                        text = definition.displayName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = LangoaOnBackground
@@ -299,41 +377,62 @@ private fun BuildingCard(
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = "Lv ${building.level}",
+                                text = "Lv ${definition.currentLevel}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = LangoaGreenLight,
                                 fontWeight = FontWeight.Bold
                             )
                         }
+                        if (instanceCount > 1) {
+                            Text(
+                                text = "×$instanceCount",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = LangoaOnBackground.copy(alpha = 0.5f)
+                            )
+                        }
                     }
                 }
 
-                if (building.description.isNotEmpty()) {
+                if (definition.description.isNotEmpty()) {
                     Text(
-                        text = building.description,
+                        text = definition.description,
                         style = MaterialTheme.typography.bodySmall,
                         color = LangoaOnBackground.copy(alpha = 0.55f),
                         modifier = Modifier.padding(top = 3.dp)
                     )
                 }
 
-                // Cost row
-                if (!isBuilt) {
+                // Cost preview for next action
+                if (!isBuilt && nextCfg != null) {
                     Row(
                         modifier = Modifier.padding(top = 6.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        if (building.coinCost > 0) SmallCostPill("🪙 ${building.coinCost}", LangoaCoins)
-                        if (building.foodCost > 0) SmallCostPill("🌾 ${building.foodCost}", LangoaFood)
-                        if (building.materialsCost > 0) SmallCostPill("🧱 ${building.materialsCost}", LangoaMaterials)
+                        if (nextCfg.coinCost > 0) SmallCostPill("🪙 ${nextCfg.coinCost}", LangoaCoins)
+                        if (nextCfg.foodCost > 0) SmallCostPill("🌾 ${nextCfg.foodCost}", LangoaFood)
+                        if (nextCfg.materialCost > 0) SmallCostPill("🧱 ${nextCfg.materialCost}", LangoaMaterials)
+                        if (nextCfg.woodCost > 0) SmallCostPill("🪵 ${nextCfg.woodCost}", LangoaAmberLight)
                     }
-                    if (building.xpRequirement > 0) {
+                    if (nextCfg.requiredLessonsCompleted > 0) {
                         Text(
-                            text = "Requires ${building.xpRequirement} XP",
+                            text = "Requires ${nextCfg.requiredLessonsCompleted} lessons",
                             style = MaterialTheme.typography.labelSmall,
                             color = LangoaXP,
                             modifier = Modifier.padding(top = 4.dp)
                         )
+                    }
+                } else if (isBuilt && !isMaxLevel && nextCfg != null) {
+                    Row(
+                        modifier = Modifier.padding(top = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "Upgrade cost:",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = LangoaOnBackground.copy(alpha = 0.5f)
+                        )
+                        if (nextCfg.coinCost > 0) SmallCostPill("🪙 ${nextCfg.coinCost}", LangoaCoins)
+                        if (nextCfg.woodCost > 0) SmallCostPill("🪵 ${nextCfg.woodCost}", LangoaAmberLight)
                     }
                 }
             }
@@ -349,9 +448,32 @@ private fun BuildingCard(
                         strokeWidth = 3.dp
                     )
                 }
-                isBuilt -> {
+                isLocked -> {
+                    Icon(
+                        Icons.Filled.Lock,
+                        contentDescription = "Locked",
+                        tint = LangoaOnBackground.copy(alpha = 0.3f),
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                isBuilt && isMaxLevel -> {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(LangoaGreen.copy(alpha = 0.15f))
+                            .padding(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "MAX",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = LangoaGreenLight,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                isBuilt && instanceId != null -> {
                     Button(
-                        onClick = onUpgrade,
+                        onClick = { onUpgrade(instanceId) },
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = LangoaGreen.copy(alpha = 0.25f),
@@ -362,15 +484,7 @@ private fun BuildingCard(
                         Text("UPGRADE", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     }
                 }
-                isLocked -> {
-                    Icon(
-                        Icons.Filled.Lock,
-                        contentDescription = "Locked",
-                        tint = LangoaOnBackground.copy(alpha = 0.3f),
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                else -> {
+                definition.canBuild -> {
                     Button(
                         onClick = onBuild,
                         shape = RoundedCornerShape(10.dp),
@@ -382,6 +496,14 @@ private fun BuildingCard(
                     ) {
                         Text("BUILD", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.ExtraBold)
                     }
+                }
+                else -> {
+                    Icon(
+                        Icons.Filled.Lock,
+                        contentDescription = "Cannot build",
+                        tint = LangoaOnBackground.copy(alpha = 0.3f),
+                        modifier = Modifier.size(22.dp)
+                    )
                 }
             }
         }
@@ -421,21 +543,5 @@ private fun CostRow(icon: String, label: String, color: Color) {
         Text(text = icon, fontSize = 16.sp)
         Spacer(modifier = Modifier.width(6.dp))
         Text(text = label, style = MaterialTheme.typography.bodySmall, color = color)
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFF0F1923)
-@Composable
-private fun BuildingCardPreview() {
-    Box(Modifier.background(LangoaBackground).padding(16.dp)) {
-        BuildingCard(
-            building = Building(
-                id = "1", buildingType = "LEARNING_CENTER", name = "Academy",
-                level = 1, isUnlocked = false, coinCost = 50, foodCost = 20,
-                materialsCost = 30, civPowerGrant = 10, description = "Center of learning",
-                xpRequirement = 100
-            ),
-            onBuild = {}, onUpgrade = {}, isBuildingInProgress = false
-        )
     }
 }

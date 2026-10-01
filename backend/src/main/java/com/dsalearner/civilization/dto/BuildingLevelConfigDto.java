@@ -6,6 +6,7 @@ public record BuildingLevelConfigDto(
         long coinCost,
         long foodCost,
         long materialCost,
+        long woodCost,
         int requiredLessonsCompleted,
         long requiredXp,
         boolean affordable

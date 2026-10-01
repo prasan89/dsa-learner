@@ -25,16 +25,16 @@ public class CivilizationService {
 
     // Maps human-readable route names to ISO 639-1 codes
     private static final Map<String, String> LANGUAGE_NAME_TO_CODE = Map.of(
-            "german",   "de",
-            "french",   "fr",
-            "spanish",  "es",
-            "korean",   "ko",
-            "japanese", "ja",
-            "chinese",  "zh",
-            "italian",  "it",
+            "german",     "de",
+            "french",     "fr",
+            "spanish",    "es",
+            "korean",     "ko",
+            "japanese",   "ja",
+            "chinese",    "zh",
+            "italian",    "it",
             "portuguese", "pt",
-            "hindi",    "hi",
-            "kannada",  "kn"
+            "hindi",      "hi",
+            "kannada",    "kn"
     );
 
     // Tier advancement thresholds (total lessons completed)
@@ -54,7 +54,9 @@ public class CivilizationService {
             "LEARNING_CENTER", 2,
             "SCHOOL",          5,
             "MARKET",         10,
-            "WORKSHOP",       15
+            "WORKSHOP",       15,
+            "PARK",           20,
+            "LIBRARY",        30
     );
 
     private final LangoaCivilizationRepository civilizationRepo;
@@ -64,6 +66,10 @@ public class CivilizationService {
     private final LangoaBuildingLevelConfigRepository buildingLevelConfigRepo;
     private final LangoaBuildingInstanceRepository buildingInstanceRepo;
     private final LangoaRewardDefinitionRepository rewardDefRepo;
+    private final LangoaDecorationDefinitionRepository decorationDefRepo;
+    private final LangoaDecorationInstanceRepository decorationInstanceRepo;
+    private final LangoaCityExpansionDefinitionRepository expansionDefRepo;
+    private final LangoaCityExpansionInstanceRepository expansionInstanceRepo;
 
     // ── Public API ────────────────────────────────────────────────────────────
 
@@ -110,7 +116,7 @@ public class CivilizationService {
         if (idempotencyKey != null && transactionRepo.existsByIdempotencyKey(idempotencyKey)) {
             log.debug("Lesson reward already applied, idempotency_key={}", idempotencyKey);
             Map<String, Long> currentBalances = buildBalanceMap(userId, code);
-            return new LessonRewardResponse(0, 0, 0, 0, 0, currentBalances, null, false, List.of());
+            return new LessonRewardResponse(0, 0, 0, 0, 0, 0, currentBalances, null, false, List.of());
         }
 
         LangoaCivilization civ = getOrCreateCivilization(userId, code);
@@ -118,7 +124,7 @@ public class CivilizationService {
         // Resolve reward definition; fall back to generic defaults
         LangoaRewardDefinition reward = rewardDefRepo
                 .findByCefrLevelAndDifficultyTier(cefrLevel != null ? cefrLevel.toUpperCase() : "A1", DifficultyTier.STANDARD)
-                .orElseGet(() -> defaultReward());
+                .orElseGet(this::defaultReward);
 
         String sourceRef = lessonId != null ? lessonId.toString() : "unknown";
 
@@ -132,13 +138,15 @@ public class CivilizationService {
                     TransactionType.LESSON_COMPLETION, sourceRef, idempotencyKey + "-FOOD");
             updateBalance(userId, code, CurrencyType.MATERIALS,          reward.getMaterialReward(),
                     TransactionType.LESSON_COMPLETION, sourceRef, idempotencyKey + "-MATERIALS");
+            updateBalance(userId, code, CurrencyType.WOOD,               reward.getWoodReward(),
+                    TransactionType.LESSON_COMPLETION, sourceRef, idempotencyKey + "-WOOD");
             updateBalance(userId, code, CurrencyType.CIVILIZATION_POWER, reward.getCivilizationPowerReward(),
                     TransactionType.LESSON_COMPLETION, sourceRef, idempotencyKey + "-CIV_POWER");
         } catch (DataIntegrityViolationException e) {
             // Idempotency_key UNIQUE constraint fired — concurrent duplicate request lost the race
             log.debug("Duplicate lesson reward blocked by DB constraint, idempotency_key={}", idempotencyKey);
             Map<String, Long> currentBalances = buildBalanceMap(userId, code);
-            return new LessonRewardResponse(0, 0, 0, 0, 0, currentBalances, null, false, List.of());
+            return new LessonRewardResponse(0, 0, 0, 0, 0, 0, currentBalances, null, false, List.of());
         }
 
         // Update civilization stats
@@ -162,6 +170,7 @@ public class CivilizationService {
                 reward.getCoinReward(),
                 reward.getFoodReward(),
                 reward.getMaterialReward(),
+                reward.getWoodReward(),
                 reward.getCivilizationPowerReward(),
                 newBalances,
                 tierUpgraded ? civ.getCivilizationTier().name() : null,
@@ -186,6 +195,7 @@ public class CivilizationService {
         long coins     = getBalanceForUpdate(userId, code, CurrencyType.COINS);
         long food      = getBalanceForUpdate(userId, code, CurrencyType.FOOD);
         long materials = getBalanceForUpdate(userId, code, CurrencyType.MATERIALS);
+        long wood      = getBalanceForUpdate(userId, code, CurrencyType.WOOD);
 
         if (coins < config.getCoinCost()) {
             throw new InsufficientResourcesException(
@@ -199,26 +209,34 @@ public class CivilizationService {
             throw new InsufficientResourcesException(
                     "Insufficient MATERIALS: need " + config.getMaterialCost() + ", have " + materials);
         }
+        if (wood < config.getWoodCost()) {
+            throw new InsufficientResourcesException(
+                    "Insufficient WOOD: need " + config.getWoodCost() + ", have " + wood);
+        }
         if (civ.getTotalLessonsCompleted() < config.getRequiredLessonsCompleted()) {
             throw new InsufficientResourcesException(
                     "Requires " + config.getRequiredLessonsCompleted() + " lessons completed");
+        }
+        if (civ.getTotalXp() < config.getRequiredXp()) {
+            throw new InsufficientResourcesException(
+                    "Requires " + config.getRequiredXp() + " total XP");
         }
 
         String buildRef = req.buildingType();
 
         // Deduct resources
-        if (config.getCoinCost() > 0) {
+        if (config.getCoinCost() > 0)
             updateBalance(userId, code, CurrencyType.COINS, -config.getCoinCost(),
                     TransactionType.BUILDING_PURCHASE, buildRef, null);
-        }
-        if (config.getFoodCost() > 0) {
+        if (config.getFoodCost() > 0)
             updateBalance(userId, code, CurrencyType.FOOD, -config.getFoodCost(),
                     TransactionType.BUILDING_PURCHASE, buildRef, null);
-        }
-        if (config.getMaterialCost() > 0) {
+        if (config.getMaterialCost() > 0)
             updateBalance(userId, code, CurrencyType.MATERIALS, -config.getMaterialCost(),
                     TransactionType.BUILDING_PURCHASE, buildRef, null);
-        }
+        if (config.getWoodCost() > 0)
+            updateBalance(userId, code, CurrencyType.WOOD, -config.getWoodCost(),
+                    TransactionType.BUILDING_PURCHASE, buildRef, null);
 
         // Create building instance
         LangoaBuildingInstance instance = LangoaBuildingInstance.builder()
@@ -227,11 +245,296 @@ public class CivilizationService {
                 .currentLevel(1)
                 .positionX(req.positionX())
                 .positionY(req.positionY())
+                .buildState("BUILT")
                 .build();
         buildingInstanceRepo.save(instance);
 
         log.info("Built {} for civ={}", req.buildingType(), civ.getId());
         return buildStateResponse(civ);
+    }
+
+    @Transactional
+    public CivilizationStateResponse upgradeBuilding(UUID userId, String languageCode, UUID buildingInstanceId) {
+        String code = resolveLanguageCode(languageCode);
+        LangoaCivilization civ = civilizationRepo.findByUserIdAndLanguageCode(userId, code)
+                .orElseThrow(() -> new CivilizationNotFoundException(
+                        "Civilization not found for user=" + userId));
+
+        LangoaBuildingInstance instance = buildingInstanceRepo.findById(buildingInstanceId)
+                .orElseThrow(() -> new InsufficientResourcesException("Building instance not found: " + buildingInstanceId));
+
+        // Validate ownership
+        if (!instance.getCivilizationId().equals(civ.getId())) {
+            throw new CivilizationNotFoundException("Building does not belong to this civilization");
+        }
+
+        int nextLevel = instance.getCurrentLevel() + 1;
+        LangoaBuildingLevelConfig config = buildingLevelConfigRepo
+                .findByBuildingTypeAndLevel(instance.getBuildingType(), nextLevel)
+                .orElseThrow(() -> new InsufficientResourcesException(
+                        instance.getBuildingType() + " is already at max level " + instance.getCurrentLevel()));
+
+        // SELECT FOR UPDATE on all three spending currencies
+        long coins     = getBalanceForUpdate(userId, code, CurrencyType.COINS);
+        long food      = getBalanceForUpdate(userId, code, CurrencyType.FOOD);
+        long materials = getBalanceForUpdate(userId, code, CurrencyType.MATERIALS);
+        long wood      = getBalanceForUpdate(userId, code, CurrencyType.WOOD);
+
+        if (coins < config.getCoinCost()) {
+            throw new InsufficientResourcesException(
+                    "Insufficient COINS: need " + config.getCoinCost() + ", have " + coins);
+        }
+        if (food < config.getFoodCost()) {
+            throw new InsufficientResourcesException(
+                    "Insufficient FOOD: need " + config.getFoodCost() + ", have " + food);
+        }
+        if (materials < config.getMaterialCost()) {
+            throw new InsufficientResourcesException(
+                    "Insufficient MATERIALS: need " + config.getMaterialCost() + ", have " + materials);
+        }
+        if (wood < config.getWoodCost()) {
+            throw new InsufficientResourcesException(
+                    "Insufficient WOOD: need " + config.getWoodCost() + ", have " + wood);
+        }
+        if (civ.getTotalLessonsCompleted() < config.getRequiredLessonsCompleted()) {
+            throw new InsufficientResourcesException(
+                    "Requires " + config.getRequiredLessonsCompleted() + " lessons to upgrade to level " + nextLevel);
+        }
+        if (civ.getTotalXp() < config.getRequiredXp()) {
+            throw new InsufficientResourcesException(
+                    "Requires " + config.getRequiredXp() + " total XP to upgrade to level " + nextLevel);
+        }
+
+        String upgradeRef = instance.getBuildingType() + "_L" + nextLevel;
+
+        if (config.getCoinCost() > 0)
+            updateBalance(userId, code, CurrencyType.COINS, -config.getCoinCost(),
+                    TransactionType.BUILDING_UPGRADE, upgradeRef, null);
+        if (config.getFoodCost() > 0)
+            updateBalance(userId, code, CurrencyType.FOOD, -config.getFoodCost(),
+                    TransactionType.BUILDING_UPGRADE, upgradeRef, null);
+        if (config.getMaterialCost() > 0)
+            updateBalance(userId, code, CurrencyType.MATERIALS, -config.getMaterialCost(),
+                    TransactionType.BUILDING_UPGRADE, upgradeRef, null);
+        if (config.getWoodCost() > 0)
+            updateBalance(userId, code, CurrencyType.WOOD, -config.getWoodCost(),
+                    TransactionType.BUILDING_UPGRADE, upgradeRef, null);
+
+        instance.setCurrentLevel(nextLevel);
+        instance.setUpgradedAt(java.time.Instant.now());
+        instance.setBuildState("BUILT");
+        buildingInstanceRepo.save(instance);
+
+        log.info("Upgraded {} to level {} for civ={}", instance.getBuildingType(), nextLevel, civ.getId());
+        return buildStateResponse(civ);
+    }
+
+    @Transactional
+    public CivilizationStateResponse moveBuilding(UUID userId, String languageCode, UUID buildingInstanceId, MoveBuildingRequest req) {
+        String code = resolveLanguageCode(languageCode);
+        LangoaCivilization civ = civilizationRepo.findByUserIdAndLanguageCode(userId, code)
+                .orElseThrow(() -> new CivilizationNotFoundException("Civilization not found for user=" + userId));
+
+        LangoaBuildingInstance instance = buildingInstanceRepo.findById(buildingInstanceId)
+                .orElseThrow(() -> new InsufficientResourcesException("Building instance not found: " + buildingInstanceId));
+
+        if (!instance.getCivilizationId().equals(civ.getId())) {
+            throw new CivilizationNotFoundException("Building does not belong to this civilization");
+        }
+
+        instance.setPositionX(req.positionX());
+        instance.setPositionY(req.positionY());
+        instance.setRotationDeg(req.rotationDeg());
+        buildingInstanceRepo.save(instance);
+
+        log.info("Moved building {} for civ={}", buildingInstanceId, civ.getId());
+        return buildStateResponse(civ);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DecorationDefinitionDto> getDecorationDefinitions(UUID userId, String languageCode) {
+        String code = resolveLanguageCode(languageCode);
+        LangoaCivilization civ = civilizationRepo.findByUserIdAndLanguageCode(userId, code)
+                .orElse(null);
+        String currentTier = civ != null ? civ.getCivilizationTier().name() : "VILLAGE";
+
+        return decorationDefRepo.findByActiveTrueOrderByDisplayOrder().stream()
+                .map(def -> new DecorationDefinitionDto(
+                        def.getId(),
+                        def.getDecorationType(),
+                        def.getDisplayName(),
+                        def.getDescription(),
+                        def.getCoinCost(),
+                        def.getWoodCost(),
+                        def.getRequiredCivTier(),
+                        def.isPremium(),
+                        def.getWidthTiles(),
+                        def.getHeightTiles()
+                ))
+                .toList();
+    }
+
+    @Transactional
+    public CivilizationStateResponse placeDecoration(UUID userId, String languageCode, PlaceDecorationRequest req) {
+        String code = resolveLanguageCode(languageCode);
+        LangoaCivilization civ = civilizationRepo.findByUserIdAndLanguageCode(userId, code)
+                .orElseThrow(() -> new CivilizationNotFoundException("Civilization not found for user=" + userId));
+
+        LangoaDecorationDefinition def = decorationDefRepo.findAll().stream()
+                .filter(d -> d.getDecorationType().equals(req.decorationType()))
+                .findFirst()
+                .orElseThrow(() -> new InsufficientResourcesException("Unknown decoration type: " + req.decorationType()));
+
+        // Check tier requirement
+        if (!isTierSufficient(civ.getCivilizationTier(), def.getRequiredCivTier())) {
+            throw new InsufficientResourcesException(
+                    def.getDecorationType() + " requires civilization tier: " + def.getRequiredCivTier());
+        }
+
+        long coins = getBalanceForUpdate(userId, code, CurrencyType.COINS);
+        long wood  = getBalanceForUpdate(userId, code, CurrencyType.WOOD);
+
+        if (coins < def.getCoinCost()) {
+            throw new InsufficientResourcesException(
+                    "Insufficient COINS: need " + def.getCoinCost() + ", have " + coins);
+        }
+        if (wood < def.getWoodCost()) {
+            throw new InsufficientResourcesException(
+                    "Insufficient WOOD: need " + def.getWoodCost() + ", have " + wood);
+        }
+
+        String decorRef = def.getDecorationType();
+        if (def.getCoinCost() > 0)
+            updateBalance(userId, code, CurrencyType.COINS, -def.getCoinCost(),
+                    TransactionType.DECORATION_PURCHASE, decorRef, null);
+        if (def.getWoodCost() > 0)
+            updateBalance(userId, code, CurrencyType.WOOD, -def.getWoodCost(),
+                    TransactionType.DECORATION_PURCHASE, decorRef, null);
+
+        LangoaDecorationInstance instance = LangoaDecorationInstance.builder()
+                .civilizationId(civ.getId())
+                .decorationType(req.decorationType())
+                .positionX(req.positionX())
+                .positionY(req.positionY())
+                .rotationDeg(req.rotationDeg())
+                .build();
+        decorationInstanceRepo.save(instance);
+
+        log.info("Placed decoration {} for civ={}", req.decorationType(), civ.getId());
+        return buildStateResponse(civ);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CityExpansionDto> getExpansions(UUID userId, String languageCode) {
+        String code = resolveLanguageCode(languageCode);
+        LangoaCivilization civ = civilizationRepo.findByUserIdAndLanguageCode(userId, code)
+                .orElse(null);
+
+        if (civ == null) return List.of();
+
+        Set<Integer> unlockedSlots = expansionInstanceRepo.findByCivilizationId(civ.getId())
+                .stream().map(LangoaCityExpansionInstance::getExpansionSlot).collect(Collectors.toSet());
+
+        Map<String, Long> balances = buildBalanceMap(userId, code);
+        long coins = balances.getOrDefault(CurrencyType.COINS.name(), 0L);
+        long wood  = balances.getOrDefault(CurrencyType.WOOD.name(), 0L);
+
+        return expansionDefRepo.findAllByOrderByDisplayOrder().stream()
+                .map(def -> {
+                    boolean unlocked = unlockedSlots.contains(def.getExpansionSlot());
+                    boolean canUnlock = !unlocked
+                            && coins >= def.getCoinCost()
+                            && wood >= def.getWoodCost()
+                            && civ.getTotalLessonsCompleted() >= def.getRequiredLessons()
+                            && civ.getTotalXp() >= def.getRequiredXp()
+                            && isTierSufficient(civ.getCivilizationTier(), def.getRequiredCivTier());
+                    return new CityExpansionDto(
+                            def.getExpansionSlot(),
+                            def.getDisplayName(),
+                            def.getDescription(),
+                            def.getGridXOffset(),
+                            def.getGridYOffset(),
+                            def.getGridWidth(),
+                            def.getGridHeight(),
+                            def.getCoinCost(),
+                            def.getWoodCost(),
+                            def.getRequiredLessons(),
+                            def.getRequiredXp(),
+                            def.getRequiredCivTier(),
+                            unlocked,
+                            canUnlock
+                    );
+                })
+                .toList();
+    }
+
+    @Transactional
+    public CityExpansionDto purchaseExpansion(UUID userId, String languageCode, int expansionSlot) {
+        String code = resolveLanguageCode(languageCode);
+        LangoaCivilization civ = civilizationRepo.findByUserIdAndLanguageCode(userId, code)
+                .orElseThrow(() -> new CivilizationNotFoundException("Civilization not found for user=" + userId));
+
+        if (expansionInstanceRepo.existsByCivilizationIdAndExpansionSlot(civ.getId(), expansionSlot)) {
+            throw new InsufficientResourcesException("Expansion slot " + expansionSlot + " already unlocked");
+        }
+
+        LangoaCityExpansionDefinition def = expansionDefRepo.findByExpansionSlot(expansionSlot)
+                .orElseThrow(() -> new InsufficientResourcesException("Unknown expansion slot: " + expansionSlot));
+
+        if (!isTierSufficient(civ.getCivilizationTier(), def.getRequiredCivTier())) {
+            throw new InsufficientResourcesException("Requires civilization tier: " + def.getRequiredCivTier());
+        }
+        if (civ.getTotalLessonsCompleted() < def.getRequiredLessons()) {
+            throw new InsufficientResourcesException("Requires " + def.getRequiredLessons() + " lessons completed");
+        }
+        if (civ.getTotalXp() < def.getRequiredXp()) {
+            throw new InsufficientResourcesException("Requires " + def.getRequiredXp() + " total XP");
+        }
+
+        long coins = getBalanceForUpdate(userId, code, CurrencyType.COINS);
+        long wood  = getBalanceForUpdate(userId, code, CurrencyType.WOOD);
+
+        if (coins < def.getCoinCost()) {
+            throw new InsufficientResourcesException("Insufficient COINS: need " + def.getCoinCost() + ", have " + coins);
+        }
+        if (wood < def.getWoodCost()) {
+            throw new InsufficientResourcesException("Insufficient WOOD: need " + def.getWoodCost() + ", have " + wood);
+        }
+
+        String expRef = "expansion:" + expansionSlot;
+        if (def.getCoinCost() > 0)
+            updateBalance(userId, code, CurrencyType.COINS, -def.getCoinCost(),
+                    TransactionType.EXPANSION_PURCHASE, expRef, null);
+        if (def.getWoodCost() > 0)
+            updateBalance(userId, code, CurrencyType.WOOD, -def.getWoodCost(),
+                    TransactionType.EXPANSION_PURCHASE, expRef, null);
+
+        LangoaCityExpansionInstance instance = LangoaCityExpansionInstance.builder()
+                .civilizationId(civ.getId())
+                .expansionSlot(expansionSlot)
+                .build();
+        try {
+            expansionInstanceRepo.save(instance);
+        } catch (DataIntegrityViolationException e) {
+            throw new InsufficientResourcesException("Expansion slot " + expansionSlot + " already unlocked (concurrent)");
+        }
+
+        log.info("Expansion slot {} unlocked for civ={}", expansionSlot, civ.getId());
+        return new CityExpansionDto(
+                def.getExpansionSlot(), def.getDisplayName(), def.getDescription(),
+                def.getGridXOffset(), def.getGridYOffset(), def.getGridWidth(), def.getGridHeight(),
+                def.getCoinCost(), def.getWoodCost(), def.getRequiredLessons(), def.getRequiredXp(),
+                def.getRequiredCivTier(), true, false
+        );
+    }
+
+    // ── Package-visible methods used by QuestService / AchievementService ─────
+
+    /** Package-visible so QuestService and AchievementService can grant rewards. */
+    @Transactional
+    public void updateBalancePublic(UUID userId, String languageCode, CurrencyType currencyType,
+                                    long delta, TransactionType txType, String sourceRef, String idempotencyKey) {
+        updateBalance(userId, languageCode, currencyType, delta, txType, sourceRef, idempotencyKey);
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
@@ -243,7 +546,7 @@ public class CivilizationService {
                 .build();
         civ = civilizationRepo.save(civ);
 
-        // Initialize all 6 currency balance rows at 0
+        // Initialize all currency balance rows at 0
         for (CurrencyType ct : CurrencyType.values()) {
             LangoaCurrencyBalance bal = LangoaCurrencyBalance.builder()
                     .userId(userId)
@@ -255,11 +558,13 @@ public class CivilizationService {
         }
 
         // Apply initial grant
-        updateBalance(userId, languageCode, CurrencyType.COINS,   200,
+        updateBalance(userId, languageCode, CurrencyType.COINS,    200,
                 TransactionType.INITIAL_GRANT, "new_civilization", null);
-        updateBalance(userId, languageCode, CurrencyType.FOOD,     50,
+        updateBalance(userId, languageCode, CurrencyType.FOOD,      50,
                 TransactionType.INITIAL_GRANT, "new_civilization", null);
-        updateBalance(userId, languageCode, CurrencyType.MATERIALS, 30,
+        updateBalance(userId, languageCode, CurrencyType.MATERIALS,  30,
+                TransactionType.INITIAL_GRANT, "new_civilization", null);
+        updateBalance(userId, languageCode, CurrencyType.WOOD,       20,
                 TransactionType.INITIAL_GRANT, "new_civilization", null);
 
         // Give starter HOUSE building for free at position (2,2)
@@ -269,6 +574,7 @@ public class CivilizationService {
                 .currentLevel(1)
                 .positionX(2)
                 .positionY(2)
+                .buildState("BUILT")
                 .build();
         buildingInstanceRepo.save(house);
 
@@ -276,8 +582,8 @@ public class CivilizationService {
         return civ;
     }
 
-    private void updateBalance(UUID userId, String languageCode, CurrencyType currencyType,
-                               long delta, TransactionType txType, String sourceRef, String idempotencyKey) {
+    void updateBalance(UUID userId, String languageCode, CurrencyType currencyType,
+                       long delta, TransactionType txType, String sourceRef, String idempotencyKey) {
         // SELECT FOR UPDATE prevents lost-update races when two transactions modify the same balance row
         LangoaCurrencyBalance bal = balanceRepo
                 .findForUpdate(userId, languageCode, currencyType)
@@ -313,19 +619,13 @@ public class CivilizationService {
         transactionRepo.save(txn);
     }
 
-    private long getBalance(UUID userId, String languageCode, CurrencyType currencyType) {
-        return balanceRepo.findByUserIdAndLanguageCodeAndCurrencyType(userId, languageCode, currencyType)
-                .map(LangoaCurrencyBalance::getBalance)
-                .orElse(0L);
-    }
-
     private long getBalanceForUpdate(UUID userId, String languageCode, CurrencyType currencyType) {
         return balanceRepo.findForUpdate(userId, languageCode, currencyType)
                 .map(LangoaCurrencyBalance::getBalance)
                 .orElse(0L);
     }
 
-    private Map<String, Long> buildBalanceMap(UUID userId, String languageCode) {
+    Map<String, Long> buildBalanceMap(UUID userId, String languageCode) {
         List<LangoaCurrencyBalance> balances = balanceRepo.findByUserIdAndLanguageCode(userId, languageCode);
         Map<String, Long> map = new LinkedHashMap<>();
         for (CurrencyType ct : CurrencyType.values()) {
@@ -342,7 +642,6 @@ public class CivilizationService {
 
         List<LangoaBuildingInstance> instances = buildingInstanceRepo.findByCivilizationId(civ.getId());
 
-        // Build display name map for building types
         Map<String, String> defDisplayNames = buildingDefRepo.findByActiveTrueOrderByDisplayOrder()
                 .stream()
                 .collect(Collectors.toMap(
@@ -356,7 +655,35 @@ public class CivilizationService {
                         defDisplayNames.getOrDefault(inst.getBuildingType(), inst.getBuildingType()),
                         inst.getCurrentLevel(),
                         inst.getPositionX(),
-                        inst.getPositionY()))
+                        inst.getPositionY(),
+                        inst.getBuildState(),
+                        inst.getRotationDeg(),
+                        inst.getWidthTiles(),
+                        inst.getHeightTiles()))
+                .toList();
+
+        // Decorations
+        Map<String, String> decorDisplayNames = decorationDefRepo.findByActiveTrueOrderByDisplayOrder()
+                .stream()
+                .collect(Collectors.toMap(
+                        LangoaDecorationDefinition::getDecorationType,
+                        LangoaDecorationDefinition::getDisplayName));
+
+        List<DecorationInstanceDto> decorations = decorationInstanceRepo.findByCivilizationId(civ.getId())
+                .stream()
+                .map(d -> new DecorationInstanceDto(
+                        d.getId(),
+                        d.getDecorationType(),
+                        decorDisplayNames.getOrDefault(d.getDecorationType(), d.getDecorationType()),
+                        d.getPositionX(),
+                        d.getPositionY(),
+                        d.getRotationDeg()))
+                .toList();
+
+        // Unlocked expansion slots
+        List<Integer> unlockedSlots = expansionInstanceRepo.findByCivilizationId(civ.getId())
+                .stream()
+                .map(LangoaCityExpansionInstance::getExpansionSlot)
                 .toList();
 
         return new CivilizationStateResponse(
@@ -368,7 +695,9 @@ public class CivilizationService {
                 civ.getTotalXp(),
                 civ.getTotalLessonsCompleted(),
                 balances,
-                buildings
+                buildings,
+                decorations,
+                unlockedSlots
         );
     }
 
@@ -405,8 +734,18 @@ public class CivilizationService {
         def.setCoinReward(50);
         def.setFoodReward(10);
         def.setMaterialReward(5);
+        def.setWoodReward(5);
         def.setCivilizationPowerReward(100);
         return def;
+    }
+
+    private boolean isTierSufficient(CivilizationTier current, String requiredTierName) {
+        try {
+            CivilizationTier required = CivilizationTier.valueOf(requiredTierName);
+            return current.ordinal() >= required.ordinal();
+        } catch (IllegalArgumentException e) {
+            return true; // unknown tier name — don't block
+        }
     }
 
     public String resolveLanguageCode(String languageCode) {
@@ -421,10 +760,12 @@ public class CivilizationService {
         long coins     = balances.getOrDefault(CurrencyType.COINS.name(),     0L);
         long food      = balances.getOrDefault(CurrencyType.FOOD.name(),      0L);
         long materials = balances.getOrDefault(CurrencyType.MATERIALS.name(), 0L);
+        long wood      = balances.getOrDefault(CurrencyType.WOOD.name(),      0L);
 
         LangoaCivilization civ = civilizationRepo.findByUserIdAndLanguageCode(userId, code)
                 .orElseGet(() -> createNewCivilization(userId, code));
         int totalLessons = civ.getTotalLessonsCompleted();
+        long totalXp     = civ.getTotalXp();
 
         return buildingDefRepo.findByActiveTrueOrderByDisplayOrder().stream()
                 .map(def -> {
@@ -437,13 +778,16 @@ public class CivilizationService {
                                         coins >= cfg.getCoinCost() &&
                                         food >= cfg.getFoodCost() &&
                                         materials >= cfg.getMaterialCost() &&
-                                        totalLessons >= cfg.getRequiredLessonsCompleted();
+                                        wood >= cfg.getWoodCost() &&
+                                        totalLessons >= cfg.getRequiredLessonsCompleted() &&
+                                        totalXp >= cfg.getRequiredXp();
                                 return new BuildingLevelConfigDto(
                                         cfg.getLevel(),
                                         cfg.getDisplayName(),
                                         cfg.getCoinCost(),
                                         cfg.getFoodCost(),
                                         cfg.getMaterialCost(),
+                                        cfg.getWoodCost(),
                                         cfg.getRequiredLessonsCompleted(),
                                         cfg.getRequiredXp(),
                                         affordable);

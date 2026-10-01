@@ -3,13 +3,12 @@ package com.langoa.app.domain.model
 data class Building(
     val id: String,
     val buildingType: String,
-    val name: String,
+    val displayName: String,
     val level: Int,
-    val isUnlocked: Boolean,
-    val coinCost: Int,
-    val foodCost: Int,
-    val materialsCost: Int,
-    val civPowerGrant: Int,
-    val description: String = "",
-    val xpRequirement: Int = 0
+    val positionX: Int,
+    val positionY: Int,
+    val buildState: String = "BUILT",
+    val rotationDeg: Int = 0,
+    val widthTiles: Int = 1,
+    val heightTiles: Int = 1
 )

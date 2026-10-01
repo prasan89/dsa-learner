@@ -13,5 +13,7 @@ public record CivilizationStateResponse(
         long totalXp,
         int totalLessonsCompleted,
         Map<String, Long> balances,
-        List<BuildingInstanceDto> buildings
+        List<BuildingInstanceDto> buildings,
+        List<DecorationInstanceDto> decorations,
+        List<Integer> unlockedExpansionSlots
 ) {}

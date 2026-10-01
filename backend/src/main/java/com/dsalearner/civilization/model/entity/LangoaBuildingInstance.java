@@ -38,6 +38,22 @@ public class LangoaBuildingInstance {
     @Builder.Default
     private int positionY = 0;
 
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private String buildState = "BUILT";
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int rotationDeg = 0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int widthTiles = 1;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int heightTiles = 1;
+
     @Column(nullable = false, updatable = false)
     @Builder.Default
     private Instant builtAt = Instant.now();

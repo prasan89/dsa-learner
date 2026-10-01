@@ -10,18 +10,18 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 
 interface LearningApi {
-    @GET("api/academy/{languageCode}/curriculum")
-    suspend fun getCurriculum(@Path("languageCode") languageCode: String): CurriculumDto
+    @GET("api/v1/academy/{language}/curriculum")
+    suspend fun getCurriculum(@Path("language") language: String): CurriculumDto
 
-    @GET("api/academy/{languageCode}/lessons/{lessonId}")
+    @GET("api/v1/academy/{language}/lessons/{lessonId}")
     suspend fun getLesson(
-        @Path("languageCode") languageCode: String,
+        @Path("language") language: String,
         @Path("lessonId") lessonId: String
     ): LessonDetailDto
 
-    @POST("api/academy/{languageCode}/lessons/{lessonId}/complete")
+    @POST("api/v1/academy/{language}/lessons/{lessonId}/complete")
     suspend fun completeLesson(
-        @Path("languageCode") languageCode: String,
+        @Path("language") language: String,
         @Path("lessonId") lessonId: String,
         @Body request: LessonCompletionRequest
     ): LessonCompletionResponse

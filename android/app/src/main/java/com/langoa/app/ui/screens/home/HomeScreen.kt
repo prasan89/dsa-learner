@@ -215,7 +215,7 @@ private fun HomeTopBar(
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = "⚔ Lv ${civ.level}",
+                    text = "⚔ Lv ${civ.tierLevel}",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = LangoaGreenLight
