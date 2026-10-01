@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="langoa_green">#1B4D3E</color>
+    <color name="langoa_green_light">#2D7A62</color>
+    <color name="langoa_green_dark">#0F2D23</color>
+    <color name="langoa_amber">#D4A017</color>
+    <color name="langoa_amber_light">#E8BE45</color>
+    <color name="langoa_amber_dark">#9E750F</color>
+    <color name="langoa_blue">#4A90D9</color>
+    <color name="langoa_blue_light">#6AAEE8</color>
+    <color name="langoa_blue_dark">#2F6EA8</color>
+    <color name="langoa_background">#0F1923</color>
+    <color name="langoa_surface">#1C2A35</color>
+    <color name="langoa_surface_variant">#243342</color>
+    <color name="langoa_on_background">#F0E6C8</color>
+    <color name="langoa_on_surface">#D4C9A8</color>
+    <color name="langoa_error">#CF6679</color>
+    <color name="langoa_success">#4CAF50</color>
+    <color name="langoa_warning">#FF9800</color>
+    <color name="langoa_xp">#FFD700</color>
+    <color name="langoa_coins">#FFA500</color>
+    <color name="langoa_food">#8BC34A</color>
+    <color name="langoa_materials">#795548</color>
+    <color name="langoa_civ_power">#9C27B0</color>
+</resources>

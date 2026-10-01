@@ -8,6 +8,8 @@ import com.dsalearner.academy.model.domain.ExperiencePlan;
 import com.dsalearner.academy.model.domain.ExperiencePlanBuilder;
 import com.dsalearner.academy.model.entity.LearnerLessonProgress;
 import com.dsalearner.academy.model.entity.LearnerLevelProgress;
+import com.dsalearner.civilization.dto.LessonRewardResponse;
+import com.dsalearner.civilization.service.CivilizationService;
 import com.dsalearner.pipeline.domain.ContentStatus;
 import com.dsalearner.pipeline.model.entity.*;
 import com.dsalearner.pipeline.repository.*;
@@ -37,6 +39,7 @@ public class AcademyService {
     private final LearnerLessonProgressService lessonProgressService;
     private final LearnerLevelProgressService levelProgressService;
     private final ExperiencePlanBuilder experiencePlanBuilder;
+    private final CivilizationService civilizationService;
 
     // ── GET /{language}/curriculum ────────────────────────────────────────────
 
@@ -242,13 +245,32 @@ public class AcademyService {
             }
         }
 
+        // Apply civilization rewards for lesson completion
+        LessonRewardResponse reward;
+        try {
+            String idempotencyKey = "lesson-" + lessonId + "-" + userId;
+            reward = civilizationService.applyLessonReward(
+                    userId, languageCode, lessonId, lesson.getCefrLevel(), idempotencyKey);
+        } catch (Exception e) {
+            log.warn("Civilization reward failed for lesson={} user={}: {}", lessonId, userId, e.getMessage());
+            reward = new LessonRewardResponse(0, 0, 0, 0, 0, Map.of(), null, false, List.of());
+        }
+
         return new LessonCompletionResponse(
                 lessonId,
                 progress.getStatus(),
                 score,
                 progress.getCompletedAt(),
                 nextLevelUnlocked,
-                nextCefrLevel
+                nextCefrLevel,
+                reward.xpEarned(),
+                reward.coinsEarned(),
+                reward.foodEarned(),
+                reward.materialsEarned(),
+                reward.civilizationPowerEarned(),
+                reward.newBalances(),
+                reward.tierUpgraded(),
+                reward.newTier()
         );
     }
 
@@ -286,7 +308,9 @@ public class AcademyService {
             "japanese", "ja",
             "chinese", "zh",
             "italian", "it",
-            "portuguese", "pt"
+            "portuguese", "pt",
+            "hindi", "hi",
+            "kannada", "kn"
     );
 
     private CfCurriculum resolveCurriculum(String languageCode) {

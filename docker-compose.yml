@@ -32,6 +32,8 @@ services:
       retries: 5
 
   backend:
+    # Profile note: set APPLICATION_MODE=language to activate Langoa (language-learning) endpoints only.
+    # Set APPLICATION_MODE=all (default) to run both DSA and language endpoints together.
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -52,6 +54,7 @@ services:
       RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-rzp_test_placeholder}
       RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-placeholder_secret}
       CORS_ALLOWED_ORIGINS: http://localhost:3000
+      APPLICATION_MODE: ${APPLICATION_MODE:-language}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:

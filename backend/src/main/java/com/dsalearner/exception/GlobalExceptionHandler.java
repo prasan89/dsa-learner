@@ -126,6 +126,20 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(422, "Ineligible lesson", ex.getMessage(), Instant.now()));
     }
 
+    @ExceptionHandler(com.dsalearner.civilization.exception.InsufficientResourcesException.class)
+    public ResponseEntity<ErrorResponse> handleInsufficientResources(
+            com.dsalearner.civilization.exception.InsufficientResourcesException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(new ErrorResponse(422, "Insufficient resources", ex.getMessage(), Instant.now()));
+    }
+
+    @ExceptionHandler(com.dsalearner.civilization.exception.CivilizationNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleCivilizationNotFound(
+            com.dsalearner.civilization.exception.CivilizationNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(404, "Civilization not found", ex.getMessage(), Instant.now()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
