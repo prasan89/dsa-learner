@@ -30,6 +30,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -80,9 +84,12 @@ fun LearnScreen(
         return
     }
 
-    // Group lessons by unit (treating unit as CEFR equivalent)
+    // Group lessons by unit (treating unit as CEFR stage equivalent)
     val groupedLessons = uiState.lessons.groupBy { it.unitNumber }
     val cefrLabels = mapOf(1 to "A1 — Beginner", 2 to "A2 — Elementary", 3 to "B1 — Intermediate", 4 to "B2 — Upper-Intermediate")
+    val stageTabs = listOf("Stage 1", "Stage 2", "Stage 3", "Stage 4")
+    val availableStages = groupedLessons.keys.sorted()
+    var selectedStage by remember { mutableStateOf(availableStages.firstOrNull() ?: 1) }
 
     Scaffold(containerColor = LangoaBackground) { paddingValues ->
         LazyColumn(
@@ -107,13 +114,13 @@ fun LearnScreen(
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = when (languageCode) { "de" -> "🇩🇪" else -> "🌐" },
+                                text = when (languageCode) { "de" -> "🇩🇪"; "hi" -> "🇮🇳"; "kn" -> "🪷"; else -> "🌐" },
                                 fontSize = 28.sp
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
-                                    text = when (languageCode) { "de" -> "German" else -> languageCode.uppercase() },
+                                    text = when (languageCode) { "de" -> "German"; "hi" -> "Hindi"; "kn" -> "Kannada"; else -> languageCode.uppercase() },
                                     style = MaterialTheme.typography.headlineSmall,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = LangoaOnBackground
@@ -130,8 +137,45 @@ fun LearnScreen(
                 }
             }
 
-            // Grouped lesson sections
-            groupedLessons.entries.sortedBy { it.key }.forEach { (unitNumber, lessons) ->
+            // Stage tabs
+            if (availableStages.size > 1) {
+                item {
+                    val selectedTabIndex = availableStages.indexOf(selectedStage).coerceAtLeast(0)
+                    ScrollableTabRow(
+                        selectedTabIndex = selectedTabIndex,
+                        containerColor = LangoaBackground,
+                        contentColor = LangoaAmber,
+                        indicator = { tabPositions ->
+                            if (selectedTabIndex < tabPositions.size) {
+                                TabRowDefaults.SecondaryIndicator(
+                                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                                    color = LangoaAmber
+                                )
+                            }
+                        }
+                    ) {
+                        availableStages.forEachIndexed { index, stage ->
+                            Tab(
+                                selected = stage == selectedStage,
+                                onClick = { selectedStage = stage },
+                                text = {
+                                    Text(
+                                        stageTabs.getOrElse(stage - 1) { "Stage $stage" },
+                                        fontWeight = if (stage == selectedStage) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Grouped lesson sections — only for selected stage
+            val filteredGroups = groupedLessons.entries
+                .filter { it.key == selectedStage }
+                .sortedBy { it.key }
+
+            filteredGroups.forEach { (unitNumber, lessons) ->
                 val sectionLabel = cefrLabels[unitNumber] ?: "Unit $unitNumber"
                 val allCompleted = lessons.all { it.isCompleted }
                 val completedInUnit = lessons.count { it.isCompleted }
