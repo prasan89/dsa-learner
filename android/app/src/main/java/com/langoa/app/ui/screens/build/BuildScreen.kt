@@ -72,6 +72,11 @@ import com.langoa.app.ui.theme.LangoaOnBackground
 import com.langoa.app.ui.theme.LangoaSurface
 import com.langoa.app.ui.theme.LangoaSurfaceVariant
 import com.langoa.app.ui.theme.LangoaXP
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun BuildScreen(
@@ -220,6 +225,27 @@ fun BuildScreen(
                 .background(LangoaBackground)
                 .padding(paddingValues)
         ) {
+            // Offline banner
+            val ctx = LocalContext.current
+            val isOffline = remember {
+                val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                val caps = cm.getNetworkCapabilities(cm.activeNetwork)
+                caps == null || !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            }
+            if (isOffline) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(LangoaAmber.copy(alpha = 0.15f))
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Filled.WifiOff, contentDescription = null, tint = LangoaAmber, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Build features require network", style = MaterialTheme.typography.bodySmall, color = LangoaAmber)
+                }
+            }
+
             // Header
             Box(
                 modifier = Modifier

@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.langoa.app.data.local.LangoaDatabase
 import com.langoa.app.data.local.dao.CachedCivilizationDao
 import com.langoa.app.data.local.dao.CachedLessonDao
+import com.langoa.app.data.local.dao.PendingSyncDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -24,19 +25,22 @@ object DatabaseModule {
             LangoaDatabase::class.java,
             LangoaDatabase.DATABASE_NAME
         )
-            .fallbackToDestructiveMigration()
+            .addMigrations(LangoaDatabase.MIGRATION_2_3)
             .build()
     }
 
     @Provides
     @Singleton
-    fun provideCachedLessonDao(database: LangoaDatabase): CachedLessonDao {
-        return database.cachedLessonDao()
-    }
+    fun provideCachedLessonDao(database: LangoaDatabase): CachedLessonDao =
+        database.cachedLessonDao()
 
     @Provides
     @Singleton
-    fun provideCachedCivilizationDao(database: LangoaDatabase): CachedCivilizationDao {
-        return database.cachedCivilizationDao()
-    }
+    fun provideCachedCivilizationDao(database: LangoaDatabase): CachedCivilizationDao =
+        database.cachedCivilizationDao()
+
+    @Provides
+    @Singleton
+    fun providePendingSyncDao(database: LangoaDatabase): PendingSyncDao =
+        database.pendingSyncDao()
 }

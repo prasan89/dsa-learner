@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -84,6 +85,20 @@ fun LearnScreen(
         return
     }
 
+    // Empty state: no cached lessons and offline
+    if (uiState.isEmpty && uiState.isOffline) {
+        Box(modifier = Modifier.fillMaxSize().background(LangoaBackground), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
+                Icon(Icons.Filled.WifiOff, contentDescription = null, tint = LangoaOnBackground.copy(alpha = 0.4f), modifier = Modifier.size(48.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("No lessons cached yet", style = MaterialTheme.typography.titleMedium, color = LangoaOnBackground)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text("Go online to download your curriculum.", style = MaterialTheme.typography.bodySmall, color = LangoaOnBackground.copy(alpha = 0.55f))
+            }
+        }
+        return
+    }
+
     // Group lessons by unit (treating unit as CEFR stage equivalent)
     val groupedLessons = uiState.lessons.groupBy { it.unitNumber }
     val cefrLabels = mapOf(1 to "A1 — Beginner", 2 to "A2 — Elementary", 3 to "B1 — Intermediate", 4 to "B2 — Upper-Intermediate")
@@ -133,6 +148,23 @@ fun LearnScreen(
                                 )
                             }
                         }
+                    }
+                }
+            }
+
+            // Offline banner
+            if (uiState.isOffline) {
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(LangoaAmber.copy(alpha = 0.15f))
+                            .padding(horizontal = 20.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Filled.WifiOff, contentDescription = null, tint = LangoaAmber, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Offline — showing cached content", style = MaterialTheme.typography.bodySmall, color = LangoaAmber)
                     }
                 }
             }

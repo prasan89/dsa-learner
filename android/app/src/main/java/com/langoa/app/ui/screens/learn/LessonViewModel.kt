@@ -2,10 +2,14 @@ package com.langoa.app.ui.screens.learn
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import com.langoa.app.domain.model.Lesson
 import com.langoa.app.domain.usecase.CompleteLessonUseCase
 import com.langoa.app.domain.usecase.GetLessonsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,13 +19,16 @@ import javax.inject.Inject
 data class LearnUiState(
     val lessons: List<Lesson> = emptyList(),
     val isLoading: Boolean = true,
+    val isOffline: Boolean = false,
+    val isEmpty: Boolean = false,
     val error: String? = null
 )
 
 @HiltViewModel
 class LessonViewModel @Inject constructor(
     private val getLessonsUseCase: GetLessonsUseCase,
-    private val completeLessonUseCase: CompleteLessonUseCase
+    private val completeLessonUseCase: CompleteLessonUseCase,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LearnUiState())
@@ -30,9 +37,21 @@ class LessonViewModel @Inject constructor(
     fun loadLessons(languageCode: String) {
         viewModelScope.launch {
             getLessonsUseCase(languageCode).collect { lessons ->
-                _uiState.value = _uiState.value.copy(lessons = lessons, isLoading = false)
+                _uiState.value = _uiState.value.copy(
+                    lessons = lessons,
+                    isLoading = false,
+                    isOffline = !isOnline(),
+                    isEmpty = lessons.isEmpty()
+                )
             }
         }
+    }
+
+    private fun isOnline(): Boolean {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = cm.activeNetwork ?: return false
+        val caps = cm.getNetworkCapabilities(network) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
     fun completeLesson(

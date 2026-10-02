@@ -6,6 +6,7 @@ import com.langoa.app.data.local.TokenStorage
 import com.langoa.app.data.remote.api.AuthApi
 import com.langoa.app.data.remote.api.CivilizationApi
 import com.langoa.app.data.remote.api.LearningApi
+import com.langoa.app.data.remote.network.TokenAuthenticator
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -23,7 +24,10 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(tokenStorage: TokenStorage): OkHttpClient {
+    fun provideOkHttpClient(
+        tokenStorage: TokenStorage,
+        tokenAuthenticator: TokenAuthenticator
+    ): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = if (BuildConfig.DEBUG) {
                 HttpLoggingInterceptor.Level.BODY
@@ -45,6 +49,7 @@ object NetworkModule {
                 }
                 chain.proceed(request)
             }
+            .authenticator(tokenAuthenticator)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)

@@ -16,5 +16,6 @@ data class CachedLesson(
     val xpReward: Int,
     val exerciseCount: Int,
     val exercisesJson: String = "",
-    val cachedAt: Long = System.currentTimeMillis()
+    val cachedAt: Long = System.currentTimeMillis(),
+    val cachedExercisesAt: Long = 0L
 )

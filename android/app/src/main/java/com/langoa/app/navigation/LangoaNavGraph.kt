@@ -13,8 +13,10 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -23,6 +25,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.langoa.app.auth.AuthEvent
+import com.langoa.app.auth.AuthEventBus
 import com.langoa.app.ui.screens.auth.LoginScreen
 import com.langoa.app.ui.screens.build.BuildScreen
 import com.langoa.app.ui.screens.home.HomeScreen
@@ -36,8 +40,21 @@ import com.langoa.app.ui.screens.splash.SplashScreen
 import com.langoa.app.ui.screens.world.WorldScreen
 
 @Composable
-fun LangoaNavGraph() {
+fun LangoaNavGraph(authEventBus: AuthEventBus) {
     val navController = rememberNavController()
+
+    LaunchedEffect(Unit) {
+        authEventBus.events.collect { event ->
+            when (event) {
+                is AuthEvent.SessionExpired -> {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            }
+        }
+    }
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 

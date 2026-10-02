@@ -10,6 +10,6 @@ data class Language(
 
 val SUPPORTED_LANGUAGES = listOf(
     Language("de", "German", "🇩🇪", true),
-    Language("hi", "Hindi", "🇮🇳", false),
-    Language("kn", "Kannada", "🇮🇳", false)
+    Language("hi", "Hindi", "🇮🇳", true),
+    Language("kn", "Kannada", "🇮🇳", true)
 )

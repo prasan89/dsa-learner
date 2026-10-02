@@ -1,6 +1,12 @@
 package com.langoa.app.repository
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import com.google.gson.Gson
 import com.langoa.app.data.local.dao.CachedLessonDao
+import com.langoa.app.data.local.dao.PendingSyncDao
 import com.langoa.app.data.local.entity.CachedLesson
 import com.langoa.app.data.remote.api.LearningApi
 import com.langoa.app.data.remote.model.CurriculumDto
@@ -26,6 +32,8 @@ class LearningRepositoryTest {
 
     private lateinit var learningApi: LearningApi
     private lateinit var cachedLessonDao: CachedLessonDao
+    private lateinit var pendingSyncDao: PendingSyncDao
+    private lateinit var context: Context
     private lateinit var repository: LearningRepositoryImpl
 
     private val testCachedLesson = CachedLesson(
@@ -45,7 +53,9 @@ class LearningRepositoryTest {
     fun setup() {
         learningApi = mockk()
         cachedLessonDao = mockk(relaxed = true)
-        repository = LearningRepositoryImpl(learningApi, cachedLessonDao)
+        pendingSyncDao = mockk(relaxed = true)
+        context = mockk(relaxed = true)
+        repository = LearningRepositoryImpl(learningApi, cachedLessonDao, pendingSyncDao, Gson(), context)
     }
 
     @Test
@@ -88,6 +98,8 @@ class LearningRepositoryTest {
             )
         )
         coEvery { learningApi.getCurriculum("de") } returns curriculum
+        // Simulate lesson already cached so exercise-caching step is skipped
+        coEvery { cachedLessonDao.getLessonById(any()) } returns testCachedLesson.copy(exercisesJson = "[]")
 
         val result = repository.refreshCurriculum("de")
 
@@ -108,17 +120,24 @@ class LearningRepositoryTest {
 
     @Test
     fun `completeLesson marks lesson as completed in DB`() = runTest {
+        // Mock connectivity to simulate online state
+        val network = mockk<Network>()
+        val networkCapabilities = mockk<NetworkCapabilities>()
+        val connectivityManager = mockk<ConnectivityManager>()
+        every { context.getSystemService(Context.CONNECTIVITY_SERVICE) } returns connectivityManager
+        every { connectivityManager.activeNetwork } returns network
+        every { connectivityManager.getNetworkCapabilities(network) } returns networkCapabilities
+        every { networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) } returns true
+
         val completionResponse = LessonCompletionResponse(
             lessonId = "lesson-1",
+            lessonStatus = "COMPLETED",
+            score = 5,
             xpEarned = 10,
             coinsEarned = 5,
             foodEarned = 3,
             materialsEarned = 2,
-            civPowerEarned = 1,
-            isPerfect = true,
-            streakBonus = false,
-            newTotalXp = 110,
-            newLevel = 2
+            civilizationPowerEarned = 1
         )
         coEvery { learningApi.completeLesson(any(), any(), any()) } returns completionResponse
 
@@ -133,6 +152,6 @@ class LearningRepositoryTest {
 
         assertTrue(result.isSuccess)
         coVerify { cachedLessonDao.markLessonCompleted("lesson-1") }
-        assertEquals(10, result.getOrNull()?.xpEarned)
+        assertEquals(10L, result.getOrNull()?.xpEarned)
     }
 }
