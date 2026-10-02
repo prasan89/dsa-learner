@@ -6,6 +6,7 @@ import com.langoa.app.data.local.TokenStorage
 import com.langoa.app.data.remote.api.AuthApi
 import com.langoa.app.data.remote.api.CivilizationApi
 import com.langoa.app.data.remote.api.LearningApi
+import com.langoa.app.data.remote.api.SubscriptionApi
 import com.langoa.app.data.remote.network.TokenAuthenticator
 import dagger.Module
 import dagger.Provides
@@ -79,4 +80,8 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideCivilizationApi(retrofit: Retrofit): CivilizationApi = retrofit.create(CivilizationApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideSubscriptionApi(retrofit: Retrofit): SubscriptionApi = retrofit.create(SubscriptionApi::class.java)
 }

@@ -8,5 +8,7 @@ public record LessonSummaryDto(
         String status,
         int position,
         int stepIndex,
-        Integer score
+        Integer score,
+        boolean isPremium,
+        boolean isLocked
 ) {}

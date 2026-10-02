@@ -16,12 +16,21 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,6 +41,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.langoa.app.ui.screens.paywall.SubscriptionViewModel
 import com.langoa.app.ui.theme.LangoaAmber
 import com.langoa.app.ui.theme.LangoaAmberLight
 import com.langoa.app.ui.theme.LangoaBackground
@@ -47,7 +58,17 @@ import com.langoa.app.ui.theme.LangoaSurfaceVariant
 import com.langoa.app.ui.theme.LangoaXP
 
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(
+    onNavigateToPaywall: () -> Unit = {},
+    subscriptionViewModel: SubscriptionViewModel = hiltViewModel()
+) {
+    val subState by subscriptionViewModel.uiState.collectAsState()
+    val isPro = subState.currentStatus.isPro
+
+    LaunchedEffect(Unit) {
+        subscriptionViewModel.load()
+    }
+
     Scaffold(containerColor = LangoaBackground) { paddingValues ->
         Column(
             modifier = Modifier
@@ -185,6 +206,72 @@ fun ProfileScreen() {
                         ResourceStatRow("🌾", "Food", "80", LangoaFood)
                         ResourceStatRow("🧱", "Materials", "45", LangoaMaterials)
                         ResourceStatRow("🏰", "Civ Power", "22", LangoaCivPower)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Subscription card
+                Text(
+                    text = "SUBSCRIPTION",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = LangoaOnBackground.copy(alpha = 0.45f),
+                    letterSpacing = 2.sp,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isPro) LangoaGreen.copy(alpha = 0.12f) else LangoaSurface
+                    ),
+                    shape = RoundedCornerShape(18.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isPro) LangoaGreen.copy(alpha = 0.25f) else LangoaAmber.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (isPro) Icons.Filled.CheckCircle else Icons.Filled.Lock,
+                                contentDescription = null,
+                                tint = if (isPro) LangoaGreenLight else LangoaAmber,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (isPro) "Pro" else "Free",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = if (isPro) LangoaGreenLight else LangoaOnBackground
+                            )
+                            Text(
+                                text = if (isPro) {
+                                    subState.currentStatus.expiresAt?.let { "Renews $it" } ?: "Pro Active"
+                                } else {
+                                    "First 10 lessons free"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = LangoaOnBackground.copy(alpha = 0.5f)
+                            )
+                        }
+                        if (!isPro) {
+                            Button(
+                                onClick = onNavigateToPaywall,
+                                colors = ButtonDefaults.buttonColors(containerColor = LangoaAmber),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Text("Upgrade", fontWeight = FontWeight.Bold, color = Color.White)
+                            }
+                        }
                     }
                 }
 

@@ -3,9 +3,11 @@ package com.langoa.app.data.local
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.langoa.app.domain.model.SubscriptionStatus
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -25,6 +27,9 @@ class TokenStorage @Inject constructor(
         private val USER_ID_KEY = stringPreferencesKey("user_id")
         private val USER_EMAIL_KEY = stringPreferencesKey("user_email")
         private val SELECTED_LANGUAGE_KEY = stringPreferencesKey("selected_language")
+        private val SUBSCRIPTION_PLAN_KEY = stringPreferencesKey("subscription_plan")
+        private val SUBSCRIPTION_IS_PRO_KEY = booleanPreferencesKey("subscription_is_pro")
+        private val SUBSCRIPTION_EXPIRES_AT_KEY = stringPreferencesKey("subscription_expires_at")
     }
 
     fun getAccessToken(): String? = runBlocking {
@@ -76,5 +81,23 @@ class TokenStorage @Inject constructor(
 
     suspend fun clearAll() {
         context.dataStore.edit { it.clear() }
+    }
+
+    suspend fun saveSubscriptionStatus(planCode: String, isPro: Boolean, expiresAt: String?) {
+        context.dataStore.edit { prefs ->
+            prefs[SUBSCRIPTION_PLAN_KEY] = planCode
+            prefs[SUBSCRIPTION_IS_PRO_KEY] = isPro
+            if (expiresAt != null) prefs[SUBSCRIPTION_EXPIRES_AT_KEY] = expiresAt
+            else prefs.remove(SUBSCRIPTION_EXPIRES_AT_KEY)
+        }
+    }
+
+    fun getCachedSubscriptionStatus(): SubscriptionStatus = runBlocking {
+        val prefs = context.dataStore.data.first()
+        SubscriptionStatus(
+            planCode = prefs[SUBSCRIPTION_PLAN_KEY] ?: "FREE",
+            isPro = prefs[SUBSCRIPTION_IS_PRO_KEY] ?: false,
+            expiresAt = prefs[SUBSCRIPTION_EXPIRES_AT_KEY]
+        )
     }
 }

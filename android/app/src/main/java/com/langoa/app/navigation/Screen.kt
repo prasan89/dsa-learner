@@ -24,4 +24,5 @@ sealed class Screen(val route: String) {
     }
     object World : Screen("world")
     object Profile : Screen("profile")
+    object Paywall : Screen("paywall")
 }

@@ -15,6 +15,8 @@ import com.dsalearner.civilization.service.QuestService;
 import com.dsalearner.pipeline.domain.ContentStatus;
 import com.dsalearner.pipeline.model.entity.*;
 import com.dsalearner.pipeline.repository.*;
+import com.dsalearner.subscription.exception.PremiumRequiredException;
+import com.dsalearner.subscription.service.EntitlementService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,7 @@ public class AcademyService {
     private final CivilizationService civilizationService;
     private final QuestService questService;
     private final AchievementService achievementService;
+    private final EntitlementService entitlementService;
 
     // ── GET /{language}/curriculum ────────────────────────────────────────────
 
@@ -65,6 +68,8 @@ public class AcademyService {
         Map<String, LearnerLevelProgress> levelProgressByCefr = allLevelProgress.stream()
                 .collect(Collectors.toMap(LearnerLevelProgress::getCefrLevel, Function.identity()));
 
+        boolean isPro = entitlementService.isPro(userId);
+
         // Group units and plans by levelId
         Map<UUID, List<CfCurriculumUnit>> unitsByLevelId = allUnits.stream()
                 .collect(Collectors.groupingBy(CfCurriculumUnit::getLevelId));
@@ -81,7 +86,8 @@ public class AcademyService {
                         unitsByLevelId.getOrDefault(level.getId(), List.of()),
                         plansByLevelId.getOrDefault(level.getId(), List.of()),
                         plansByUnitId,
-                        progressByLessonId))
+                        progressByLessonId,
+                        isPro))
                 .toList();
 
         return new AcademyCurriculumResponse(
@@ -98,7 +104,8 @@ public class AcademyService {
             List<CfCurriculumUnit> units,
             List<CfCurriculumLessonPlan> plansInLevel,
             Map<UUID, List<CfCurriculumLessonPlan>> plansByUnitId,
-            Map<UUID, LearnerLessonProgress> progressByLessonId) {
+            Map<UUID, LearnerLessonProgress> progressByLessonId,
+            boolean isPro) {
 
         String levelStatus = levelProg != null ? levelProg.getStatus() : "NOT_STARTED";
         int lessonsCompleted = levelProg != null ? levelProg.getLessonsCompleted() : 0;
@@ -108,7 +115,7 @@ public class AcademyService {
                 .sorted(Comparator.comparingInt(CfCurriculumUnit::getOrdinal))
                 .map(unit -> {
                     List<CfCurriculumLessonPlan> unitPlans = plansByUnitId.getOrDefault(unit.getId(), List.of());
-                    List<LessonSummaryDto> lessonDtos = buildLessonSummaries(unitPlans, progressByLessonId);
+                    List<LessonSummaryDto> lessonDtos = buildLessonSummaries(unitPlans, progressByLessonId, isPro);
                     return new UnitDto(unit.getId(), unit.getLabel(), unit.getOrdinal(), lessonDtos);
                 })
                 .toList();
@@ -119,7 +126,7 @@ public class AcademyService {
                 .sorted(Comparator.comparingInt(CfCurriculumLessonPlan::getPosition))
                 .toList();
         if (!unassignedPlans.isEmpty()) {
-            List<LessonSummaryDto> lessonDtos = buildLessonSummaries(unassignedPlans, progressByLessonId);
+            List<LessonSummaryDto> lessonDtos = buildLessonSummaries(unassignedPlans, progressByLessonId, isPro);
             unitDtos = new ArrayList<>(unitDtos);
             unitDtos.add(new UnitDto(null, null, 0, lessonDtos));
         }
@@ -140,7 +147,8 @@ public class AcademyService {
 
     private List<LessonSummaryDto> buildLessonSummaries(
             List<CfCurriculumLessonPlan> plans,
-            Map<UUID, LearnerLessonProgress> progressByLessonId) {
+            Map<UUID, LearnerLessonProgress> progressByLessonId,
+            boolean isPro) {
         return plans.stream()
                 .filter(this::isEligible)
                 .sorted(Comparator.comparingInt(CfCurriculumLessonPlan::getPosition))
@@ -152,7 +160,10 @@ public class AcademyService {
                     String status = prog != null ? prog.getStatus() : "NOT_STARTED";
                     int stepIndex = prog != null ? prog.getStepIndex() : 0;
                     Integer score = prog != null && prog.getScore() != null ? (int) prog.getScore() : null;
-                    return new LessonSummaryDto(lessonId, plan.getTitle(), status, plan.getPosition(), stepIndex, score);
+                    boolean isPremium = !plan.isFreeAccess();
+                    boolean isLocked = isPremium && !isPro;
+                    return new LessonSummaryDto(lessonId, plan.getTitle(), status, plan.getPosition(),
+                            stepIndex, score, isPremium, isLocked);
                 })
                 .toList();
     }
@@ -180,9 +191,14 @@ public class AcademyService {
         assertEligible(lesson);
         assertLevelUnlocked(userId, curriculum.getId(), lesson.getCefrLevel());
 
-        CfLessonVersion version = resolveActiveVersion(lesson);
         CfCurriculumLessonPlan plan = lessonPlanRepo.findByLessonId(lessonId)
                 .orElseThrow(() -> new LessonNotFoundException("No lesson plan for lesson: " + lessonId));
+
+        if (!plan.isFreeAccess() && !entitlementService.isPro(userId)) {
+            throw new PremiumRequiredException("Lesson " + lessonId + " requires a Pro subscription.");
+        }
+
+        CfLessonVersion version = resolveActiveVersion(lesson);
 
         ExperiencePlan experiencePlan = experiencePlanBuilder.build(lesson, version, plan.getUnitDisplayName());
         LearnerLessonProgress progress = lessonProgressService.getOrCreate(userId, lessonId);
@@ -198,6 +214,11 @@ public class AcademyService {
         CfLesson lesson = lessonRepo.findById(lessonId)
                 .orElseThrow(() -> new LessonNotFoundException("Lesson not found: " + lessonId));
         assertEligible(lesson);
+
+        CfCurriculumLessonPlan plan = lessonPlanRepo.findByLessonId(lessonId).orElse(null);
+        if (plan != null && !plan.isFreeAccess() && !entitlementService.isPro(userId)) {
+            throw new PremiumRequiredException("Lesson " + lessonId + " requires a Pro subscription.");
+        }
 
         LearnerLessonProgress progress = lessonProgressService.startOrAdvance(userId, lessonId, stepIndex);
         return LessonProgressDto.from(progress);
@@ -296,6 +317,10 @@ public class AcademyService {
 
         CfLessonVersion version = resolveActiveVersion(lesson);
         CfCurriculumLessonPlan plan = lessonPlanRepo.findByLessonId(lessonId).orElse(null);
+
+        if (plan != null && !plan.isFreeAccess() && !entitlementService.isPro(userId)) {
+            throw new PremiumRequiredException("Lesson " + lessonId + " requires a Pro subscription.");
+        }
 
         return LessonOverviewDto.from(lesson, version, plan);
     }

@@ -145,6 +145,13 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(404, "Civilization not found", ex.getMessage(), Instant.now()));
     }
 
+    @ExceptionHandler(com.dsalearner.subscription.exception.PremiumRequiredException.class)
+    public ResponseEntity<ErrorResponse> handlePremiumRequired(
+            com.dsalearner.subscription.exception.PremiumRequiredException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse(403, "PREMIUM_REQUIRED", ex.getMessage(), Instant.now()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
         log.error("Unhandled exception: {}", ex.getMessage(), ex);

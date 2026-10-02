@@ -35,6 +35,7 @@ import com.langoa.app.ui.screens.learn.LearnScreen
 import com.langoa.app.ui.screens.learn.LessonOverviewScreen
 import com.langoa.app.ui.screens.learn.LessonScreen
 import com.langoa.app.ui.screens.learn.RewardScreen
+import com.langoa.app.ui.screens.paywall.PaywallScreen
 import com.langoa.app.ui.screens.profile.ProfileScreen
 import com.langoa.app.ui.screens.splash.SplashScreen
 import com.langoa.app.ui.screens.world.WorldScreen
@@ -211,6 +212,9 @@ fun LangoaNavGraph(authEventBus: AuthEventBus) {
                     languageCode = languageCode,
                     onLessonClick = { lessonId ->
                         navController.navigate(Screen.LessonOverview.createRoute(languageCode, lessonId))
+                    },
+                    onPremiumLessonTap = {
+                        navController.navigate(Screen.Paywall.route)
                     }
                 )
             }
@@ -288,7 +292,24 @@ fun LangoaNavGraph(authEventBus: AuthEventBus) {
             }
 
             composable(Screen.Profile.route) {
-                ProfileScreen()
+                val languageCode = navBackStackEntry?.arguments?.getString("languageCode") ?: "de"
+                ProfileScreen(
+                    onNavigateToPaywall = {
+                        navController.navigate(Screen.Paywall.route)
+                    }
+                )
+            }
+
+            composable(Screen.Paywall.route) {
+                val languageCode = navBackStackEntry?.arguments?.getString("languageCode") ?: "de"
+                PaywallScreen(
+                    onBack = { navController.popBackStack() },
+                    onUpgradeSuccess = {
+                        navController.navigate(Screen.Learn.createRoute(languageCode)) {
+                            popUpTo(Screen.Paywall.route) { inclusive = true }
+                        }
+                    }
+                )
             }
         }
     }

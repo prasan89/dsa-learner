@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.langoa.app.domain.model.Lesson
 import com.langoa.app.ui.components.LoadingScreen
+import com.langoa.app.ui.screens.paywall.SubscriptionViewModel
 import com.langoa.app.ui.theme.LangoaAmber
 import com.langoa.app.ui.theme.LangoaBackground
 import com.langoa.app.ui.theme.LangoaBlue
@@ -70,13 +71,18 @@ import com.langoa.app.ui.theme.LangoaXP
 fun LearnScreen(
     languageCode: String,
     onLessonClick: (String) -> Unit,
-    viewModel: LessonViewModel = hiltViewModel()
+    onPremiumLessonTap: () -> Unit = {},
+    viewModel: LessonViewModel = hiltViewModel(),
+    subscriptionViewModel: SubscriptionViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val subState by subscriptionViewModel.uiState.collectAsState()
+    val isPro = subState.currentStatus.isPro
     var visible by remember { mutableStateOf(false) }
 
     LaunchedEffect(languageCode) {
         viewModel.loadLessons(languageCode)
+        subscriptionViewModel.load()
         visible = true
     }
 
@@ -265,7 +271,13 @@ fun LearnScreen(
                     ) {
                         LessonCard(
                             lesson = lesson,
-                            onClick = { if (!lesson.isLocked) onLessonClick(lesson.id) },
+                            isPro = isPro,
+                            onClick = {
+                                when {
+                                    lesson.isPremium && !isPro -> onPremiumLessonTap()
+                                    !lesson.isLocked -> onLessonClick(lesson.id)
+                                }
+                            },
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                         )
                     }
@@ -278,11 +290,14 @@ fun LearnScreen(
 @Composable
 private fun LessonCard(
     lesson: Lesson,
+    isPro: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isPaywalled = lesson.isPremium && !isPro
     val borderColor = when {
         lesson.isCompleted -> LangoaGreen.copy(alpha = 0.5f)
+        isPaywalled -> LangoaAmber.copy(alpha = 0.35f)
         lesson.isLocked -> Color.Transparent
         else -> LangoaAmber.copy(alpha = 0.4f)
     }
@@ -290,16 +305,17 @@ private fun LessonCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .alpha(if (lesson.isLocked) 0.45f else 1f)
+            .alpha(if (lesson.isLocked && !lesson.isPremium) 0.45f else 1f)
             .border(
-                width = if (lesson.isCompleted || !lesson.isLocked) 1.5.dp else 0.dp,
+                width = if (lesson.isCompleted || !lesson.isLocked || isPaywalled) 1.5.dp else 0.dp,
                 color = borderColor,
                 shape = RoundedCornerShape(14.dp)
             )
-            .clickable(enabled = !lesson.isLocked, onClick = onClick),
+            .clickable(enabled = !lesson.isLocked || lesson.isPremium, onClick = onClick),
         colors = CardDefaults.cardColors(
             containerColor = when {
                 lesson.isCompleted -> LangoaGreen.copy(alpha = 0.1f)
+                isPaywalled -> LangoaAmber.copy(alpha = 0.06f)
                 lesson.isLocked -> LangoaSurfaceVariant.copy(alpha = 0.5f)
                 else -> LangoaSurface
             }
@@ -318,6 +334,7 @@ private fun LessonCard(
                     .background(
                         when {
                             lesson.isCompleted -> LangoaGreen.copy(alpha = 0.25f)
+                            isPaywalled -> LangoaAmber.copy(alpha = 0.2f)
                             lesson.isLocked -> LangoaSurfaceVariant
                             else -> LangoaAmber.copy(alpha = 0.2f)
                         }
@@ -329,6 +346,10 @@ private fun LessonCard(
                         Icons.Filled.Check, null,
                         tint = LangoaGreenLight,
                         modifier = Modifier.size(20.dp)
+                    )
+                    isPaywalled -> Text(
+                        text = "⭐",
+                        fontSize = 18.sp
                     )
                     lesson.isLocked -> Icon(
                         Icons.Filled.Lock, null,
@@ -377,6 +398,7 @@ private fun LessonCard(
                     .background(
                         when {
                             lesson.isCompleted -> LangoaGreen.copy(alpha = 0.2f)
+                            isPaywalled -> LangoaAmber.copy(alpha = 0.25f)
                             lesson.isLocked -> Color.Transparent
                             else -> LangoaAmber.copy(alpha = 0.15f)
                         }
@@ -386,6 +408,7 @@ private fun LessonCard(
                 Text(
                     text = when {
                         lesson.isCompleted -> "Done ✓"
+                        isPaywalled -> "PRO"
                         lesson.isLocked -> "Locked"
                         else -> "Start →"
                     },
@@ -393,6 +416,7 @@ private fun LessonCard(
                     fontWeight = FontWeight.Bold,
                     color = when {
                         lesson.isCompleted -> LangoaGreenLight
+                        isPaywalled -> LangoaAmber
                         lesson.isLocked -> LangoaOnBackground.copy(alpha = 0.3f)
                         else -> LangoaAmber
                     }
@@ -413,14 +437,17 @@ private fun LessonCardPreview() {
     ) {
         LessonCard(
             lesson = Lesson("1", "Basic Greetings", "", "de", 1, 1, isCompleted = true, xpReward = 15, exerciseCount = 8),
+            isPro = false,
             onClick = {}
         )
         LessonCard(
             lesson = Lesson("2", "Numbers 1-10", "", "de", 1, 2, isCompleted = false, xpReward = 20, exerciseCount = 10),
+            isPro = false,
             onClick = {}
         )
         LessonCard(
-            lesson = Lesson("3", "Colors & Objects", "", "de", 1, 3, isLocked = true, xpReward = 25, exerciseCount = 12),
+            lesson = Lesson("3", "Colors & Objects", "", "de", 1, 3, isLocked = true, isPremium = true, xpReward = 25, exerciseCount = 12),
+            isPro = false,
             onClick = {}
         )
     }

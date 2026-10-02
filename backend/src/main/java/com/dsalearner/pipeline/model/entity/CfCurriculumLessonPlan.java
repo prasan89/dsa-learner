@@ -86,4 +86,8 @@ public class CfCurriculumLessonPlan {
 
     @UpdateTimestamp
     private Instant updatedAt;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean freeAccess = false;
 }

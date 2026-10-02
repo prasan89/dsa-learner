@@ -11,5 +11,6 @@ data class Lesson(
     val isLocked: Boolean = false,
     val xpReward: Int = 10,
     val exerciseCount: Int = 0,
-    val exercises: List<Exercise> = emptyList()
+    val exercises: List<Exercise> = emptyList(),
+    val isPremium: Boolean = false
 )

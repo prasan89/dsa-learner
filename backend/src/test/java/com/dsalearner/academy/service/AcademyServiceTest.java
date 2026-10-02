@@ -16,6 +16,8 @@ import com.dsalearner.pipeline.repository.*;
 import com.dsalearner.civilization.service.CivilizationService;
 import com.dsalearner.civilization.service.QuestService;
 import com.dsalearner.civilization.service.AchievementService;
+import com.dsalearner.subscription.exception.PremiumRequiredException;
+import com.dsalearner.subscription.service.EntitlementService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +49,7 @@ class AcademyServiceTest {
     @Mock CivilizationService civilizationService;
     @Mock QuestService questService;
     @Mock AchievementService achievementService;
+    @Mock EntitlementService entitlementService;
 
     @InjectMocks AcademyService service;
 
@@ -113,6 +116,7 @@ class AcademyServiceTest {
                 .position(1)
                 .unitDisplayName("Unit 1: Basics")
                 .planStatus("PROVISIONED")
+                .freeAccess(true)
                 .build();
     }
 
@@ -379,5 +383,89 @@ class AcademyServiceTest {
 
         var response = service.getCurriculum("fr", userId);
         assertThat(response.languageCode()).isEqualTo("fr");
+    }
+
+    // ── Premium gating ────────────────────────────────────────────────────────
+
+    @Test
+    void getLesson_freeUserRequestsPremiumLesson_throwsPremiumRequired() {
+        when(curriculumRepo.findByLanguageCode("de")).thenReturn(List.of(curriculum));
+        when(lessonRepo.findById(lessonId)).thenReturn(Optional.of(lesson));
+        when(levelRepo.findByCurriculumIdAndCefrLevel(curriculumId, "A1")).thenReturn(Optional.of(levelA1));
+        CfCurriculumLessonPlan premiumPlan = CfCurriculumLessonPlan.builder()
+                .id(UUID.randomUUID()).curriculumId(curriculumId).levelId(levelA1.getId())
+                .lessonId(lessonId).title("Premium lesson").stableRef("de-a1-premium").position(11)
+                .planStatus("PROVISIONED").freeAccess(false).build();
+        when(lessonPlanRepo.findByCurriculumId(curriculumId)).thenReturn(List.of(premiumPlan));
+        when(levelProgressService.unlock(any(), any(), any(), anyInt()))
+                .thenReturn(LearnerLevelProgress.builder().status("IN_PROGRESS").build());
+        when(lessonPlanRepo.findByLessonId(lessonId)).thenReturn(Optional.of(premiumPlan));
+        when(entitlementService.isPro(userId)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.getLesson("de", lessonId, userId))
+                .isInstanceOf(PremiumRequiredException.class);
+    }
+
+    @Test
+    void getLesson_freeUserRequestsA1Lesson_succeeds() {
+        when(curriculumRepo.findByLanguageCode("de")).thenReturn(List.of(curriculum));
+        when(lessonRepo.findById(lessonId)).thenReturn(Optional.of(lesson));
+        when(levelRepo.findByCurriculumIdAndCefrLevel(curriculumId, "A1")).thenReturn(Optional.of(levelA1));
+        when(levelProgressService.unlock(any(), any(), any(), anyInt()))
+                .thenReturn(LearnerLevelProgress.builder().status("IN_PROGRESS").build());
+        CfCurriculumLessonPlan freePlan = CfCurriculumLessonPlan.builder()
+                .id(UUID.randomUUID()).curriculumId(curriculumId).levelId(levelA1.getId())
+                .lessonId(lessonId).title("Free lesson").stableRef("de-a1-free").position(1)
+                .planStatus("PROVISIONED").freeAccess(true).build();
+        when(lessonPlanRepo.findByLessonId(lessonId)).thenReturn(Optional.of(freePlan));
+        when(lessonPlanRepo.findByCurriculumId(curriculumId)).thenReturn(List.of(freePlan));
+        ExperiencePlan xp = new ExperiencePlan(lessonId, versionId, 1, "Greetings", "A1", "de", "Unit 1", List.of());
+        when(experiencePlanBuilder.build(any(), any(), any())).thenReturn(xp);
+        when(lessonVersionRepo.findByLessonIdAndVersion(lessonId, 1)).thenReturn(Optional.of(version));
+        LearnerLessonProgress prog = LearnerLessonProgress.builder()
+                .userId(userId).lessonId(lessonId).status("NOT_STARTED").stepIndex(0).build();
+        when(lessonProgressService.getOrCreate(userId, lessonId)).thenReturn(prog);
+
+        assertThatNoException().isThrownBy(() -> service.getLesson("de", lessonId, userId));
+    }
+
+    @Test
+    void getCurriculum_freeUser_premiumLessonsHaveIsLockedTrue() {
+        when(curriculumRepo.findByLanguageCode("de")).thenReturn(List.of(curriculum));
+        when(levelRepo.findByCurriculumIdOrderByOrdinal(curriculumId)).thenReturn(List.of(levelA1));
+        when(unitRepo.findByCurriculumIdOrderByLevelIdAscOrdinalAsc(curriculumId)).thenReturn(List.of());
+        CfCurriculumLessonPlan premiumPlan = CfCurriculumLessonPlan.builder()
+                .id(UUID.randomUUID()).curriculumId(curriculumId).levelId(levelA1.getId())
+                .lessonId(lessonId).title("Premium").stableRef("de-a1-premium").position(11)
+                .planStatus("PROVISIONED").freeAccess(false).build();
+        when(lessonPlanRepo.findByCurriculumId(curriculumId)).thenReturn(List.of(premiumPlan));
+        when(lessonProgressService.findAllForUser(userId)).thenReturn(List.of());
+        when(levelProgressService.findAllForUserAndCurriculum(userId, curriculumId)).thenReturn(List.of());
+        when(entitlementService.isPro(userId)).thenReturn(false);
+
+        var response = service.getCurriculum("de", userId);
+        var lesson = response.levels().get(0).units().get(0).lessons().get(0);
+        assertThat(lesson.isPremium()).isTrue();
+        assertThat(lesson.isLocked()).isTrue();
+    }
+
+    @Test
+    void getCurriculum_proUser_allLessonsHaveIsLockedFalse() {
+        when(curriculumRepo.findByLanguageCode("de")).thenReturn(List.of(curriculum));
+        when(levelRepo.findByCurriculumIdOrderByOrdinal(curriculumId)).thenReturn(List.of(levelA1));
+        when(unitRepo.findByCurriculumIdOrderByLevelIdAscOrdinalAsc(curriculumId)).thenReturn(List.of());
+        CfCurriculumLessonPlan premiumPlan = CfCurriculumLessonPlan.builder()
+                .id(UUID.randomUUID()).curriculumId(curriculumId).levelId(levelA1.getId())
+                .lessonId(lessonId).title("Premium").stableRef("de-a1-premium").position(11)
+                .planStatus("PROVISIONED").freeAccess(false).build();
+        when(lessonPlanRepo.findByCurriculumId(curriculumId)).thenReturn(List.of(premiumPlan));
+        when(lessonProgressService.findAllForUser(userId)).thenReturn(List.of());
+        when(levelProgressService.findAllForUserAndCurriculum(userId, curriculumId)).thenReturn(List.of());
+        when(entitlementService.isPro(userId)).thenReturn(true);
+
+        var response = service.getCurriculum("de", userId);
+        var lesson = response.levels().get(0).units().get(0).lessons().get(0);
+        assertThat(lesson.isPremium()).isTrue();
+        assertThat(lesson.isLocked()).isFalse();
     }
 }

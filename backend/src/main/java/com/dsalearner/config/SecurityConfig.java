@@ -4,6 +4,7 @@ import com.dsalearner.security.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -48,6 +49,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/pipeline/health").permitAll()
                 .requestMatchers("/api/v1/curriculum/health").permitAll()
                 .requestMatchers("/api/v1/civilization/health").permitAll()
+                .requestMatchers("/api/v1/webhook/razorpay").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/subscriptions/plans").permitAll()
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())

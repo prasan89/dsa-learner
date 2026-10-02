@@ -115,6 +115,9 @@ dependencies {
     // Gson
     implementation(libs.gson)
 
+    // Google Play Billing
+    implementation(libs.billing.ktx)
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
