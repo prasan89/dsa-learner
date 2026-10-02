@@ -275,6 +275,15 @@ fun RewardScreen(
                             RewardRow(icon = "🪵", label = "Wood", value = "+${reward.woodEarned}", color = LangoaAmberLight)
                         }
 
+                        if (reward.milestoneCoinsEarned > 0) {
+                            RewardRow(
+                                icon = "🏆",
+                                label = if (reward.nextLevelUnlocked) "Level Bonus" else "Perfect Bonus",
+                                value = "+${reward.milestoneCoinsEarned} 🪙",
+                                color = LangoaAmber
+                            )
+                        }
+
                         if (reward.tierUpgraded) {
                             Box(
                                 modifier = Modifier

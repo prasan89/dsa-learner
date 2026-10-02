@@ -289,7 +289,8 @@ class LearningRepositoryImpl @Inject constructor(
         newTier = response.newTier,
         unlockedBuildingTypes = response.unlockedBuildingTypes,
         completedQuestKeys = response.completedQuestKeys,
-        unlockedAchievementKeys = response.unlockedAchievementKeys
+        unlockedAchievementKeys = response.unlockedAchievementKeys,
+        milestoneCoinsEarned = response.milestoneCoinsEarned
     )
 
     private fun CachedLesson.toDomain() = Lesson(

@@ -23,5 +23,6 @@ public record LessonCompletionResponse(
         String newCivilizationTier,
         List<String> unlockedBuildingTypes,
         List<String> completedQuestKeys,
-        List<String> unlockedAchievementKeys
+        List<String> unlockedAchievementKeys,
+        long milestoneCoinsEarned
 ) {}

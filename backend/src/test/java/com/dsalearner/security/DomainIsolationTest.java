@@ -3,6 +3,7 @@ package com.dsalearner.security;
 import com.dsalearner.academy.controller.AcademyController;
 import com.dsalearner.academy.security.CurrentUserProvider;
 import com.dsalearner.academy.service.AcademyService;
+import com.dsalearner.civilization.service.LearningRewardService;
 import com.dsalearner.config.SecurityConfig;
 import com.dsalearner.controller.ProblemController;
 import com.dsalearner.service.ProblemService;
@@ -39,6 +40,7 @@ class DomainIsolationTest {
     @Autowired MockMvc mvc;
 
     @MockBean AcademyService academyService;
+    @MockBean LearningRewardService learningRewardService;
     @MockBean CurrentUserProvider currentUserProvider;
     @MockBean ProblemService problemService;
     @MockBean JwtService jwtService;

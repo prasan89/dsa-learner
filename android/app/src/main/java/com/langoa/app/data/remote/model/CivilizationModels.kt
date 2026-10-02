@@ -70,7 +70,8 @@ data class LessonCompletionResponse(
     val newTier: String? = null,
     val unlockedBuildingTypes: List<String> = emptyList(),
     val completedQuestKeys: List<String> = emptyList(),
-    val unlockedAchievementKeys: List<String> = emptyList()
+    val unlockedAchievementKeys: List<String> = emptyList(),
+    val milestoneCoinsEarned: Long = 0
 )
 
 data class BuildingLevelConfigDto(

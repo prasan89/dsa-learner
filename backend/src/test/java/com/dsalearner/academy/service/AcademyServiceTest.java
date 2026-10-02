@@ -14,6 +14,7 @@ import com.dsalearner.pipeline.domain.ContentStatus;
 import com.dsalearner.pipeline.model.entity.*;
 import com.dsalearner.pipeline.repository.*;
 import com.dsalearner.civilization.service.CivilizationService;
+import com.dsalearner.civilization.service.LearningRewardService;
 import com.dsalearner.civilization.service.QuestService;
 import com.dsalearner.civilization.service.AchievementService;
 import com.dsalearner.subscription.exception.PremiumRequiredException;
@@ -47,6 +48,7 @@ class AcademyServiceTest {
     @Mock LearnerLevelProgressService levelProgressService;
     @Mock ExperiencePlanBuilder experiencePlanBuilder;
     @Mock CivilizationService civilizationService;
+    @Mock LearningRewardService learningRewardService;
     @Mock QuestService questService;
     @Mock AchievementService achievementService;
     @Mock EntitlementService entitlementService;

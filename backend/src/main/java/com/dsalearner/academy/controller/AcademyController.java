@@ -3,8 +3,11 @@ package com.dsalearner.academy.controller;
 import com.dsalearner.academy.dto.*;
 import com.dsalearner.academy.security.CurrentUserProvider;
 import com.dsalearner.academy.service.AcademyService;
+import com.dsalearner.civilization.service.LearningRewardService;
 import com.dsalearner.security.DomainAuthorizationService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -20,6 +23,7 @@ import java.util.UUID;
 public class AcademyController {
 
     private final AcademyService academyService;
+    private final LearningRewardService learningRewardService;
     private final CurrentUserProvider currentUserProvider;
     private final DomainAuthorizationService domainAuthService;
 
@@ -82,4 +86,23 @@ public class AcademyController {
         UUID userId = currentUserProvider.getUserId(authentication);
         return ResponseEntity.ok(academyService.getProgress(language, userId));
     }
+
+    /**
+     * Grant a small reward for first-time exercise completion. Idempotent —
+     * calling again for the same exerciseId returns coinsAwarded=0 with no side effects.
+     */
+    @PostMapping("/lessons/{lessonId}/exercises/{exerciseId}/complete")
+    public ResponseEntity<ExerciseRewardResponse> completeExercise(
+            @PathVariable String language,
+            @PathVariable UUID lessonId,
+            @PathVariable String exerciseId,
+            Authentication authentication) {
+        domainAuthService.requireDomain(authentication, "language");
+        UUID userId = currentUserProvider.getUserId(authentication);
+        long coinsAwarded = learningRewardService.grantExerciseReward(
+                userId, lessonId, exerciseId, language, 5L);
+        return ResponseEntity.ok(new ExerciseRewardResponse(exerciseId, coinsAwarded));
+    }
+
+    record ExerciseRewardResponse(@NotBlank String exerciseId, @NotNull long coinsAwarded) {}
 }

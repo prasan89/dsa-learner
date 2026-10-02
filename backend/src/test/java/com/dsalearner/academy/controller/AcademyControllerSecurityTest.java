@@ -2,6 +2,7 @@ package com.dsalearner.academy.controller;
 
 import com.dsalearner.academy.security.CurrentUserProvider;
 import com.dsalearner.academy.service.AcademyService;
+import com.dsalearner.civilization.service.LearningRewardService;
 import com.dsalearner.config.SecurityConfig;
 import com.dsalearner.security.DomainAuthorizationService;
 import com.dsalearner.security.JwtService;
@@ -29,6 +30,7 @@ class AcademyControllerSecurityTest {
     @Autowired MockMvc mvc;
 
     @MockBean AcademyService academyService;
+    @MockBean LearningRewardService learningRewardService;
     @MockBean CurrentUserProvider currentUserProvider;
     @MockBean DomainAuthorizationService domainAuthService;
 

@@ -11,6 +11,7 @@ import com.dsalearner.academy.model.entity.LearnerLevelProgress;
 import com.dsalearner.civilization.dto.LessonRewardResponse;
 import com.dsalearner.civilization.service.AchievementService;
 import com.dsalearner.civilization.service.CivilizationService;
+import com.dsalearner.civilization.service.LearningRewardService;
 import com.dsalearner.civilization.service.QuestService;
 import com.dsalearner.pipeline.domain.ContentStatus;
 import com.dsalearner.pipeline.model.entity.*;
@@ -44,6 +45,7 @@ public class AcademyService {
     private final LearnerLevelProgressService levelProgressService;
     private final ExperiencePlanBuilder experiencePlanBuilder;
     private final CivilizationService civilizationService;
+    private final LearningRewardService learningRewardService;
     private final QuestService questService;
     private final AchievementService achievementService;
     private final EntitlementService entitlementService;
@@ -276,6 +278,18 @@ public class AcademyService {
         LessonRewardResponse reward = civilizationService.applyLessonReward(
                 userId, languageCode, lessonId, lesson.getCefrLevel(), idempotencyKey);
 
+        // Milestone bonus: perfect lesson (score = 100%)
+        long milestoneCoins = 0L;
+        if (score >= 100) {
+            milestoneCoins += learningRewardService.grantPerfectLessonBonus(userId, languageCode, lessonId);
+        }
+
+        // Milestone bonus: level completed (next level just unlocked = current level just finished)
+        if (nextLevelUnlocked && currentLevel != null) {
+            milestoneCoins += learningRewardService.grantLevelCompletionBonus(
+                    userId, languageCode, lesson.getCefrLevel(), curriculum.getId());
+        }
+
         // Progress quests for lesson completion
         List<String> completedQuestKeys = questService.progressQuests(userId, languageCode, "LESSONS_COMPLETED", 1);
 
@@ -302,7 +316,8 @@ public class AcademyService {
                 reward.newTier(),
                 reward.unlockedBuildingTypes(),
                 completedQuestKeys,
-                unlockedAchievementKeys
+                unlockedAchievementKeys,
+                milestoneCoins
         );
     }
 
