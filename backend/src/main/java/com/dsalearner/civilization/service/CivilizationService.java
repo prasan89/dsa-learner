@@ -10,6 +10,7 @@ import com.dsalearner.civilization.exception.InsufficientResourcesException;
 import com.dsalearner.civilization.model.entity.*;
 import com.dsalearner.civilization.repository.*;
 import com.dsalearner.civilization.model.entity.LangoaBuildingProductionConfig;
+import com.dsalearner.economy.analytics.EconomyEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -74,6 +75,7 @@ public class CivilizationService {
     private final LangoaDecorationInstanceRepository decorationInstanceRepo;
     private final LangoaCityExpansionDefinitionRepository expansionDefRepo;
     private final LangoaCityExpansionInstanceRepository expansionInstanceRepo;
+    private final EconomyEventService economyEventService;
 
     // ── Public API ────────────────────────────────────────────────────────────
 
@@ -121,7 +123,9 @@ public class CivilizationService {
                 .orElseThrow(() -> new CivilizationNotFoundException(
                         "Civilization not found for user=" + userId + " language=" + code));
         // applyLazyProduction runs inside buildStateResponse
-        return buildStateResponse(civ);
+        CivilizationStateResponse state = buildStateResponse(civ);
+        economyEventService.record("RESOURCE_COLLECTED", userId, code, null, null, "collect_all");
+        return state;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -186,6 +190,10 @@ public class CivilizationService {
                 civ.getTotalLessonsCompleted());
 
         Map<String, Long> newBalances = buildBalanceMap(userId, code);
+
+        economyEventService.record("lesson_reward_granted", userId, code,
+                (long) reward.getCoinReward(), "COINS",
+                lessonId != null ? lessonId.toString() : "unknown");
 
         return new LessonRewardResponse(
                 reward.getXpReward(),
@@ -271,6 +279,8 @@ public class CivilizationService {
                 .build();
         buildingInstanceRepo.save(instance);
 
+        economyEventService.record("BUILDING_CONSTRUCTED", userId, code,
+                (long) config.getCoinCost(), "COINS", req.buildingType());
         log.info("Built {} for civ={}", req.buildingType(), civ.getId());
         return buildStateResponse(civ);
     }
@@ -347,6 +357,8 @@ public class CivilizationService {
         instance.setBuildState("BUILT");
         buildingInstanceRepo.save(instance);
 
+        economyEventService.record("BUILDING_UPGRADED", userId, code,
+                (long) config.getCoinCost(), "COINS", instance.getBuildingType() + "_L" + nextLevel);
         log.info("Upgraded {} to level {} for civ={}", instance.getBuildingType(), nextLevel, civ.getId());
         return buildStateResponse(civ);
     }

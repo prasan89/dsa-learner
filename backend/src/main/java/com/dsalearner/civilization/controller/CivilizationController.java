@@ -9,6 +9,9 @@ import com.dsalearner.civilization.repository.LangoaTransactionRepository;
 import com.dsalearner.civilization.service.AchievementService;
 import com.dsalearner.civilization.service.CivilizationService;
 import com.dsalearner.civilization.service.QuestService;
+import com.dsalearner.economy.antiabuse.EconomyRateLimiter;
+import com.dsalearner.economy.antiabuse.SuspiciousActivityService;
+import com.dsalearner.exception.TooManyRequestsException;
 import com.dsalearner.security.DomainAuthorizationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +40,8 @@ public class CivilizationController {
     private final LangoaBuildingDefinitionRepository buildingDefRepo;
     private final LangoaCurrencyBalanceRepository balanceRepo;
     private final LangoaTransactionRepository transactionRepo;
+    private final EconomyRateLimiter economyRateLimiter;
+    private final SuspiciousActivityService suspiciousActivityService;
 
     @GetMapping
     public ResponseEntity<CivilizationStateResponse> getCivilizationState(
@@ -63,6 +68,11 @@ public class CivilizationController {
             Authentication authentication) {
         domainAuthService.requireDomain(authentication, "language");
         UUID userId = currentUserProvider.getUserId(authentication);
+        if (!economyRateLimiter.isBuildAllowed(userId)) {
+            suspiciousActivityService.flag(userId, "BUILD_RATE_LIMIT",
+                    "Exceeded build rate limit for buildingType=" + request.buildingType());
+            throw new TooManyRequestsException("Building rate limit exceeded. Please slow down.");
+        }
         return ResponseEntity.ok(civilizationService.buildBuilding(userId, language, request));
     }
 
@@ -106,6 +116,11 @@ public class CivilizationController {
             Authentication authentication) {
         domainAuthService.requireDomain(authentication, "language");
         UUID userId = currentUserProvider.getUserId(authentication);
+        if (!economyRateLimiter.isUpgradeAllowed(userId)) {
+            suspiciousActivityService.flag(userId, "UPGRADE_RATE_LIMIT",
+                    "Exceeded upgrade rate limit for instance=" + buildingInstanceId);
+            throw new TooManyRequestsException("Upgrade rate limit exceeded. Please slow down.");
+        }
         return ResponseEntity.ok(civilizationService.upgradeBuilding(userId, language, buildingInstanceId));
     }
 
@@ -211,6 +226,11 @@ public class CivilizationController {
             Authentication authentication) {
         domainAuthService.requireDomain(authentication, "language");
         UUID userId = currentUserProvider.getUserId(authentication);
+        if (!economyRateLimiter.isCollectAllowed(userId)) {
+            suspiciousActivityService.flag(userId, "COLLECT_RATE_LIMIT",
+                    "Exceeded resource collection rate limit");
+            throw new TooManyRequestsException("Collection rate limit exceeded. Please wait before collecting again.");
+        }
         return ResponseEntity.ok(civilizationService.collectAllResources(userId, language));
     }
 }

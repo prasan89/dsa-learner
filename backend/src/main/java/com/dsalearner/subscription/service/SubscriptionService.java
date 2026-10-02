@@ -1,5 +1,6 @@
 package com.dsalearner.subscription.service;
 
+import com.dsalearner.economy.analytics.EconomyEventService;
 import com.dsalearner.subscription.dto.SubscriptionPlanDto;
 import com.dsalearner.subscription.dto.SubscriptionStatusDto;
 import com.dsalearner.subscription.entity.LangSubscription;
@@ -42,6 +43,7 @@ public class SubscriptionService {
     private final LangSubscriptionRepository subscriptionRepository;
     private final SubscriptionPlanRepository planRepository;
     private final PaymentEventRepository paymentEventRepository;
+    private final EconomyEventService economyEventService;
 
     public CreateOrderResponse createOrder(UUID userId, String planCode) {
         SubscriptionPlan plan = planRepository.findByPlanCodeAndIsActiveTrue(planCode)
@@ -146,6 +148,7 @@ public class SubscriptionService {
         }
 
         log.info("Subscription activated for userId={} plan={}", userId, planCode);
+        economyEventService.record("SUBSCRIPTION_STARTED", userId, null, planCode);
         return new SubscriptionStatusDto(planCode, sub.isProActive(),
                 sub.getCurrentPeriodStart(), sub.getCurrentPeriodEnd());
     }

@@ -6,6 +6,8 @@ import com.dsalearner.academy.service.AcademyService;
 import com.dsalearner.civilization.service.LearningRewardService;
 import com.dsalearner.config.SecurityConfig;
 import com.dsalearner.controller.ProblemController;
+import com.dsalearner.economy.antiabuse.EconomyRateLimiter;
+import com.dsalearner.economy.antiabuse.SuspiciousActivityService;
 import com.dsalearner.service.ProblemService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +48,8 @@ class DomainIsolationTest {
     @MockBean JwtService jwtService;
     @MockBean UserDetailsServiceImpl userDetailsService;
     @MockBean DomainAuthorizationService domainAuthService;
+    @MockBean EconomyRateLimiter economyRateLimiter;
+    @MockBean SuspiciousActivityService suspiciousActivityService;
 
     // ── Unauthenticated ──────────────────────────────────────────────────────
 

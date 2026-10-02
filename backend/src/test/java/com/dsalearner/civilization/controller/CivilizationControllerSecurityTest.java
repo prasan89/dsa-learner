@@ -9,9 +9,12 @@ import com.dsalearner.civilization.service.AchievementService;
 import com.dsalearner.civilization.service.CivilizationService;
 import com.dsalearner.civilization.service.QuestService;
 import com.dsalearner.config.SecurityConfig;
+import com.dsalearner.economy.antiabuse.EconomyRateLimiter;
+import com.dsalearner.economy.antiabuse.SuspiciousActivityService;
 import com.dsalearner.security.DomainAuthorizationService;
 import com.dsalearner.security.JwtService;
 import com.dsalearner.security.UserDetailsServiceImpl;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -57,6 +60,16 @@ class CivilizationControllerSecurityTest {
     @MockBean LangoaBuildingDefinitionRepository buildingDefRepo;
     @MockBean LangoaCurrencyBalanceRepository balanceRepo;
     @MockBean LangoaTransactionRepository transactionRepo;
+    @MockBean EconomyRateLimiter economyRateLimiter;
+    @MockBean SuspiciousActivityService suspiciousActivityService;
+
+    @BeforeEach
+    void allowAllRateLimits() {
+        when(economyRateLimiter.isBuildAllowed(any())).thenReturn(true);
+        when(economyRateLimiter.isUpgradeAllowed(any())).thenReturn(true);
+        when(economyRateLimiter.isCollectAllowed(any())).thenReturn(true);
+        when(economyRateLimiter.isLessonAllowed(any())).thenReturn(true);
+    }
 
     // JwtAuthFilter dependencies
     @MockBean JwtService jwtService;

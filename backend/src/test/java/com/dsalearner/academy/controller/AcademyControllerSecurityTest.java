@@ -4,6 +4,8 @@ import com.dsalearner.academy.security.CurrentUserProvider;
 import com.dsalearner.academy.service.AcademyService;
 import com.dsalearner.civilization.service.LearningRewardService;
 import com.dsalearner.config.SecurityConfig;
+import com.dsalearner.economy.antiabuse.EconomyRateLimiter;
+import com.dsalearner.economy.antiabuse.SuspiciousActivityService;
 import com.dsalearner.security.DomainAuthorizationService;
 import com.dsalearner.security.JwtService;
 import com.dsalearner.security.UserDetailsServiceImpl;
@@ -33,6 +35,8 @@ class AcademyControllerSecurityTest {
     @MockBean LearningRewardService learningRewardService;
     @MockBean CurrentUserProvider currentUserProvider;
     @MockBean DomainAuthorizationService domainAuthService;
+    @MockBean EconomyRateLimiter economyRateLimiter;
+    @MockBean SuspiciousActivityService suspiciousActivityService;
 
     // JwtAuthFilter dependencies
     @MockBean JwtService jwtService;

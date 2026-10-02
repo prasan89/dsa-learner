@@ -1,6 +1,8 @@
 package com.dsalearner.subscription.controller;
 
 import com.dsalearner.academy.security.CurrentUserProvider;
+import com.dsalearner.economy.antiabuse.EconomyRateLimiter;
+import com.dsalearner.economy.antiabuse.SuspiciousActivityService;
 import com.dsalearner.subscription.dto.SubscriptionPlanDto;
 import com.dsalearner.subscription.dto.SubscriptionStatusDto;
 import com.dsalearner.subscription.service.EntitlementService;
@@ -24,6 +26,8 @@ class LangSubscriptionControllerSecurityTest {
     @Mock EntitlementService entitlementService;
     @Mock SubscriptionService subscriptionService;
     @Mock CurrentUserProvider currentUserProvider;
+    @Mock EconomyRateLimiter economyRateLimiter;
+    @Mock SuspiciousActivityService suspiciousActivityService;
     @Mock Authentication authentication;
 
     @InjectMocks LangSubscriptionController controller;

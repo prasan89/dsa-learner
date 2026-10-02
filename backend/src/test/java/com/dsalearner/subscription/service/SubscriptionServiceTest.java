@@ -7,6 +7,7 @@ import com.dsalearner.subscription.entity.SubscriptionPlan;
 import com.dsalearner.subscription.repository.LangSubscriptionRepository;
 import com.dsalearner.subscription.repository.PaymentEventRepository;
 import com.dsalearner.subscription.repository.SubscriptionPlanRepository;
+import com.dsalearner.economy.analytics.EconomyEventService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,6 +30,7 @@ class SubscriptionServiceTest {
     @Mock LangSubscriptionRepository subscriptionRepository;
     @Mock SubscriptionPlanRepository planRepository;
     @Mock PaymentEventRepository paymentEventRepository;
+    @Mock EconomyEventService economyEventService;
 
     @InjectMocks SubscriptionService subscriptionService;
 

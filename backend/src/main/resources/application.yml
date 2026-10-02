@@ -67,3 +67,6 @@ razorpay:
 
 application:
   mode: ${APPLICATION_MODE:all}
+
+admin:
+  key: ${ADMIN_KEY:}

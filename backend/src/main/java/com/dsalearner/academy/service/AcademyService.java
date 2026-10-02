@@ -16,6 +16,7 @@ import com.dsalearner.civilization.service.QuestService;
 import com.dsalearner.pipeline.domain.ContentStatus;
 import com.dsalearner.pipeline.model.entity.*;
 import com.dsalearner.pipeline.repository.*;
+import com.dsalearner.economy.analytics.EconomyEventService;
 import com.dsalearner.subscription.exception.PremiumRequiredException;
 import com.dsalearner.subscription.service.EntitlementService;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +50,7 @@ public class AcademyService {
     private final QuestService questService;
     private final AchievementService achievementService;
     private final EntitlementService entitlementService;
+    private final EconomyEventService economyEventService;
 
     // ── GET /{language}/curriculum ────────────────────────────────────────────
 
@@ -277,6 +279,11 @@ public class AcademyService {
         String idempotencyKey = "lesson-" + lessonId + "-" + userId;
         LessonRewardResponse reward = civilizationService.applyLessonReward(
                 userId, languageCode, lessonId, lesson.getCefrLevel(), idempotencyKey);
+
+        economyEventService.record("LESSON_COMPLETED", userId, languageCode, lessonId.toString());
+        if (reward.coinsEarned() > 0) {
+            economyEventService.record("REWARD_GRANTED", userId, languageCode, reward.coinsEarned(), "COINS", lessonId.toString());
+        }
 
         // Milestone bonus: perfect lesson (score = 100%)
         long milestoneCoins = 0L;

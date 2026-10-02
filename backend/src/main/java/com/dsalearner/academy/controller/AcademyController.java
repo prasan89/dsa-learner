@@ -4,6 +4,9 @@ import com.dsalearner.academy.dto.*;
 import com.dsalearner.academy.security.CurrentUserProvider;
 import com.dsalearner.academy.service.AcademyService;
 import com.dsalearner.civilization.service.LearningRewardService;
+import com.dsalearner.economy.antiabuse.EconomyRateLimiter;
+import com.dsalearner.economy.antiabuse.SuspiciousActivityService;
+import com.dsalearner.exception.TooManyRequestsException;
 import com.dsalearner.security.DomainAuthorizationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -26,6 +29,8 @@ public class AcademyController {
     private final LearningRewardService learningRewardService;
     private final CurrentUserProvider currentUserProvider;
     private final DomainAuthorizationService domainAuthService;
+    private final EconomyRateLimiter economyRateLimiter;
+    private final SuspiciousActivityService suspiciousActivityService;
 
     @GetMapping("/curriculum")
     public ResponseEntity<AcademyCurriculumResponse> getCurriculum(
@@ -75,6 +80,11 @@ public class AcademyController {
             Authentication authentication) {
         domainAuthService.requireDomain(authentication, "language");
         UUID userId = currentUserProvider.getUserId(authentication);
+        if (!economyRateLimiter.isLessonAllowed(userId)) {
+            suspiciousActivityService.flag(userId, "LESSON_RATE_LIMIT",
+                    "Exceeded lesson completion rate limit for lessonId=" + lessonId);
+            throw new TooManyRequestsException("Lesson completion rate limit exceeded. Please slow down.");
+        }
         return ResponseEntity.ok(academyService.completeLesson(language, lessonId, userId, request.score()));
     }
 

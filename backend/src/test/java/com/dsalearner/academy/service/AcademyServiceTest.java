@@ -19,6 +19,7 @@ import com.dsalearner.civilization.service.QuestService;
 import com.dsalearner.civilization.service.AchievementService;
 import com.dsalearner.subscription.exception.PremiumRequiredException;
 import com.dsalearner.subscription.service.EntitlementService;
+import com.dsalearner.economy.analytics.EconomyEventService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,6 +53,7 @@ class AcademyServiceTest {
     @Mock QuestService questService;
     @Mock AchievementService achievementService;
     @Mock EntitlementService entitlementService;
+    @Mock EconomyEventService economyEventService;
 
     @InjectMocks AcademyService service;
 

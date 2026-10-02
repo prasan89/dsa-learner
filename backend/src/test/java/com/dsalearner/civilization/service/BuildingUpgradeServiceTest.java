@@ -7,6 +7,7 @@ import com.dsalearner.civilization.exception.CivilizationNotFoundException;
 import com.dsalearner.civilization.exception.InsufficientResourcesException;
 import com.dsalearner.civilization.model.entity.*;
 import com.dsalearner.civilization.repository.*;
+import com.dsalearner.economy.analytics.EconomyEventService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +38,7 @@ class BuildingUpgradeServiceTest {
     @Mock LangoaDecorationInstanceRepository decorationInstanceRepo;
     @Mock LangoaCityExpansionDefinitionRepository expansionDefRepo;
     @Mock LangoaCityExpansionInstanceRepository expansionInstanceRepo;
+    @Mock EconomyEventService economyEventService;
 
     @InjectMocks CivilizationService service;
 

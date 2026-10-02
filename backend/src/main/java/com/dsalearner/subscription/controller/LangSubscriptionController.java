@@ -1,6 +1,9 @@
 package com.dsalearner.subscription.controller;
 
 import com.dsalearner.academy.security.CurrentUserProvider;
+import com.dsalearner.economy.antiabuse.EconomyRateLimiter;
+import com.dsalearner.economy.antiabuse.SuspiciousActivityService;
+import com.dsalearner.exception.TooManyRequestsException;
 import com.dsalearner.subscription.dto.SubscriptionPlanDto;
 import com.dsalearner.subscription.dto.SubscriptionStatusDto;
 import com.dsalearner.subscription.service.EntitlementService;
@@ -23,6 +26,8 @@ public class LangSubscriptionController {
     private final EntitlementService entitlementService;
     private final SubscriptionService subscriptionService;
     private final CurrentUserProvider currentUserProvider;
+    private final EconomyRateLimiter economyRateLimiter;
+    private final SuspiciousActivityService suspiciousActivityService;
 
     @GetMapping("/me")
     public ResponseEntity<SubscriptionStatusDto> getMySubscription(Authentication authentication) {
@@ -57,6 +62,11 @@ public class LangSubscriptionController {
             Authentication authentication,
             @RequestBody VerifyPlayRequest request) {
         UUID userId = currentUserProvider.getUserId(authentication);
+        if (!economyRateLimiter.isSubscribeAllowed(userId)) {
+            suspiciousActivityService.flag(userId, "SUBSCRIBE_RATE_LIMIT",
+                    "Exceeded subscription verify rate limit");
+            throw new TooManyRequestsException("Subscription verification rate limit exceeded. Please try again later.");
+        }
         return ResponseEntity.ok(subscriptionService.activateSubscription(
                 userId, request.purchaseToken(), request.orderId(), request.planCode()));
     }
