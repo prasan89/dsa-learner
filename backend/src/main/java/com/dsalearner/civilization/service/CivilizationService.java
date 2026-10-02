@@ -9,6 +9,7 @@ import com.dsalearner.civilization.exception.CivilizationNotFoundException;
 import com.dsalearner.civilization.exception.InsufficientResourcesException;
 import com.dsalearner.civilization.model.entity.*;
 import com.dsalearner.civilization.repository.*;
+import com.dsalearner.civilization.model.entity.LangoaBuildingProductionConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.time.temporal.ChronoUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -66,6 +68,7 @@ public class CivilizationService {
     private final LangoaBuildingDefinitionRepository buildingDefRepo;
     private final LangoaBuildingLevelConfigRepository buildingLevelConfigRepo;
     private final LangoaBuildingInstanceRepository buildingInstanceRepo;
+    private final LangoaBuildingProductionConfigRepository productionConfigRepo;
     private final LangoaRewardDefinitionRepository rewardDefRepo;
     private final LangoaDecorationDefinitionRepository decorationDefRepo;
     private final LangoaDecorationInstanceRepository decorationInstanceRepo;
@@ -102,6 +105,22 @@ public class CivilizationService {
     @Transactional
     public CivilizationStateResponse getOrCreateAndGetState(UUID userId, String languageCode) {
         LangoaCivilization civ = getOrCreateCivilization(userId, languageCode);
+        return buildStateResponse(civ);
+    }
+
+    /**
+     * Explicitly collect accumulated production for all buildings in this civilization.
+     * The lazy production engine already runs on every GET; this endpoint forces a flush
+     * and returns updated balances. Idempotent — calling multiple times within the same
+     * second produces no extra credit.
+     */
+    @Transactional
+    public CivilizationStateResponse collectAllResources(UUID userId, String languageCode) {
+        String code = resolveLanguageCode(languageCode);
+        LangoaCivilization civ = civilizationRepo.findByUserIdAndLanguageCode(userId, code)
+                .orElseThrow(() -> new CivilizationNotFoundException(
+                        "Civilization not found for user=" + userId + " language=" + code));
+        // applyLazyProduction runs inside buildStateResponse
         return buildStateResponse(civ);
     }
 
@@ -542,6 +561,12 @@ public class CivilizationService {
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
+    private static final Map<CurrencyType, Long> DEFAULT_CAPACITY = Map.of(
+            CurrencyType.FOOD,      500L,
+            CurrencyType.MATERIALS, 500L,
+            CurrencyType.WOOD,      500L
+    );
+
     private LangoaCivilization createNewCivilization(UUID userId, String languageCode) {
         LangoaCivilization civ = LangoaCivilization.builder()
                 .userId(userId)
@@ -549,13 +574,14 @@ public class CivilizationService {
                 .build();
         civ = civilizationRepo.save(civ);
 
-        // Initialize all currency balance rows at 0
+        // Initialize all currency balance rows at 0 with default capacity for resource currencies
         for (CurrencyType ct : CurrencyType.values()) {
             LangoaCurrencyBalance bal = LangoaCurrencyBalance.builder()
                     .userId(userId)
                     .languageCode(languageCode)
                     .currencyType(ct)
                     .balance(0L)
+                    .capacity(DEFAULT_CAPACITY.getOrDefault(ct, null))
                     .build();
             balanceRepo.save(bal);
         }
@@ -641,7 +667,11 @@ public class CivilizationService {
     }
 
     private CivilizationStateResponse buildStateResponse(LangoaCivilization civ) {
+        // Apply lazy production for all buildings before reading balances
+        applyLazyProduction(civ);
+
         Map<String, Long> balances = buildBalanceMap(civ.getUserId(), civ.getLanguageCode());
+        Map<String, Long> capacities = buildCapacityMap(civ.getUserId(), civ.getLanguageCode());
 
         List<LangoaBuildingInstance> instances = buildingInstanceRepo.findByCivilizationId(civ.getId());
 
@@ -698,10 +728,101 @@ public class CivilizationService {
                 civ.getTotalXp(),
                 civ.getTotalLessonsCompleted(),
                 balances,
+                capacities,
                 buildings,
                 decorations,
                 unlockedSlots
         );
+    }
+
+    Map<String, Long> buildCapacityMap(UUID userId, String languageCode) {
+        List<LangoaCurrencyBalance> balances = balanceRepo.findByUserIdAndLanguageCode(userId, languageCode);
+        Map<String, Long> map = new LinkedHashMap<>();
+        // For balance rows without explicit capacity, apply defaults for resource currencies
+        for (LangoaCurrencyBalance bal : balances) {
+            Long cap = bal.getCapacity();
+            if (cap == null) cap = DEFAULT_CAPACITY.getOrDefault(bal.getCurrencyType(), null);
+            if (cap != null) map.put(bal.getCurrencyType().name(), cap);
+        }
+        // Ensure all three resource types always appear even if no balance row exists yet
+        for (Map.Entry<CurrencyType, Long> entry : DEFAULT_CAPACITY.entrySet()) {
+            map.putIfAbsent(entry.getKey().name(), entry.getValue());
+        }
+        return map;
+    }
+
+    /**
+     * Lazy production: for each building instance in this civilization, compute how much
+     * resource it has produced since lastProductionAt, cap at capacity, persist the delta,
+     * and update lastProductionAt. Called on every GET civilization — no background jobs.
+     */
+    private void applyLazyProduction(LangoaCivilization civ) {
+        java.time.Instant now = java.time.Instant.now();
+        List<LangoaBuildingInstance> instances = buildingInstanceRepo.findByCivilizationId(civ.getId());
+
+        for (LangoaBuildingInstance inst : instances) {
+            List<LangoaBuildingProductionConfig> configs =
+                    productionConfigRepo.findByBuildingTypeAndLevel(inst.getBuildingType(), inst.getCurrentLevel());
+
+            if (configs.isEmpty()) continue;
+
+            java.time.Instant lastAt = inst.getLastProductionAt();
+            if (lastAt == null) lastAt = now;
+
+            long secondsElapsed = ChronoUnit.SECONDS.between(lastAt, now);
+            if (secondsElapsed <= 0) continue;
+
+            for (LangoaBuildingProductionConfig config : configs) {
+                // rate_per_hour → amount per second
+                double produced = (config.getRatePerHour() * secondsElapsed) / 3600.0;
+                long amount = (long) produced;
+                if (amount <= 0) continue;
+
+                CurrencyType ct;
+                try {
+                    ct = CurrencyType.valueOf(config.getResourceType());
+                } catch (IllegalArgumentException e) {
+                    log.warn("Unknown resource_type in production config: {}", config.getResourceType());
+                    continue;
+                }
+
+                // Read current balance and capacity under lock
+                LangoaCurrencyBalance bal = balanceRepo
+                        .findForUpdate(civ.getUserId(), civ.getLanguageCode(), ct)
+                        .orElse(null);
+
+                if (bal == null) continue;
+
+                long cap = bal.getCapacity() != null ? bal.getCapacity() : Long.MAX_VALUE;
+                long room = cap - bal.getBalance();
+                if (room <= 0) continue;
+
+                long actualAmount = Math.min(amount, room);
+
+                bal.setBalance(bal.getBalance() + actualAmount);
+                balanceRepo.save(bal);
+
+                String idemKey = "prod-" + inst.getId() + "-" + ct.name() + "-" + now.getEpochSecond();
+                LangoaTransaction txn = LangoaTransaction.builder()
+                        .userId(civ.getUserId())
+                        .languageCode(civ.getLanguageCode())
+                        .transactionType(TransactionType.RESOURCE_PRODUCTION)
+                        .currencyType(ct)
+                        .amount(actualAmount)
+                        .balanceAfter(bal.getBalance())
+                        .sourceReference("building:" + inst.getId())
+                        .idempotencyKey(idemKey)
+                        .build();
+                try {
+                    transactionRepo.save(txn);
+                } catch (org.springframework.dao.DataIntegrityViolationException ignored) {
+                    // Concurrent production tick — silently skip duplicate ledger entry
+                }
+            }
+
+            inst.setLastProductionAt(now);
+            buildingInstanceRepo.save(inst);
+        }
     }
 
     private void advanceTierIfEligible(LangoaCivilization civ) {

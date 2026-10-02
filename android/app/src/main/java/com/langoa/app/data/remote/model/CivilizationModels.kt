@@ -9,6 +9,7 @@ data class CivilizationStateResponse(
     val totalXp: Long,
     val totalLessonsCompleted: Int,
     val balances: Map<String, Long>,
+    val capacities: Map<String, Long> = emptyMap(),
     val buildings: List<BuildingInstanceDto>,
     val decorations: List<DecorationInstanceDto> = emptyList(),
     val unlockedExpansionSlots: List<Int> = emptyList()

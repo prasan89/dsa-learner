@@ -119,6 +119,16 @@ class CivilizationRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun collectResources(languageCode: String): Result<Civilization> {
+        return try {
+            val response = civilizationApi.collectResources(languageCode)
+            cachedCivilizationDao.insertCivilization(response.toEntity())
+            Result.success(response.toDomain())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     private fun CivilizationStateResponse.toEntity() = CachedCivilization(
         id = id,
         languageCode = languageCode,
@@ -128,6 +138,7 @@ class CivilizationRepositoryImpl @Inject constructor(
         totalXp = totalXp,
         totalLessonsCompleted = totalLessonsCompleted,
         balancesJson = gson.toJson(balances),
+        capacitiesJson = gson.toJson(capacities),
         buildingsJson = gson.toJson(buildings),
         decorationsJson = gson.toJson(decorations),
         unlockedExpansionSlotsJson = gson.toJson(unlockedExpansionSlots)
@@ -142,6 +153,7 @@ class CivilizationRepositoryImpl @Inject constructor(
         totalXp = totalXp,
         totalLessonsCompleted = totalLessonsCompleted,
         balances = balances,
+        capacities = capacities,
         buildings = buildings.map { dto ->
             Building(
                 id = dto.id,
@@ -172,6 +184,7 @@ class CivilizationRepositoryImpl @Inject constructor(
     private fun CachedCivilization.toDomain(): Civilization {
         val balancesType = object : TypeToken<Map<String, Long>>() {}.type
         val balances: Map<String, Long> = gson.fromJson(balancesJson, balancesType) ?: emptyMap()
+        val capacities: Map<String, Long> = gson.fromJson(capacitiesJson, balancesType) ?: emptyMap()
         return Civilization(
             id = id,
             languageCode = languageCode,
@@ -180,7 +193,8 @@ class CivilizationRepositoryImpl @Inject constructor(
             tierLevel = tierLevel,
             totalXp = totalXp,
             totalLessonsCompleted = totalLessonsCompleted,
-            balances = balances
+            balances = balances,
+            capacities = capacities
         )
     }
 }

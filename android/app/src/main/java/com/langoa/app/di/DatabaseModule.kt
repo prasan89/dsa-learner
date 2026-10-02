@@ -25,7 +25,7 @@ object DatabaseModule {
             LangoaDatabase::class.java,
             LangoaDatabase.DATABASE_NAME
         )
-            .addMigrations(LangoaDatabase.MIGRATION_2_3, LangoaDatabase.MIGRATION_3_4)
+            .addMigrations(LangoaDatabase.MIGRATION_2_3, LangoaDatabase.MIGRATION_3_4, LangoaDatabase.MIGRATION_4_5)
             .build()
     }
 

@@ -34,4 +34,7 @@ interface CivilizationApi {
 
     @GET("api/v1/civilization/{language}/achievements")
     suspend fun getAchievements(@Path("language") language: String): List<AchievementDto>
+
+    @POST("api/v1/civilization/{language}/resources/collect")
+    suspend fun collectResources(@Path("language") language: String): CivilizationStateResponse
 }

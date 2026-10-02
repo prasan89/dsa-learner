@@ -13,6 +13,8 @@ public record CivilizationStateResponse(
         long totalXp,
         int totalLessonsCompleted,
         Map<String, Long> balances,
+        /** Capacity for resource currencies (FOOD/MATERIALS/WOOD). NULL = unlimited. */
+        Map<String, Long> capacities,
         List<BuildingInstanceDto> buildings,
         List<DecorationInstanceDto> decorations,
         List<Integer> unlockedExpansionSlots

@@ -61,6 +61,11 @@ public class LangoaBuildingInstance {
     @Column(name = "upgraded_at")
     private Instant upgradedAt;
 
+    /** Timestamp of last production tick for this building — drives lazy production calc. */
+    @Column(name = "last_production_at")
+    @Builder.Default
+    private Instant lastProductionAt = Instant.now();
+
     @UpdateTimestamp
     @Column(name = "updated_at")
     private Instant updatedAt;

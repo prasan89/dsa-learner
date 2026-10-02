@@ -13,7 +13,7 @@ import com.langoa.app.data.local.entity.PendingSync
 
 @Database(
     entities = [CachedLesson::class, CachedCivilization::class, PendingSync::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class LangoaDatabase : RoomDatabase() {
@@ -43,6 +43,11 @@ abstract class LangoaDatabase : RoomDatabase() {
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE cached_lessons ADD COLUMN isPremium INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cached_civilizations ADD COLUMN capacitiesJson TEXT NOT NULL DEFAULT '{}'")
             }
         }
     }

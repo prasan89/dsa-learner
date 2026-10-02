@@ -1,5 +1,6 @@
 package com.langoa.app.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -16,5 +17,6 @@ data class CachedCivilization(
     val buildingsJson: String = "[]",
     val decorationsJson: String = "[]",
     val unlockedExpansionSlotsJson: String = "[]",
+    @ColumnInfo(defaultValue = "{}") val capacitiesJson: String = "{}",
     val cachedAt: Long = System.currentTimeMillis()
 )

@@ -44,6 +44,7 @@ class CivilizationServiceTest {
     @Mock LangoaBuildingDefinitionRepository buildingDefRepo;
     @Mock LangoaBuildingLevelConfigRepository buildingLevelConfigRepo;
     @Mock LangoaBuildingInstanceRepository buildingInstanceRepo;
+    @Mock LangoaBuildingProductionConfigRepository productionConfigRepo;
     @Mock LangoaRewardDefinitionRepository rewardDefRepo;
     @Mock LangoaDecorationDefinitionRepository decorationDefRepo;
     @Mock LangoaDecorationInstanceRepository decorationInstanceRepo;

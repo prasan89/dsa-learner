@@ -263,8 +263,8 @@ private fun ResourceChipRow(civilization: Civilization) {
     ) {
         ResourceChip(icon = "⭐", value = civilization.totalXp.toLong(), color = LangoaXP, modifier = Modifier.weight(1f))
         ResourceChip(icon = "🪙", value = civilization.coins.toLong(), color = LangoaCoins, modifier = Modifier.weight(1f))
-        ResourceChip(icon = "🌾", value = civilization.food.toLong(), color = LangoaFood, modifier = Modifier.weight(1f))
-        ResourceChip(icon = "🧱", value = civilization.materials.toLong(), color = LangoaMaterials, modifier = Modifier.weight(1f))
+        ResourceChip(icon = "🌾", value = civilization.food.toLong(), capacity = civilization.foodCapacity, color = LangoaFood, modifier = Modifier.weight(1f))
+        ResourceChip(icon = "🧱", value = civilization.materials.toLong(), capacity = civilization.materialsCapacity, color = LangoaMaterials, modifier = Modifier.weight(1f))
     }
 }
 
@@ -273,6 +273,7 @@ private fun ResourceChip(
     icon: String,
     value: Long,
     color: Color,
+    capacity: Long? = null,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -289,7 +290,7 @@ private fun ResourceChip(
             Text(text = icon, fontSize = 12.sp)
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = formatResourceCount(value),
+                text = if (capacity != null) "${formatResourceCount(value)}/${formatResourceCount(capacity)}" else formatResourceCount(value),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = color

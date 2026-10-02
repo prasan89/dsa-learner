@@ -35,6 +35,10 @@ public class LangoaCurrencyBalance {
     @Builder.Default
     private long balance = 0L;
 
+    /** Max balance for this currency. NULL = unlimited (COINS, XP, GEMS, CIVILIZATION_POWER). */
+    @Column(nullable = true)
+    private Long capacity;
+
     @UpdateTimestamp
     @Column(name = "updated_at")
     private Instant updatedAt;

@@ -9,6 +9,7 @@ data class Civilization(
     val totalXp: Long,
     val totalLessonsCompleted: Int,
     val balances: Map<String, Long>,
+    val capacities: Map<String, Long> = emptyMap(),
     val buildings: List<Building> = emptyList(),
     val decorations: List<Decoration> = emptyList(),
     val unlockedExpansionSlots: List<Int> = emptyList()
@@ -20,4 +21,8 @@ data class Civilization(
     val gems: Long get() = balances["GEMS"] ?: 0L
     val xp: Long get() = balances["XP"] ?: 0L
     val civilizationPower: Long get() = balances["CIVILIZATION_POWER"] ?: 0L
+
+    val foodCapacity: Long get() = capacities["FOOD"] ?: 500L
+    val materialsCapacity: Long get() = capacities["MATERIALS"] ?: 500L
+    val woodCapacity: Long get() = capacities["WOOD"] ?: 500L
 }

@@ -204,4 +204,13 @@ public class CivilizationController {
 
         return ResponseEntity.ok(new WalletResponse(balances, recentTxns));
     }
+
+    @PostMapping("/resources/collect")
+    public ResponseEntity<CivilizationStateResponse> collectResources(
+            @PathVariable String language,
+            Authentication authentication) {
+        domainAuthService.requireDomain(authentication, "language");
+        UUID userId = currentUserProvider.getUserId(authentication);
+        return ResponseEntity.ok(civilizationService.collectAllResources(userId, language));
+    }
 }

@@ -3,6 +3,8 @@ package com.dsalearner.civilization.controller;
 import com.dsalearner.academy.security.CurrentUserProvider;
 import com.dsalearner.civilization.repository.LangoaBuildingDefinitionRepository;
 import com.dsalearner.civilization.repository.LangoaBuildingInstanceRepository;
+import com.dsalearner.civilization.repository.LangoaCurrencyBalanceRepository;
+import com.dsalearner.civilization.repository.LangoaTransactionRepository;
 import com.dsalearner.civilization.service.AchievementService;
 import com.dsalearner.civilization.service.CivilizationService;
 import com.dsalearner.civilization.service.QuestService;
@@ -53,6 +55,8 @@ class CivilizationControllerSecurityTest {
     @MockBean DomainAuthorizationService domainAuthService;
     @MockBean LangoaBuildingInstanceRepository buildingInstanceRepo;
     @MockBean LangoaBuildingDefinitionRepository buildingDefRepo;
+    @MockBean LangoaCurrencyBalanceRepository balanceRepo;
+    @MockBean LangoaTransactionRepository transactionRepo;
 
     // JwtAuthFilter dependencies
     @MockBean JwtService jwtService;
@@ -89,7 +93,7 @@ class CivilizationControllerSecurityTest {
         // Stub the service to return a minimal response
         var stateResponse = new com.dsalearner.civilization.dto.CivilizationStateResponse(
                 UUID.randomUUID(), "de", "My Civ", "VILLAGE", 1, 0L, 0,
-                new java.util.LinkedHashMap<>(), List.of(), List.of(), List.of());
+                new java.util.LinkedHashMap<>(), new java.util.LinkedHashMap<>(), List.of(), List.of(), List.of());
         when(civilizationService.getOrCreateAndGetState(any(), anyString()))
                 .thenReturn(stateResponse);
 
@@ -139,7 +143,7 @@ class CivilizationControllerSecurityTest {
         // Simulate User A building a building in "their" civilization
         var stateResponse = new com.dsalearner.civilization.dto.CivilizationStateResponse(
                 UUID.randomUUID(), "de", "User A Civ", "VILLAGE", 1, 0L, 0,
-                new java.util.LinkedHashMap<>(), List.of(), List.of(), List.of());
+                new java.util.LinkedHashMap<>(), new java.util.LinkedHashMap<>(), List.of(), List.of(), List.of());
         when(civilizationService.buildBuilding(eq(userAId), anyString(), any()))
                 .thenReturn(stateResponse);
 
