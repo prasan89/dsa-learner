@@ -10,5 +10,8 @@ public record BuildingDefinitionDto(
         String description,
         int maxLevel,
         String assetRef,
-        List<BuildingLevelConfigDto> levels
+        List<BuildingLevelConfigDto> levels,
+        boolean isUnlocked,
+        boolean canBuild,
+        int currentLevel
 ) {}

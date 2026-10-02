@@ -770,8 +770,17 @@ public class CivilizationService {
         int totalLessons = civ.getTotalLessonsCompleted();
         long totalXp     = civ.getTotalXp();
 
+        // Group existing building instances by type to derive currentLevel per type
+        Map<String, Integer> currentLevelByType = buildingInstanceRepo
+                .findByCivilizationId(civ.getId()).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        LangoaBuildingInstance::getBuildingType,
+                        LangoaBuildingInstance::getCurrentLevel,
+                        Integer::max));
+
         return buildingDefRepo.findByActiveTrueOrderByDisplayOrder().stream()
                 .map(def -> {
+                    int currentLevel = currentLevelByType.getOrDefault(def.getBuildingType(), 0);
                     List<LangoaBuildingLevelConfig> levelConfigs =
                             buildingLevelConfigRepo.findByBuildingType(def.getBuildingType());
                     List<BuildingLevelConfigDto> levelDtos = levelConfigs.stream()
@@ -796,6 +805,21 @@ public class CivilizationService {
                                         affordable);
                             })
                             .toList();
+
+                    // isUnlocked: lessons requirement for level 1 is met
+                    LangoaBuildingLevelConfig lvl1 = levelConfigs.stream()
+                            .filter(c -> c.getLevel() == 1).findFirst().orElse(null);
+                    boolean isUnlocked = lvl1 == null ||
+                            (totalLessons >= lvl1.getRequiredLessonsCompleted() &&
+                             totalXp >= lvl1.getRequiredXp());
+
+                    // canBuild: unlocked AND affordable AND not already built
+                    boolean canBuild = isUnlocked && currentLevel == 0 && lvl1 != null &&
+                            coins >= lvl1.getCoinCost() &&
+                            food >= lvl1.getFoodCost() &&
+                            materials >= lvl1.getMaterialCost() &&
+                            wood >= lvl1.getWoodCost();
+
                     return new BuildingDefinitionDto(
                             def.getId(),
                             def.getBuildingType(),
@@ -803,7 +827,10 @@ public class CivilizationService {
                             def.getDescription(),
                             def.getMaxLevel(),
                             def.getAssetRef(),
-                            levelDtos);
+                            levelDtos,
+                            isUnlocked,
+                            canBuild,
+                            currentLevel);
                 })
                 .toList();
     }
