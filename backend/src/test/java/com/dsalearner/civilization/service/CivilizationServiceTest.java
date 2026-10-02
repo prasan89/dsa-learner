@@ -164,7 +164,7 @@ class CivilizationServiceTest {
         // First transactionRepo.save() throws — simulates the concurrent duplicate losing the DB race
         when(transactionRepo.save(any()))
                 .thenThrow(new DataIntegrityViolationException("duplicate key: idempotency_key"));
-        when(balanceRepo.findByUserIdAndLanguageCode(userId, "de")).thenReturn(List.of());
+        lenient().when(balanceRepo.findByUserIdAndLanguageCode(userId, "de")).thenReturn(List.of());
 
         LessonRewardResponse response = service.applyLessonReward(
                 userId, "de", lessonId, "A1", "idem-key-concurrent");

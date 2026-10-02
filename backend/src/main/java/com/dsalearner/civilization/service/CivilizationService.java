@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
@@ -104,16 +105,16 @@ public class CivilizationService {
         return buildStateResponse(civ);
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public LessonRewardResponse applyLessonReward(
             UUID userId, String languageCode, UUID lessonId,
             String cefrLevel, String idempotencyKey) {
 
         String code = resolveLanguageCode(languageCode);
 
-        // Fast path: check before issuing all the locks (non-authoritative — race is resolved by the
-        // UNIQUE constraint on idempotency_key when the transaction actually commits)
-        if (idempotencyKey != null && transactionRepo.existsByIdempotencyKey(idempotencyKey)) {
+        // Fast path: check before issuing all the locks. The actual rows use idempotencyKey+"-XP" etc,
+        // so check for the suffixed key rather than the bare base key.
+        if (idempotencyKey != null && transactionRepo.existsByIdempotencyKey(idempotencyKey + "-XP")) {
             log.debug("Lesson reward already applied, idempotency_key={}", idempotencyKey);
             Map<String, Long> currentBalances = buildBalanceMap(userId, code);
             return new LessonRewardResponse(0, 0, 0, 0, 0, 0, currentBalances, null, false, List.of());
@@ -143,10 +144,12 @@ public class CivilizationService {
             updateBalance(userId, code, CurrencyType.CIVILIZATION_POWER, reward.getCivilizationPowerReward(),
                     TransactionType.LESSON_COMPLETION, sourceRef, idempotencyKey + "-CIV_POWER");
         } catch (DataIntegrityViolationException e) {
-            // Idempotency_key UNIQUE constraint fired — concurrent duplicate request lost the race
+            // Idempotency_key UNIQUE constraint fired — concurrent duplicate request lost the race.
+            // Do NOT call buildBalanceMap here: the PG transaction is aborted after a constraint violation,
+            // so any DB call would throw "current transaction is aborted". Return zeros; caller is the same
+            // lesson-complete TX which has its own idempotency guard.
             log.debug("Duplicate lesson reward blocked by DB constraint, idempotency_key={}", idempotencyKey);
-            Map<String, Long> currentBalances = buildBalanceMap(userId, code);
-            return new LessonRewardResponse(0, 0, 0, 0, 0, 0, currentBalances, null, false, List.of());
+            return new LessonRewardResponse(0, 0, 0, 0, 0, 0, Map.of(), null, false, List.of());
         }
 
         // Update civilization stats
