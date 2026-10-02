@@ -5,8 +5,10 @@ import com.dsalearner.pipeline.agent.ModelRouter;
 import com.dsalearner.pipeline.agent.PromptRegistry;
 import com.dsalearner.pipeline.provider.LlmProviderRegistry;
 import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /** Evaluates CEFR A1 appropriateness (vocabulary level, grammar difficulty, sentence complexity). */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 public class CefrQaAgent extends BaseGermanQaAgent {
 

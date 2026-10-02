@@ -11,11 +11,13 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Resolves DomainPlugin and LanguageProfile from database.
  * Acts as the single source of truth for domain/language configuration.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 @RequiredArgsConstructor
 public class DomainRegistry {

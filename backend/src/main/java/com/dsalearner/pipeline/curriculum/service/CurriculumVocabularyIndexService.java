@@ -11,11 +11,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Manages the vocabulary term index for a curriculum.
  * Tracks when each term is introduced, reviewed, and which plans depend on it.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Service
 @RequiredArgsConstructor
 @Slf4j

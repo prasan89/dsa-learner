@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.fasterxml.jackson.databind.MapperFeature.SORT_PROPERTIES_ALPHABETICALLY;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Executes agents with idempotency, run tracking, and cost recording.
@@ -36,6 +37,7 @@ import static com.fasterxml.jackson.databind.MapperFeature.SORT_PROPERTIES_ALPHA
  * recommendations, and culturalFlag — is persisted to cf_agent_runs so that cache
  * hits reconstruct an equivalent AgentOutput without re-executing the agent.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 @RequiredArgsConstructor
 @Slf4j

@@ -21,12 +21,14 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * DAG-based dependency engine.
  * Records plan → plan dependencies, detects cycles via topological sort,
  * and determines which plans are unblocked given the current completion set.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Service
 @RequiredArgsConstructor
 @Slf4j

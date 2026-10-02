@@ -23,7 +23,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('aa000000-0000-0000-0000-000000000102','de-b1-l258','Rechtssystem - Legal System','language','de','B1','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-000000000103','de-b1-l259','Deutschlandkunde - German Studies','language','de','B1','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-000000000104','de-b1-l260','B1 Mitte - B1 Midpoint','language','de','B1','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('aa000000-0000-0000-0000-0000000000f1',1,'APPROVED','PUBLISHED',

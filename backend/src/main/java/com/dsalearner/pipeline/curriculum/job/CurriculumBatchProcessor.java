@@ -22,11 +22,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Extracted from CurriculumBatchScheduler so that @Transactional is applied via
  * Spring AOP proxy (self-calls in the same class are not intercepted).
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Service
 @RequiredArgsConstructor
 @Slf4j

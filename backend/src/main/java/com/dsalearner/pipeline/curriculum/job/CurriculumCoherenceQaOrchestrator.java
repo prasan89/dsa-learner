@@ -18,11 +18,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Executes CURRICULUM_COHERENCE_QA job: cross-level coherence check.
  * Transitions curriculum to CURRICULUM_QA_PASSED or CURRICULUM_QA_FAILED.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Service
 @RequiredArgsConstructor
 @Slf4j

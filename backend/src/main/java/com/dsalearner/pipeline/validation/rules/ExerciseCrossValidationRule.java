@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Deterministic cross-validation for language lesson exercises.
@@ -20,6 +21,7 @@ import java.util.Map;
  *
  * Only runs for domainCode == "language". Skips non-language lessons silently.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 public class ExerciseCrossValidationRule implements ValidatorRule {
 

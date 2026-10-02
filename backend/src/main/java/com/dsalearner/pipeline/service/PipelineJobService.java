@@ -7,6 +7,7 @@ import com.dsalearner.pipeline.model.entity.CfPipelineJob;
 import com.dsalearner.pipeline.repository.CfPipelineJobRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @RequiredArgsConstructor
 @Slf4j
 public class PipelineJobService {

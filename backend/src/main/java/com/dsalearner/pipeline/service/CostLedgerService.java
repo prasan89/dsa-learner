@@ -11,7 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Service
 @RequiredArgsConstructor
 @Slf4j

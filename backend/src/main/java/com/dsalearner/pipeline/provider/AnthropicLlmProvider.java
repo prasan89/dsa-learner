@@ -11,12 +11,14 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Anthropic Messages API provider.
  * Reuses the same WebClient/API-key pattern as the existing AiService.
  * API key and base URL are read from application config — never hard-coded.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 @Slf4j
 public class AnthropicLlmProvider implements LlmProvider {

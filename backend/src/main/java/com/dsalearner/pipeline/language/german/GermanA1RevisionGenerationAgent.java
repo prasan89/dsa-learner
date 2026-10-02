@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Revises a German A1 lesson based on QA feedback.
@@ -26,6 +27,7 @@ import java.util.Map;
  * Architecture is identical to GermanA1ContentGenerationAgent — same parsing,
  * same output type — only the prompt key and template variables differ.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 @RequiredArgsConstructor
 @Slf4j

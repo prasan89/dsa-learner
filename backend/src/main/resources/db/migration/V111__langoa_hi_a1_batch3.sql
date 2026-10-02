@@ -13,7 +13,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('cc000000-0000-0000-0000-00000000001c','hi-a1-l028','फ़ोन और इंटरनेट — Phone and Internet','language','hi','A1','APPROVED','PUBLISHED',1,1),
 ('cc000000-0000-0000-0000-00000000001d','hi-a1-l029','भोजन और रेस्तराँ — Dining and Restaurants','language','hi','A1','APPROVED','PUBLISHED',1,1),
 ('cc000000-0000-0000-0000-00000000001e','hi-a1-l030','विशेषण — Adjectives for Description','language','hi','A1','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('cc000000-0000-0000-0000-000000000015',1,'APPROVED','PUBLISHED',

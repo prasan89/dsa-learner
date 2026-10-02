@@ -12,7 +12,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('aa000000-0000-0000-0000-000000000300','de-b2-l768','Kreislaufwirtschaft - Circular Economy','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-000000000301','de-b2-l769','Umweltgerechtigkeit - Environmental Justice','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-000000000302','de-b2-l770','Internationale Klimaverhandlungen - International Climate Negotiations','language','de','B2','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('aa000000-0000-0000-0000-0000000002f9',1,'APPROVED','PUBLISHED',

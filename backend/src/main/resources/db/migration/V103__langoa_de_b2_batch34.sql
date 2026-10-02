@@ -12,7 +12,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('aa000000-0000-0000-0000-0000000002ec','de-b2-l748','Patente und Wissensrecht - Patents and Knowledge Rights','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-0000000002ed','de-b2-l749','Open Science und Datenverfügbarkeit - Open Science and Data Availability','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-0000000002ee','de-b2-l750','Technologiefolgenabschätzung - Technology Assessment','language','de','B2','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('aa000000-0000-0000-0000-0000000002e5',1,'APPROVED','PUBLISHED',

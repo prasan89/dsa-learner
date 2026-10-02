@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Executes CURRICULUM_BLUEPRINT jobs one CEFR level at a time.
@@ -25,6 +26,7 @@ import java.util.UUID;
  * persists it (units + lesson-plan rows), and advances the curriculum status through
  * BLUEPRINT_GENERATED → BLUEPRINT_VALIDATED → GENERATION_IN_PROGRESS.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Service
 @RequiredArgsConstructor
 @Slf4j

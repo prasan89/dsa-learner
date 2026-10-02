@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Executes a REVISION_GENERATION pipeline job end-to-end.
@@ -51,6 +52,7 @@ import java.util.UUID;
  *
  * This method intentionally has NO @Transactional.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Service
 @RequiredArgsConstructor
 @Slf4j

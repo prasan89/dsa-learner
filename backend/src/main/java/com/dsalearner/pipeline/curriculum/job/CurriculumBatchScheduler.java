@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Periodic scheduler that drives curriculum content generation.
@@ -19,6 +20,7 @@ import java.util.List;
  * sweepQaPending is called OUTSIDE processCurriculum's transaction so that
  * a conflict exception in submitQaContent cannot poison the dispatch transaction.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 @RequiredArgsConstructor
 @Slf4j

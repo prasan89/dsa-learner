@@ -26,11 +26,13 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Core pipeline service. Coordinates lesson lifecycle operations.
  * Does NOT contain business logic — delegates to StateMachine, Validator, Orchestrator.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Service
 @RequiredArgsConstructor
 @Slf4j

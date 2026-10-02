@@ -7,11 +7,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Resolves the active prompt for an agent execution.
  * Every agent run must know exactly which prompt version produced its result.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 @RequiredArgsConstructor
 public class PromptRegistry {

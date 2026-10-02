@@ -5,6 +5,7 @@ import com.dsalearner.pipeline.agent.Issue;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Deterministic QA decision aggregator.
@@ -21,6 +22,7 @@ import java.util.List;
  * This component contains no LLM calls; it only reads the issues lists that
  * AgentRunner has already persisted from each of the four QA agents.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 public class QaAggregator {
 

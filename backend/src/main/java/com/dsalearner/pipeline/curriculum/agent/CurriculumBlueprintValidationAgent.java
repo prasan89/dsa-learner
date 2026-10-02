@@ -10,11 +10,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Validates a blueprint for structural correctness and CEFR coherence using the LLM.
  * Deterministic checks should be run first; this agent performs the qualitative pass.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 @RequiredArgsConstructor
 @Slf4j

@@ -12,7 +12,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('aa000000-0000-0000-0000-00000000030a','de-b2-l778','Hochschulzulassung und Numerus Clausus - University Admissions and NC','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-00000000030b','de-b2-l779','Bildung und Demokratie - Education and Democracy','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-00000000030c','de-b2-l780','Kompetenzgesellschaft - Competence Society','language','de','B2','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('aa000000-0000-0000-0000-000000000303',1,'APPROVED','PUBLISHED',

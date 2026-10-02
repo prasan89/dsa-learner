@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Resolves ModelConfig for an agent execution.
@@ -18,6 +19,7 @@ import java.util.Optional;
  *   3. agentType
  *   4. configKey literal fallback
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 @RequiredArgsConstructor
 public class ModelRouter {

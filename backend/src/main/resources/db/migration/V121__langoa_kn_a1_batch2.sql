@@ -13,7 +13,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('11000000-0000-0000-0000-000000000012','kn-a1-l018','Likes and Dislikes','language','kn','A1','APPROVED','PUBLISHED',1,1),
 ('11000000-0000-0000-0000-000000000013','kn-a1-l019','Describing Places','language','kn','A1','APPROVED','PUBLISHED',1,1),
 ('11000000-0000-0000-0000-000000000014','kn-a1-l020','Simple Questions and Answers','language','kn','A1','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('11000000-0000-0000-0000-00000000000b',1,'APPROVED','PUBLISHED',

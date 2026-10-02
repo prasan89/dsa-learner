@@ -7,12 +7,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Resolves the correct LlmProvider by provider name.
  * All LlmProvider beans are auto-discovered at startup.
  * ModelRouter resolves the ModelConfig; this registry resolves the implementation.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 @Slf4j
 public class LlmProviderRegistry {

@@ -5,8 +5,10 @@ import com.dsalearner.pipeline.agent.ModelRouter;
 import com.dsalearner.pipeline.agent.PromptRegistry;
 import com.dsalearner.pipeline.provider.LlmProviderRegistry;
 import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /** Evaluates pedagogical quality (objectives, explanation, progression, learner-friendliness). */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 public class PedagogyQaAgent extends BaseGermanQaAgent {
 

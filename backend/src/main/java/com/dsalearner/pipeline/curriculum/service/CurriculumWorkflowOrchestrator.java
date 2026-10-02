@@ -16,12 +16,14 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Validates and applies curriculum and level state transitions.
  * Records an immutable audit event for every transition.
  * Mirrors the pattern of WorkflowOrchestrator for lessons.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Service
 @RequiredArgsConstructor
 @Slf4j

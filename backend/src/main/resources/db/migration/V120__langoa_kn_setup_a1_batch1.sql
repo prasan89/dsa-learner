@@ -4,16 +4,16 @@
 -- ALL CONTENT IN ENGLISH / ROMAN TRANSLITERATION ONLY — no Kannada script
 
 -- Curriculum
-INSERT INTO cf_curricula (id, stable_ref, title, language_code, description, status) VALUES
-('ff000000-0000-0000-0000-000000000001','kannada-complete-v1','Kannada Complete','kn','Complete Kannada language curriculum A1-B2','PUBLISHED')
+INSERT INTO cf_curricula (id, stable_ref, domain_code, language_code, display_name, description, curriculum_status, batch_size) VALUES
+('ff000000-0000-0000-0000-000000000001','kannada-complete-v1','language','kn','Kannada Complete (A1-B2)','Complete Kannada language curriculum A1-B2','APPROVED',10)
 ON CONFLICT (stable_ref) DO NOTHING;
 
 -- CEFR Levels
-INSERT INTO cf_curriculum_levels (id, curriculum_id, cefr_level, ordinal, title, description) VALUES
-('ff100000-0000-0000-0000-000000000001','ff000000-0000-0000-0000-000000000001','A1',1,'Kannada A1 — Beginner','Basic Kannada: greetings, introductions, daily essentials'),
-('ff100000-0000-0000-0000-000000000002','ff000000-0000-0000-0000-000000000001','A2',2,'Kannada A2 — Elementary','Elementary Kannada: everyday topics, simple descriptions'),
-('ff100000-0000-0000-0000-000000000003','ff000000-0000-0000-0000-000000000001','B1',3,'Kannada B1 — Intermediate','Intermediate Kannada: opinions, narratives, practical needs'),
-('ff100000-0000-0000-0000-000000000004','ff000000-0000-0000-0000-000000000001','B2',4,'Kannada B2 — Upper Intermediate','Upper intermediate Kannada: complex topics, nuanced expression')
+INSERT INTO cf_curriculum_levels (id, curriculum_id, cefr_level, ordinal, display_name) VALUES
+('ff100000-0000-0000-0000-000000000001','ff000000-0000-0000-0000-000000000001','A1',1,'Kannada A1 — Beginner'),
+('ff100000-0000-0000-0000-000000000002','ff000000-0000-0000-0000-000000000001','A2',2,'Kannada A2 — Elementary'),
+('ff100000-0000-0000-0000-000000000003','ff000000-0000-0000-0000-000000000001','B1',3,'Kannada B1 — Intermediate'),
+('ff100000-0000-0000-0000-000000000004','ff000000-0000-0000-0000-000000000001','B2',4,'Kannada B2 — Upper Intermediate')
 ON CONFLICT (id) DO NOTHING;
 
 -- Lessons 1-10
@@ -28,7 +28,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('11000000-0000-0000-0000-000000000008','kn-a1-l008','At the Market — Shopping','language','kn','A1','APPROVED','PUBLISHED',1,1),
 ('11000000-0000-0000-0000-000000000009','kn-a1-l009','Daily Routine','language','kn','A1','APPROVED','PUBLISHED',1,1),
 ('11000000-0000-0000-0000-00000000000a','kn-a1-l010','Weather and Seasons','language','kn','A1','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('11000000-0000-0000-0000-000000000001',1,'APPROVED','PUBLISHED',

@@ -5,8 +5,10 @@ import com.dsalearner.pipeline.agent.ModelRouter;
 import com.dsalearner.pipeline.agent.PromptRegistry;
 import com.dsalearner.pipeline.provider.LlmProviderRegistry;
 import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /** Evaluates exercise correctness (correct answers, plausible distractors, lesson alignment). */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 public class ExerciseQaAgent extends BaseGermanQaAgent {
 

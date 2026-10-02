@@ -13,7 +13,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('11000000-0000-0000-0000-000000000030','kn-a1-l048','Karnataka Geography','language','kn','A1','APPROVED','PUBLISHED',1,1),
 ('11000000-0000-0000-0000-000000000031','kn-a1-l049','Talking About Work and Career','language','kn','A1','APPROVED','PUBLISHED',1,1),
 ('11000000-0000-0000-0000-000000000032','kn-a1-l050','A1 Milestone — Conversation Review','language','kn','A1','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('11000000-0000-0000-0000-000000000029',1,'APPROVED','PUBLISHED',

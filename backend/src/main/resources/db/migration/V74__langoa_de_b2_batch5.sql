@@ -22,7 +22,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('aa000000-0000-0000-0000-0000000001ca','de-b2-l458','Tarifverhandlungen - Collective Bargaining','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-0000000001cb','de-b2-l459','Unternehmenskultur - Corporate Culture','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-0000000001cc','de-b2-l460','Führung und Management - Leadership','language','de','B2','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('aa000000-0000-0000-0000-0000000001b9',1,'APPROVED','PUBLISHED',

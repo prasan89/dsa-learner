@@ -7,10 +7,12 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Verifies cefrLevel is a valid CEFR enum value when the domain uses CEFR.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 public class CefrEnumRule implements ValidatorRule {
 

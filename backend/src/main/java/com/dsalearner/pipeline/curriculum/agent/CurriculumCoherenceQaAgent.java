@@ -10,11 +10,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Cross-curriculum coherence QA — checks grammar/vocab progression across all levels.
  * Input is a CurriculumQaInput with curriculumSummaryJson covering all levels.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 @RequiredArgsConstructor
 @Slf4j

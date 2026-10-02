@@ -21,7 +21,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('aa000000-0000-0000-0000-000000000026','de-a1-l038','In der Bäckerei - At the Bakery','language','de','A1','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-000000000027','de-a1-l039','In der Buchhandlung - At the Bookstore','language','de','A1','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-000000000028','de-a1-l040','Im Fitnessstudio - At the Gym','language','de','A1','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 -- LESSON 21: Tiere
 INSERT INTO cf_lesson_versions (lesson_id, version, content_status, publication_status, content, vocabulary, grammar, exercises, frozen, published_at) VALUES (

@@ -23,7 +23,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('aa000000-0000-0000-0000-00000000018e','de-b2-l398','Erinnerungskultur - Memorial Culture','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-00000000018f','de-b2-l399','Nachhaltige Entwicklung - Sustainable Dev','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-000000000190','de-b2-l400','B2 Meilenstein 1 - B2 Milestone 1','language','de','B2','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('aa000000-0000-0000-0000-00000000017d',1,'APPROVED','PUBLISHED',

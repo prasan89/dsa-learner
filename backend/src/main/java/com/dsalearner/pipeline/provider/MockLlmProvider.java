@@ -1,12 +1,14 @@
 package com.dsalearner.pipeline.provider;
 
 import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Mock LLM provider for automated tests.
  * Returns a realistic structured German A1 lesson without making real API calls.
  * Tests must NEVER use the real Anthropic provider.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 public class MockLlmProvider implements LlmProvider {
 

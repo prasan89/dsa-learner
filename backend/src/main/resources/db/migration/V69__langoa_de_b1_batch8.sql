@@ -23,7 +23,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('aa000000-0000-0000-0000-000000000166','de-b1-l358','Wohnungsmarkt 2 - Housing Market 2','language','de','B1','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-000000000167','de-b1-l359','Mietrecht - Rental Law','language','de','B1','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-000000000168','de-b1-l360','B1 Abschluss - B1 Completion','language','de','B1','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('aa000000-0000-0000-0000-000000000155',1,'APPROVED','PUBLISHED',

@@ -19,11 +19,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Executes CURRICULUM_LEVEL_QA job: runs deterministic checks + LLM QA on a level,
  * then transitions the level to LEVEL_QA_PASSED or LEVEL_QA_FAILED.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Service
 @RequiredArgsConstructor
 @Slf4j

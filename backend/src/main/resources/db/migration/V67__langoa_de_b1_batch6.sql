@@ -23,7 +23,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('aa000000-0000-0000-0000-00000000013e','de-b1-l318','Veganismus - Veganism','language','de','B1','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-00000000013f','de-b1-l319','Gesunde Stadt - Healthy City','language','de','B1','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-000000000140','de-b1-l320','Umweltbewusstsein - Environmental Awareness','language','de','B1','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('aa000000-0000-0000-0000-00000000012d',1,'APPROVED','PUBLISHED',

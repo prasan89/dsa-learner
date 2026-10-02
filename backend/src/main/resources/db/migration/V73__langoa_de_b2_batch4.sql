@@ -23,7 +23,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('aa000000-0000-0000-0000-0000000001b6','de-b2-l438','Psychologie - Psychology','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-0000000001b7','de-b2-l439','Gesellschaft und Individuum - Society','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-0000000001b8','de-b2-l440','B2 Meilenstein 2 - B2 Milestone 2','language','de','B2','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('aa000000-0000-0000-0000-0000000001a5',1,'APPROVED','PUBLISHED',

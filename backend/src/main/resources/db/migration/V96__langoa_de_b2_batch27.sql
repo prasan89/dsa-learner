@@ -12,7 +12,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('aa000000-0000-0000-0000-0000000002a6','de-b2-l678','Religion und Säkularismus - Religion and Secularism','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-0000000002a7','de-b2-l679','Wissenschaft und Gesellschaft - Science and Society','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-0000000002a8','de-b2-l680','Technologiefolgen - Consequences of Technology','language','de','B2','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('aa000000-0000-0000-0000-00000000029f',1,'APPROVED','PUBLISHED',

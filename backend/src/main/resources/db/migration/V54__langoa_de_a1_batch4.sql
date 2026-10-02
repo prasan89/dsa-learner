@@ -21,7 +21,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('aa000000-0000-0000-0000-00000000003a','de-a1-l058','Komplimente machen - Compliments','language','de','A1','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-00000000003b','de-a1-l059','Entschuldigungen - Apologies','language','de','A1','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-00000000003c','de-a1-l060','Dankbarkeit - Expressing Thanks','language','de','A1','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id, version, content_status, publication_status, content, vocabulary, grammar, exercises, frozen, published_at) VALUES
 ('aa000000-0000-0000-0000-000000000029',1,'APPROVED','PUBLISHED',

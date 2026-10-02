@@ -4,6 +4,7 @@ import com.dsalearner.pipeline.model.entity.CfCurriculumPipelineJob;
 import com.dsalearner.pipeline.repository.CfCurriculumPipelineJobRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,7 @@ import java.util.UUID;
  * Spring AOP proxy intercepts them correctly (self-calls in the same class are not
  * intercepted).
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 @RequiredArgsConstructor
 @Slf4j

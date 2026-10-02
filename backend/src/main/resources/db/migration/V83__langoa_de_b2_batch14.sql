@@ -12,7 +12,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('aa000000-0000-0000-0000-000000000224','de-b2-l548','Ressourcenpolitik - Resource Policy','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-000000000225','de-b2-l549','Landwirtschaftspolitik - Agricultural Policy','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-000000000226','de-b2-l550','Ernährungssicherheit - Food Security','language','de','B2','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('aa000000-0000-0000-0000-00000000021d',1,'APPROVED','PUBLISHED',

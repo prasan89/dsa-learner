@@ -13,7 +13,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('11000000-0000-0000-0000-000000000058','kn-a1-l088','Describing Plans for a Celebration','language','kn','A1','APPROVED','PUBLISHED',1,1),
 ('11000000-0000-0000-0000-000000000059','kn-a1-l089','Common Kannada Proverbs and Idioms','language','kn','A1','APPROVED','PUBLISHED',1,1),
 ('11000000-0000-0000-0000-00000000005a','kn-a1-l090','A1 Complete Review — Ready for A2','language','kn','A1','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('11000000-0000-0000-0000-000000000051',1,'APPROVED','PUBLISHED',

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Generates a complete German A1 lesson using the content_generator agent type.
@@ -31,6 +32,7 @@ import java.util.Map;
  *
  * Language-specific logic lives here; the generic orchestrator remains untouched.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 @RequiredArgsConstructor
 @Slf4j

@@ -4,6 +4,7 @@ import com.dsalearner.pipeline.model.entity.CfCurriculumPipelineJob;
 import com.dsalearner.pipeline.repository.CfCurriculumPipelineJobRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,7 @@ import java.util.UUID;
  * that @Transactional is applied via proxy (self-calls from the same class are
  * not intercepted by Spring AOP).
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Service
 @RequiredArgsConstructor
 @Slf4j

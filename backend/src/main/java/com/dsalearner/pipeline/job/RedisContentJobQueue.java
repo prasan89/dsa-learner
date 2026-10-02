@@ -4,6 +4,7 @@ import com.dsalearner.pipeline.model.entity.CfPipelineJob;
 import com.dsalearner.pipeline.repository.CfPipelineJobRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +20,7 @@ import java.util.UUID;
  * is the primary execution path.
  */
 @Component
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @RequiredArgsConstructor
 @Slf4j
 public class RedisContentJobQueue implements ContentJobQueue {

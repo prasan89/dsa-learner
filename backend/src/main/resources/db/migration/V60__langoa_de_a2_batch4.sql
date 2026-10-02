@@ -21,7 +21,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('aa000000-0000-0000-0000-0000000000b2','de-a2-l178','Deutsche Kultur - German Culture','language','de','A2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-0000000000b3','de-a2-l179','Stereotype und Realität - Stereotypes','language','de','A2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-0000000000b4','de-a2-l180','A2 Abschluss - A2 Completion','language','de','A2','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('aa000000-0000-0000-0000-0000000000a1',1,'APPROVED','PUBLISHED',

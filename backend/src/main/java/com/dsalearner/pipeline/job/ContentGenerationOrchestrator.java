@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Executes a CONTENT_GENERATION pipeline job end-to-end.
@@ -33,6 +34,7 @@ import java.util.UUID;
  *
  * ContentStatus and JobStatus remain separate throughout.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Service
 @RequiredArgsConstructor
 @Slf4j

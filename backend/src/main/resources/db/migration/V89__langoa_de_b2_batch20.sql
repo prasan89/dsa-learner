@@ -12,7 +12,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('aa000000-0000-0000-0000-000000000260','de-b2-l608','Wirtschaftswachstum - Economic Growth','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-000000000261','de-b2-l609','Arbeitslosigkeit - Unemployment','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-000000000262','de-b2-l610','Konjunktur - Business Cycle','language','de','B2','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('aa000000-0000-0000-0000-000000000259',1,'APPROVED','PUBLISHED',

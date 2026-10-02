@@ -4,6 +4,7 @@ import com.dsalearner.pipeline.language.german.qa.QaOrchestrator;
 import com.dsalearner.pipeline.model.entity.CfPipelineJob;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -35,6 +36,7 @@ import java.util.UUID;
  *   AgentRunner's existing input-hash mechanism prevents duplicate LLM calls
  *   even if the worker restarts mid-execution after claiming a job.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 @RequiredArgsConstructor
 @Slf4j

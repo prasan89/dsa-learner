@@ -13,7 +13,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('11000000-0000-0000-0000-000000000026','kn-a1-l038','Talking About the Weather in Detail','language','kn','A1','APPROVED','PUBLISHED',1,1),
 ('11000000-0000-0000-0000-000000000027','kn-a1-l039','Expressing Needs and Wants','language','kn','A1','APPROVED','PUBLISHED',1,1),
 ('11000000-0000-0000-0000-000000000028','kn-a1-l040','Compound Sentences — And, But, Because','language','kn','A1','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('11000000-0000-0000-0000-00000000001f',1,'APPROVED','PUBLISHED',

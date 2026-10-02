@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Executes a QA_CONTENT pipeline job end-to-end.
@@ -39,6 +40,7 @@ import java.util.*;
  * This class has no @Transactional — it deliberately holds no DB connection
  * across the external LLM calls.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Service
 @RequiredArgsConstructor
 @Slf4j

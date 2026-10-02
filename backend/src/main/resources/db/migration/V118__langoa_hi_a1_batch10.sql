@@ -14,7 +14,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('cc000000-0000-0000-0000-000000000062','hi-a1-l098','Telling a Simple Story','language','hi','A1','APPROVED','PUBLISHED',1,1),
 ('cc000000-0000-0000-0000-000000000063','hi-a1-l099','Review — Grammar Structures','language','hi','A1','APPROVED','PUBLISHED',1,1),
 ('cc000000-0000-0000-0000-000000000064','hi-a1-l100','A1 Final Milestone','language','hi','A1','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('cc000000-0000-0000-0000-00000000005b',1,'APPROVED','PUBLISHED',

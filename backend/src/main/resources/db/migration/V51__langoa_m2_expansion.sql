@@ -165,6 +165,10 @@ INSERT INTO langoa_building_definitions (building_type, display_name, descriptio
         display_order = EXCLUDED.display_order;
 
 -- ── 11. Seed: building level configs — M2 buildings and higher levels ─────────
+-- Add wood_cost column (introduced in M2, missing from V48 DDL)
+ALTER TABLE langoa_building_level_configs
+    ADD COLUMN IF NOT EXISTS wood_cost BIGINT NOT NULL DEFAULT 0;
+
 -- HOUSE levels 4-5
 INSERT INTO langoa_building_level_configs
     (building_type, level, display_name, coin_cost, food_cost, material_cost, wood_cost, xp_cost, required_lessons_completed, required_xp)

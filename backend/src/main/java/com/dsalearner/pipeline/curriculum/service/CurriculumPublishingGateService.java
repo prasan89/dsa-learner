@@ -10,12 +10,14 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Publishing gate for curriculum-linked lessons.
  * Standalone lessons (no row in cf_curriculum_lesson_plans) pass unrestricted.
  * Curriculum-linked lessons require the curriculum to be APPROVED.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Service
 @RequiredArgsConstructor
 @Slf4j

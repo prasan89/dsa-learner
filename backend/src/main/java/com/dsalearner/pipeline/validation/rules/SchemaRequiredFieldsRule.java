@@ -8,10 +8,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Verifies that all required top-level fields are present and non-null.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 public class SchemaRequiredFieldsRule implements ValidatorRule {
 

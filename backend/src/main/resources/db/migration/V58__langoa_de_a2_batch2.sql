@@ -21,7 +21,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('aa000000-0000-0000-0000-00000000008a','de-a2-l138','Politik und Gesellschaft - Politics Society','language','de','A2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-00000000008b','de-a2-l139','Medien und Nachrichten - Media and News','language','de','A2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-00000000008c','de-a2-l140','Technologie im Alltag - Everyday Technology','language','de','A2','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('aa000000-0000-0000-0000-000000000079',1,'APPROVED','PUBLISHED',

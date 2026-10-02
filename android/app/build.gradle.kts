@@ -32,8 +32,7 @@ android {
         }
         create("gcpDev") {
             dimension = "env"
-            // Placeholder replaced after Cloud Run deployment
-            buildConfigField("String", "BASE_URL", "\"https://langoa-api-placeholder.run.app\"")
+            buildConfigField("String", "BASE_URL", "\"https://langoa-api-342373291799.us-central1.run.app\"")
         }
     }
 

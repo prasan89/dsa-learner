@@ -26,7 +26,9 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @RestController
 @RequestMapping("/api/v1/pipeline")
 @RequiredArgsConstructor

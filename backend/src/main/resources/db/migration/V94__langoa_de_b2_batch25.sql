@@ -12,7 +12,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('aa000000-0000-0000-0000-000000000292','de-b2-l658','Grundeinkommen - Basic Income','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-000000000293','de-b2-l659','Wohlfahrtsstaat - Welfare State','language','de','B2','APPROVED','PUBLISHED',1,1),
 ('aa000000-0000-0000-0000-000000000294','de-b2-l660','Soziale Ungleichheit - Social Inequality','language','de','B2','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('aa000000-0000-0000-0000-00000000028b',1,'APPROVED','PUBLISHED',

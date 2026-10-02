@@ -8,16 +8,16 @@
 -- Rewards: A1/A2/B1 regular xp:100 coins:50; B2 regular xp:150 coins:80; milestones every 100th lesson xp:200 coins:100
 
 -- Hindi curriculum row
-INSERT INTO cf_curricula (id, stable_ref, language_code, title, description, status) VALUES
-('bb000000-0000-0000-0000-000000000001','hindi-complete-v1','hi','Hindi Complete','Complete Hindi curriculum from A1 to B2','ACTIVE')
+INSERT INTO cf_curricula (id, stable_ref, domain_code, language_code, display_name, description, curriculum_status, batch_size) VALUES
+('bb000000-0000-0000-0000-000000000001','hindi-complete-v1','language','hi','Hindi Complete (A1-B2)','Complete Hindi curriculum from A1 to B2','APPROVED',10)
 ON CONFLICT (stable_ref) DO NOTHING;
 
 -- Hindi CEFR levels
-INSERT INTO cf_curriculum_levels (id, curriculum_id, cefr_level, ordinal, title, description) VALUES
-('bb100000-0000-0000-0000-000000000001','bb000000-0000-0000-0000-000000000001','A1',1,'Hindi A1 — Foundations','Basic Hindi greetings, numbers, daily phrases and script introduction'),
-('bb100000-0000-0000-0000-000000000002','bb000000-0000-0000-0000-000000000001','A2',2,'Hindi A2 — Everyday','Everyday conversations, family, food and simple descriptions'),
-('bb100000-0000-0000-0000-000000000003','bb000000-0000-0000-0000-000000000001','B1',3,'Hindi B1 — Intermediate','Connected discourse, opinions, narrative and current events'),
-('bb100000-0000-0000-0000-000000000004','bb000000-0000-0000-0000-000000000001','B2',4,'Hindi B2 — Advanced','Nuanced discussion, abstract topics, literature and society')
+INSERT INTO cf_curriculum_levels (id, curriculum_id, cefr_level, ordinal, display_name) VALUES
+('bb100000-0000-0000-0000-000000000001','bb000000-0000-0000-0000-000000000001','A1',1,'Hindi A1 — Foundations'),
+('bb100000-0000-0000-0000-000000000002','bb000000-0000-0000-0000-000000000001','A2',2,'Hindi A2 — Everyday'),
+('bb100000-0000-0000-0000-000000000003','bb000000-0000-0000-0000-000000000001','B1',3,'Hindi B1 — Intermediate'),
+('bb100000-0000-0000-0000-000000000004','bb000000-0000-0000-0000-000000000001','B2',4,'Hindi B2 — Advanced')
 ON CONFLICT (id) DO NOTHING;
 
 -- Hindi A1 lessons 1-10
@@ -34,7 +34,7 @@ INSERT INTO cf_lessons (id, stable_ref, title, domain_code, language_code, cefr_
 ('cc000000-0000-0000-0000-000000000008','hi-a1-l008','दिन और सप्ताह — Days and the Week','language','hi','A1','APPROVED','PUBLISHED',1,1),
 ('cc000000-0000-0000-0000-000000000009','hi-a1-l009','घर और कमरे — House and Rooms','language','hi','A1','APPROVED','PUBLISHED',1,1),
 ('cc000000-0000-0000-0000-00000000000a','hi-a1-l010','शरीर के अंग — Parts of the Body','language','hi','A1','APPROVED','PUBLISHED',1,1)
-ON CONFLICT (stable_ref) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO cf_lesson_versions (lesson_id,version,content_status,publication_status,content,vocabulary,grammar,exercises,frozen,published_at) VALUES
 ('cc000000-0000-0000-0000-000000000001',1,'APPROVED','PUBLISHED',

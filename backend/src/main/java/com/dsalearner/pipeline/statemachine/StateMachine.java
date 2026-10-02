@@ -7,11 +7,13 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.Set;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * Validates and executes state transitions.
  * All valid transitions are explicitly enumerated — anything not listed is rejected.
  */
+@ConditionalOnExpression("'${application.mode}' == 'all'")
 @Component
 public class StateMachine {
 
