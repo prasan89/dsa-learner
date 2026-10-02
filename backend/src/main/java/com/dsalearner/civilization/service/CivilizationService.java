@@ -757,6 +757,7 @@ public class CivilizationService {
         return isoCode != null ? isoCode : languageCode.toLowerCase();
     }
 
+    @Transactional
     public List<BuildingDefinitionDto> getBuildingDefinitions(UUID userId, String languageCode) {
         String code = resolveLanguageCode(languageCode);
         Map<String, Long> balances = buildBalanceMap(userId, code);
