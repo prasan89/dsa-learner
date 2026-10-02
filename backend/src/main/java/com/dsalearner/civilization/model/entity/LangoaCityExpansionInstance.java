@@ -19,13 +19,13 @@ public class LangoaCityExpansionInstance {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(name = "civilization_id", nullable = false)
     private UUID civilizationId;
 
-    @Column(nullable = false)
+    @Column(name = "expansion_slot", nullable = false)
     private int expansionSlot;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "unlocked_at", nullable = false, updatable = false)
     @Builder.Default
     private Instant unlockedAt = Instant.now();
 }

@@ -19,43 +19,43 @@ public class LangoaDecorationDefinition {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, unique = true, length = 50)
+    @Column(name = "decoration_type", nullable = false, unique = true, length = 50)
     private String decorationType;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "display_name", nullable = false, length = 100)
     private String displayName;
 
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(length = 200)
+    @Column(name = "asset_ref", length = 200)
     private String assetRef;
 
-    @Column(nullable = false)
+    @Column(name = "coin_cost", nullable = false)
     @Builder.Default
     private long coinCost = 0L;
 
-    @Column(nullable = false)
+    @Column(name = "wood_cost", nullable = false)
     @Builder.Default
     private long woodCost = 0L;
 
-    @Column(nullable = false, length = 20)
+    @Column(name = "required_civ_tier", nullable = false, length = 20)
     @Builder.Default
     private String requiredCivTier = "VILLAGE";
 
-    @Column(nullable = false)
+    @Column(name = "is_premium", nullable = false)
     @Builder.Default
     private boolean isPremium = false;
 
-    @Column(nullable = false)
+    @Column(name = "width_tiles", nullable = false)
     @Builder.Default
     private int widthTiles = 1;
 
-    @Column(nullable = false)
+    @Column(name = "height_tiles", nullable = false)
     @Builder.Default
     private int heightTiles = 1;
 
-    @Column(nullable = false)
+    @Column(name = "display_order", nullable = false)
     @Builder.Default
     private int displayOrder = 0;
 
@@ -63,7 +63,7 @@ public class LangoaDecorationDefinition {
     @Builder.Default
     private boolean active = true;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private Instant createdAt = Instant.now();
 }

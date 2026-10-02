@@ -21,16 +21,16 @@ public class LangoaQuestProgress {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @Column(nullable = false, length = 10)
+    @Column(name = "language_code", nullable = false, length = 10)
     private String languageCode;
 
-    @Column(nullable = false)
+    @Column(name = "quest_id", nullable = false)
     private UUID questId;
 
-    @Column(nullable = false)
+    @Column(name = "current_count", nullable = false)
     @Builder.Default
     private int currentCount = 0;
 
@@ -38,20 +38,22 @@ public class LangoaQuestProgress {
     @Builder.Default
     private boolean completed = false;
 
-    @Column(nullable = false)
+    @Column(name = "reward_claimed", nullable = false)
     @Builder.Default
     private boolean rewardClaimed = false;
 
-    @Column(nullable = false)
+    @Column(name = "quest_date", nullable = false)
     @Builder.Default
     private LocalDate questDate = LocalDate.now();
 
+    @Column(name = "completed_at")
     private Instant completedAt;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private Instant createdAt = Instant.now();
 
     @UpdateTimestamp
+    @Column(name = "updated_at")
     private Instant updatedAt;
 }

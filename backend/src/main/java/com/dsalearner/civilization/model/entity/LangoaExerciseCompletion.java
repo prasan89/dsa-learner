@@ -25,19 +25,19 @@ public class LangoaExerciseCompletion {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @Column(nullable = false)
+    @Column(name = "lesson_id", nullable = false)
     private UUID lessonId;
 
-    @Column(nullable = false, length = 64)
+    @Column(name = "exercise_id", nullable = false, length = 64)
     private String exerciseId;
 
-    @Column(nullable = false, length = 10)
+    @Column(name = "language_code", nullable = false, length = 10)
     private String languageCode;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "completed_at", nullable = false, updatable = false)
     @Builder.Default
     private Instant completedAt = Instant.now();
 }

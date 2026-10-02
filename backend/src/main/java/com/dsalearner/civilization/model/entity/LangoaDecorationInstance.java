@@ -20,28 +20,29 @@ public class LangoaDecorationInstance {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(name = "civilization_id", nullable = false)
     private UUID civilizationId;
 
-    @Column(nullable = false, length = 50)
+    @Column(name = "decoration_type", nullable = false, length = 50)
     private String decorationType;
 
-    @Column(nullable = false)
+    @Column(name = "position_x", nullable = false)
     @Builder.Default
     private int positionX = 0;
 
-    @Column(nullable = false)
+    @Column(name = "position_y", nullable = false)
     @Builder.Default
     private int positionY = 0;
 
-    @Column(nullable = false)
+    @Column(name = "rotation_deg", nullable = false)
     @Builder.Default
     private int rotationDeg = 0;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "placed_at", nullable = false, updatable = false)
     @Builder.Default
     private Instant placedAt = Instant.now();
 
     @UpdateTimestamp
+    @Column(name = "updated_at")
     private Instant updatedAt;
 }

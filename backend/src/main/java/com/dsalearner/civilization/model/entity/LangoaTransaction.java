@@ -21,33 +21,33 @@ public class LangoaTransaction {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @Column(nullable = false, length = 10)
+    @Column(name = "language_code", nullable = false, length = 10)
     private String languageCode;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 40)
+    @Column(name = "transaction_type", nullable = false, length = 40)
     private TransactionType transactionType;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(name = "currency_type", nullable = false, length = 20)
     private CurrencyType currencyType;
 
     @Column(nullable = false)
     private long amount;
 
-    @Column(nullable = false)
+    @Column(name = "balance_after", nullable = false)
     private long balanceAfter;
 
-    @Column(length = 100)
+    @Column(name = "source_reference", length = 100)
     private String sourceReference;
 
-    @Column(length = 100, unique = true)
+    @Column(name = "idempotency_key", length = 100, unique = true)
     private String idempotencyKey;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private Instant createdAt = Instant.now();
 }

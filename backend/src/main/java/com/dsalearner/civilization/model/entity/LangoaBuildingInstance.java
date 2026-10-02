@@ -20,46 +20,48 @@ public class LangoaBuildingInstance {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(name = "civilization_id", nullable = false)
     private UUID civilizationId;
 
-    @Column(nullable = false, length = 50)
+    @Column(name = "building_type", nullable = false, length = 50)
     private String buildingType;
 
-    @Column(nullable = false)
+    @Column(name = "current_level", nullable = false)
     @Builder.Default
     private int currentLevel = 1;
 
-    @Column(nullable = false)
+    @Column(name = "position_x", nullable = false)
     @Builder.Default
     private int positionX = 0;
 
-    @Column(nullable = false)
+    @Column(name = "position_y", nullable = false)
     @Builder.Default
     private int positionY = 0;
 
-    @Column(nullable = false, length = 20)
+    @Column(name = "build_state", nullable = false, length = 20)
     @Builder.Default
     private String buildState = "BUILT";
 
-    @Column(nullable = false)
+    @Column(name = "rotation_deg", nullable = false)
     @Builder.Default
     private int rotationDeg = 0;
 
-    @Column(nullable = false)
+    @Column(name = "width_tiles", nullable = false)
     @Builder.Default
     private int widthTiles = 1;
 
-    @Column(nullable = false)
+    @Column(name = "height_tiles", nullable = false)
     @Builder.Default
     private int heightTiles = 1;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "built_at", nullable = false, updatable = false)
     @Builder.Default
     private Instant builtAt = Instant.now();
 
+    @Column(name = "upgraded_at")
     private Instant upgradedAt;
 
     @UpdateTimestamp
+    @Column(name = "updated_at")
     private Instant updatedAt;
 }

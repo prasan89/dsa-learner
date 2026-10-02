@@ -20,39 +20,39 @@ public class LangoaRewardDefinition {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, length = 4)
+    @Column(name = "cefr_level", nullable = false, length = 4)
     private String cefrLevel;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(name = "difficulty_tier", nullable = false, length = 20)
     @Builder.Default
     private DifficultyTier difficultyTier = DifficultyTier.STANDARD;
 
-    @Column(nullable = false)
+    @Column(name = "xp_reward", nullable = false)
     @Builder.Default
     private long xpReward = 100L;
 
-    @Column(nullable = false)
+    @Column(name = "coin_reward", nullable = false)
     @Builder.Default
     private long coinReward = 50L;
 
-    @Column(nullable = false)
+    @Column(name = "food_reward", nullable = false)
     @Builder.Default
     private long foodReward = 10L;
 
-    @Column(nullable = false)
+    @Column(name = "material_reward", nullable = false)
     @Builder.Default
     private long materialReward = 5L;
 
-    @Column(nullable = false)
+    @Column(name = "civilization_power_reward", nullable = false)
     @Builder.Default
     private long civilizationPowerReward = 100L;
 
-    @Column(nullable = false)
+    @Column(name = "wood_reward", nullable = false)
     @Builder.Default
     private long woodReward = 5L;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private Instant createdAt = Instant.now();
 }

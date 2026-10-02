@@ -19,34 +19,34 @@ public class LangCoinPackage {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, unique = true, length = 40)
+    @Column(name = "package_code", nullable = false, unique = true, length = 40)
     private String packageCode;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "display_name", nullable = false, length = 100)
     private String displayName;
 
-    @Column(nullable = false)
+    @Column(name = "coin_amount", nullable = false)
     private long coinAmount;
 
-    @Column(nullable = false)
+    @Column(name = "price_paise", nullable = false)
     private int pricePaise;
 
     @Column(nullable = false, length = 10)
     @Builder.Default
     private String currency = "INR";
 
-    @Column(length = 100)
+    @Column(name = "play_product_id", length = 100)
     private String playProductId;
 
-    @Column(nullable = false)
+    @Column(name = "is_active", nullable = false)
     @Builder.Default
     private boolean isActive = true;
 
-    @Column(nullable = false)
+    @Column(name = "display_order", nullable = false)
     @Builder.Default
     private int displayOrder = 0;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private Instant createdAt = Instant.now();
 }

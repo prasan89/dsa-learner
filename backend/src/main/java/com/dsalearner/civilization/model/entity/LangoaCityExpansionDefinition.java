@@ -19,52 +19,52 @@ public class LangoaCityExpansionDefinition {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "expansion_slot", nullable = false, unique = true)
     private int expansionSlot;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "display_name", nullable = false, length = 100)
     private String displayName;
 
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
+    @Column(name = "grid_x_offset", nullable = false)
     @Builder.Default
     private int gridXOffset = 0;
 
-    @Column(nullable = false)
+    @Column(name = "grid_y_offset", nullable = false)
     @Builder.Default
     private int gridYOffset = 0;
 
-    @Column(nullable = false)
+    @Column(name = "grid_width", nullable = false)
     @Builder.Default
     private int gridWidth = 10;
 
-    @Column(nullable = false)
+    @Column(name = "grid_height", nullable = false)
     @Builder.Default
     private int gridHeight = 10;
 
-    @Column(nullable = false)
+    @Column(name = "coin_cost", nullable = false)
     @Builder.Default
     private long coinCost = 0L;
 
-    @Column(nullable = false)
+    @Column(name = "wood_cost", nullable = false)
     @Builder.Default
     private long woodCost = 0L;
 
-    @Column(nullable = false)
+    @Column(name = "required_lessons", nullable = false)
     @Builder.Default
     private int requiredLessons = 0;
 
-    @Column(nullable = false)
+    @Column(name = "required_xp", nullable = false)
     @Builder.Default
     private long requiredXp = 0L;
 
-    @Column(nullable = false, length = 20)
+    @Column(name = "required_civ_tier", nullable = false, length = 20)
     @Builder.Default
     private String requiredCivTier = "VILLAGE";
 
-    @Column(nullable = false)
+    @Column(name = "display_order", nullable = false)
     @Builder.Default
     private int displayOrder = 0;
 }

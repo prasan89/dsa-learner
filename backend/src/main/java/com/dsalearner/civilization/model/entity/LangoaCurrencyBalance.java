@@ -21,14 +21,14 @@ public class LangoaCurrencyBalance {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @Column(nullable = false, length = 10)
+    @Column(name = "language_code", nullable = false, length = 10)
     private String languageCode;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(name = "currency_type", nullable = false, length = 20)
     private CurrencyType currencyType;
 
     @Column(nullable = false)
@@ -36,5 +36,6 @@ public class LangoaCurrencyBalance {
     private long balance = 0L;
 
     @UpdateTimestamp
+    @Column(name = "updated_at")
     private Instant updatedAt;
 }

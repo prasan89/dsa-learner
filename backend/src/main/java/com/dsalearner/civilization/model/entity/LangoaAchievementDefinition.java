@@ -19,10 +19,10 @@ public class LangoaAchievementDefinition {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(name = "achievement_key", nullable = false, unique = true, length = 100)
     private String achievementKey;
 
-    @Column(nullable = false, length = 200)
+    @Column(name = "display_name", nullable = false, length = 200)
     private String displayName;
 
     @Column(columnDefinition = "TEXT")
@@ -31,18 +31,18 @@ public class LangoaAchievementDefinition {
     @Column(length = 10)
     private String icon;
 
-    @Column(nullable = false, length = 50)
+    @Column(name = "trigger_type", nullable = false, length = 50)
     private String triggerType;
 
-    @Column(nullable = false)
+    @Column(name = "trigger_value", nullable = false)
     @Builder.Default
     private int triggerValue = 1;
 
-    @Column(nullable = false)
+    @Column(name = "xp_reward", nullable = false)
     @Builder.Default
     private long xpReward = 0L;
 
-    @Column(nullable = false)
+    @Column(name = "coin_reward", nullable = false)
     @Builder.Default
     private long coinReward = 0L;
 
@@ -50,7 +50,7 @@ public class LangoaAchievementDefinition {
     @Builder.Default
     private boolean active = true;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private Instant createdAt = Instant.now();
 }

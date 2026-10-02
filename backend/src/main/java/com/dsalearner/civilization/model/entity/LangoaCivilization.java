@@ -21,10 +21,10 @@ public class LangoaCivilization {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @Column(nullable = false, length = 10)
+    @Column(name = "language_code", nullable = false, length = 10)
     private String languageCode;
 
     @Column(nullable = false, length = 100)
@@ -32,26 +32,27 @@ public class LangoaCivilization {
     private String name = "My Civilization";
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(name = "civilization_tier", nullable = false, length = 20)
     @Builder.Default
     private CivilizationTier civilizationTier = CivilizationTier.VILLAGE;
 
-    @Column(nullable = false)
+    @Column(name = "tier_level", nullable = false)
     @Builder.Default
     private int tierLevel = 1;
 
-    @Column(nullable = false)
+    @Column(name = "total_lessons_completed", nullable = false)
     @Builder.Default
     private int totalLessonsCompleted = 0;
 
-    @Column(nullable = false)
+    @Column(name = "total_xp", nullable = false)
     @Builder.Default
     private long totalXp = 0L;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private Instant createdAt = Instant.now();
 
     @UpdateTimestamp
+    @Column(name = "updated_at")
     private Instant updatedAt;
 }

@@ -19,22 +19,23 @@ public class LangoaAchievementProgress {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @Column(nullable = false, length = 10)
+    @Column(name = "language_code", nullable = false, length = 10)
     private String languageCode;
 
-    @Column(nullable = false)
+    @Column(name = "achievement_id", nullable = false)
     private UUID achievementId;
 
     @Column(nullable = false)
     @Builder.Default
     private boolean unlocked = false;
 
+    @Column(name = "unlocked_at")
     private Instant unlockedAt;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private Instant createdAt = Instant.now();
 }
