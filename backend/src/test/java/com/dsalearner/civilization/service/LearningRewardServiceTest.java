@@ -4,6 +4,7 @@ import com.dsalearner.civilization.model.entity.LangoaExerciseCompletion;
 import com.dsalearner.civilization.model.entity.LangoaMilestoneReward;
 import com.dsalearner.civilization.repository.LangoaExerciseCompletionRepository;
 import com.dsalearner.civilization.repository.LangoaMilestoneRewardRepository;
+import com.dsalearner.civilization.repository.LangoaTransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +27,7 @@ class LearningRewardServiceTest {
     @Mock CivilizationService civilizationService;
     @Mock LangoaMilestoneRewardRepository milestoneRepo;
     @Mock LangoaExerciseCompletionRepository exerciseCompletionRepo;
+    @Mock LangoaTransactionRepository transactionRepo;
 
     @InjectMocks LearningRewardService service;
 
@@ -36,6 +38,7 @@ class LearningRewardServiceTest {
     @BeforeEach
     void setUp() {
         lenient().when(civilizationService.resolveLanguageCode(anyString())).thenReturn("de");
+        lenient().when(transactionRepo.existsByIdempotencyKey(anyString())).thenReturn(false);
     }
 
     // ── Perfect lesson bonus ──────────────────────────────────────────────────

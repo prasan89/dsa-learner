@@ -5,10 +5,12 @@ import com.dsalearner.civilization.domain.TransactionType;
 import com.dsalearner.civilization.model.entity.LangoaExerciseCompletion;
 import com.dsalearner.civilization.repository.LangoaExerciseCompletionRepository;
 import com.dsalearner.civilization.repository.LangoaMilestoneRewardRepository;
+import com.dsalearner.civilization.repository.LangoaTransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
@@ -28,14 +30,12 @@ public class LearningRewardService {
     private final CivilizationService civilizationService;
     private final LangoaMilestoneRewardRepository milestoneRepo;
     private final LangoaExerciseCompletionRepository exerciseCompletionRepo;
+    private final LangoaTransactionRepository transactionRepo;
 
-    // ── Milestone rewards ─────────────────────────────────────────────────────
+    // Each public method uses REQUIRES_NEW so a duplicate-key exception inside it
+    // rolls back only its own transaction, not the outer lesson-completion transaction.
 
-    /**
-     * Grant a perfect-lesson bonus (all exercises correct).
-     * Idempotency key: "perfect-{lessonId}-{userId}"
-     */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public long grantPerfectLessonBonus(UUID userId, String languageCode, UUID lessonId) {
         String idemKey = "perfect-" + lessonId + "-" + userId;
         return grantMilestoneBonus(userId, languageCode, "LESSON_PERFECT",
@@ -46,7 +46,7 @@ public class LearningRewardService {
      * Grant a unit-completion bonus when all lessons in a unit are done.
      * Idempotency key: "unit-{unitId}-{userId}"
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public long grantUnitCompletionBonus(UUID userId, String languageCode, UUID unitId) {
         String idemKey = "unit-" + unitId + "-" + userId;
         return grantMilestoneBonus(userId, languageCode, "UNIT_COMPLETED",
@@ -57,7 +57,7 @@ public class LearningRewardService {
      * Grant a level-completion bonus when a full CEFR level is unlocked.
      * Idempotency key: "level-{cefrLevel}-{curriculumId}-{userId}"
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public long grantLevelCompletionBonus(UUID userId, String languageCode,
                                           String cefrLevel, UUID curriculumId) {
         String idemKey = "level-" + cefrLevel + "-" + curriculumId + "-" + userId;
@@ -73,7 +73,7 @@ public class LearningRewardService {
      *
      * @param coinsPerExercise reward amount from the lesson's reward definition
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public long grantExerciseReward(UUID userId, UUID lessonId, String exerciseId,
                                     String languageCode, long coinsPerExercise) {
         if (exerciseCompletionRepo.existsByUserIdAndExerciseIdAndLanguageCode(
@@ -111,6 +111,12 @@ public class LearningRewardService {
                 .orElse(0L);
         if (coinBonus <= 0) return 0L;
 
+        // Fast-path: check before attempting insert to avoid poisoning the transaction
+        if (transactionRepo.existsByIdempotencyKey(idemKey)) {
+            log.debug("Milestone already granted (fast path): type={} userId={}", milestoneType, userId);
+            return 0L;
+        }
+
         try {
             String resolvedCode = civilizationService.resolveLanguageCode(languageCode);
             civilizationService.updateBalancePublic(userId, resolvedCode, CurrencyType.COINS,
@@ -118,7 +124,7 @@ public class LearningRewardService {
             log.info("Milestone bonus granted: type={} coins={} userId={}", milestoneType, coinBonus, userId);
             return coinBonus;
         } catch (DataIntegrityViolationException e) {
-            log.debug("Milestone duplicate blocked: type={} userId={}", milestoneType, userId);
+            log.debug("Milestone duplicate blocked by constraint: type={} userId={}", milestoneType, userId);
             return 0L;
         }
     }
