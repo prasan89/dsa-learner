@@ -21,8 +21,20 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+    }
 
-        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080\"")
+    flavorDimensions += "env"
+
+    productFlavors {
+        create("local") {
+            dimension = "env"
+            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080\"")
+        }
+        create("gcpDev") {
+            dimension = "env"
+            // Placeholder replaced after Cloud Run deployment
+            buildConfigField("String", "BASE_URL", "\"https://langoa-api-placeholder.run.app\"")
+        }
     }
 
     buildTypes {
