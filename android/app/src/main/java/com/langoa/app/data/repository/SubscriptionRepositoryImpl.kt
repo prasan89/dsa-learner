@@ -2,6 +2,7 @@ package com.langoa.app.data.repository
 
 import com.langoa.app.data.local.TokenStorage
 import com.langoa.app.data.remote.api.SubscriptionApi
+import com.langoa.app.data.remote.model.EntitlementsResponse
 import com.langoa.app.data.remote.model.SubscriptionPlanDto
 import com.langoa.app.data.remote.model.VerifyPlayRequest
 import com.langoa.app.domain.model.SubscriptionStatus
@@ -43,5 +44,20 @@ class SubscriptionRepositoryImpl @Inject constructor(
         )
         tokenStorage.saveSubscriptionStatus(status.planCode, status.isPro, status.expiresAt)
         status
+    }
+
+    override suspend fun restore(): Result<SubscriptionStatus> = runCatching {
+        val dto = subscriptionApi.restore()
+        val status = SubscriptionStatus(
+            planCode = dto.planCode,
+            isPro = dto.isPro,
+            expiresAt = dto.currentPeriodEnd
+        )
+        tokenStorage.saveSubscriptionStatus(status.planCode, status.isPro, status.expiresAt)
+        status
+    }
+
+    override suspend fun getEntitlements(): Result<EntitlementsResponse> = runCatching {
+        subscriptionApi.getEntitlements()
     }
 }

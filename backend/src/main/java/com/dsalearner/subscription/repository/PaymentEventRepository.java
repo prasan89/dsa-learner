@@ -10,5 +10,6 @@ import java.util.UUID;
 @Repository
 public interface PaymentEventRepository extends JpaRepository<PaymentEvent, UUID> {
     boolean existsByPlayOrderIdAndStatus(String playOrderId, PaymentEvent.EventStatus status);
+    boolean existsByPlayPurchaseTokenAndStatus(String playPurchaseToken, PaymentEvent.EventStatus status);
     List<PaymentEvent> findByUserIdOrderByCreatedAtDesc(UUID userId);
 }

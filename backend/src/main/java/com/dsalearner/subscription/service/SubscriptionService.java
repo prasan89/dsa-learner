@@ -97,6 +97,23 @@ public class SubscriptionService {
 
     public SubscriptionStatusDto activateSubscription(UUID userId, String purchaseToken,
                                                        String orderId, String planCode) {
+        // Idempotency: token already fully processed for this user → return current status
+        if (purchaseToken != null && !purchaseToken.isBlank()) {
+            if (paymentEventRepository.existsByPlayPurchaseTokenAndStatus(purchaseToken, PaymentEvent.EventStatus.PROCESSED)) {
+                return subscriptionRepository.findByUserId(userId)
+                        .map(s -> new SubscriptionStatusDto(s.getPlanCode(), s.isProActive(),
+                                s.getCurrentPeriodStart(), s.getCurrentPeriodEnd()))
+                        .orElseThrow(() -> new IllegalStateException("Processed event but no subscription found for userId=" + userId));
+            }
+
+            // Token-to-user binding: reject if token belongs to a different user
+            subscriptionRepository.findByPlayPurchaseToken(purchaseToken)
+                    .filter(existing -> !existing.getUserId().equals(userId))
+                    .ifPresent(existing -> {
+                        throw new IllegalArgumentException("Purchase token is bound to a different account");
+                    });
+        }
+
         SubscriptionPlan plan = planRepository.findByPlanCodeAndIsActiveTrue(planCode)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown plan: " + planCode));
 
@@ -115,8 +132,32 @@ public class SubscriptionService {
         sub.setCancelledAt(null);
         subscriptionRepository.save(sub);
 
+        if (purchaseToken != null && !purchaseToken.isBlank()) {
+            PaymentEvent processed = PaymentEvent.builder()
+                    .userId(userId)
+                    .playPurchaseToken(purchaseToken)
+                    .playOrderId(orderId)
+                    .eventType("PLAY_SUBSCRIPTION_VERIFIED")
+                    .planCode(planCode)
+                    .status(PaymentEvent.EventStatus.PROCESSED)
+                    .processedAt(now)
+                    .build();
+            paymentEventRepository.save(processed);
+        }
+
         log.info("Subscription activated for userId={} plan={}", userId, planCode);
         return new SubscriptionStatusDto(planCode, sub.isProActive(),
+                sub.getCurrentPeriodStart(), sub.getCurrentPeriodEnd());
+    }
+
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public SubscriptionStatusDto restorePurchase(UUID userId) {
+        LangSubscription sub = subscriptionRepository.findByUserId(userId)
+                .orElse(null);
+        if (sub == null) {
+            return new SubscriptionStatusDto("FREE", false, null, null);
+        }
+        return new SubscriptionStatusDto(sub.getPlanCode(), sub.isProActive(),
                 sub.getCurrentPeriodStart(), sub.getCurrentPeriodEnd());
     }
 

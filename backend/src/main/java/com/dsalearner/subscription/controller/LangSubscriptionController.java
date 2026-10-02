@@ -61,7 +61,24 @@ public class LangSubscriptionController {
                 userId, request.purchaseToken(), request.orderId(), request.planCode()));
     }
 
+    @PostMapping("/restore")
+    public ResponseEntity<SubscriptionStatusDto> restore(Authentication authentication) {
+        UUID userId = currentUserProvider.getUserId(authentication);
+        return ResponseEntity.ok(subscriptionService.restorePurchase(userId));
+    }
+
+    @GetMapping("/entitlements")
+    public ResponseEntity<EntitlementsResponse> getEntitlements(Authentication authentication) {
+        UUID userId = currentUserProvider.getUserId(authentication);
+        boolean isPro = entitlementService.isPro(userId);
+        java.util.List<String> features = isPro
+                ? java.util.List.of("FULL_CURRICULUM", "ALL_EXERCISE_TYPES", "UNLIMITED_PRACTICE")
+                : java.util.List.of();
+        return ResponseEntity.ok(new EntitlementsResponse(isPro, features));
+    }
+
     record CreateOrderRequest(String planCode) {}
     record VerifyPaymentRequest(String orderId, String paymentId, String signature, String planCode) {}
     record VerifyPlayRequest(String planCode, String purchaseToken, String orderId) {}
+    record EntitlementsResponse(boolean isPro, java.util.List<String> features) {}
 }

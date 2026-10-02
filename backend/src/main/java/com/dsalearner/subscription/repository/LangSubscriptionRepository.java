@@ -12,5 +12,6 @@ import java.util.UUID;
 @Repository
 public interface LangSubscriptionRepository extends JpaRepository<LangSubscription, UUID> {
     Optional<LangSubscription> findByUserId(UUID userId);
+    Optional<LangSubscription> findByPlayPurchaseToken(String playPurchaseToken);
     List<LangSubscription> findByStatusAndCurrentPeriodEndBefore(LangSubscription.Status status, Instant cutoff);
 }

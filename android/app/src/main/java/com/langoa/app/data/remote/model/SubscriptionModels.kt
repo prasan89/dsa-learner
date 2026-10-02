@@ -32,3 +32,9 @@ data class VerifyPlayRequest(
     val purchaseToken: String,
     val orderId: String
 )
+
+data class EntitlementsResponse(
+    val isPro: Boolean,
+    val features: List<String> = emptyList()
+)
+

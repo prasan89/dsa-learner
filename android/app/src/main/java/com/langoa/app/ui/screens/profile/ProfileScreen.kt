@@ -43,6 +43,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.langoa.app.ui.screens.paywall.SubscriptionViewModel
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import com.langoa.app.ui.theme.LangoaAmber
 import com.langoa.app.ui.theme.LangoaAmberLight
 import com.langoa.app.ui.theme.LangoaBackground
@@ -264,14 +268,16 @@ fun ProfileScreen(
                         Spacer(modifier = Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = if (isPro) "Pro" else "Free",
+                                text = if (isPro) "Langova Pro ✓" else "Free",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = if (isPro) LangoaGreenLight else LangoaOnBackground
                             )
                             Text(
                                 text = if (isPro) {
-                                    subState.currentStatus.expiresAt?.let { "Renews $it" } ?: "Pro Active"
+                                    subState.currentStatus.expiresAt
+                                        ?.let { formatExpiryDate(it) }
+                                        ?: "Pro Active"
                                 } else {
                                     "First 10 lessons free"
                                 },
@@ -455,4 +461,14 @@ private fun ResourceStatRow(icon: String, label: String, value: String, color: C
 @Composable
 private fun ProfileScreenPreview() {
     ProfileScreen()
+}
+
+private fun formatExpiryDate(isoDate: String): String {
+    return try {
+        val instant = Instant.parse(isoDate)
+        val formatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
+        "Active until: ${formatter.format(instant.atZone(ZoneId.systemDefault()))}"
+    } catch (e: Exception) {
+        "Pro Active"
+    }
 }

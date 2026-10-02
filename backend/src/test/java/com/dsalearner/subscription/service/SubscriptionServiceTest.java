@@ -95,6 +95,61 @@ class SubscriptionServiceTest {
     }
 
     @Test
+    void activateSubscription_sameToken_isIdempotent() {
+        when(paymentEventRepository.existsByPlayPurchaseTokenAndStatus("token123", PaymentEvent.EventStatus.PROCESSED))
+                .thenReturn(true);
+        LangSubscription existing = LangSubscription.builder()
+                .userId(userId).planCode("PRO_MONTHLY").status(LangSubscription.Status.ACTIVE)
+                .currentPeriodEnd(Instant.now().plus(30, ChronoUnit.DAYS)).build();
+        when(subscriptionRepository.findByUserId(userId)).thenReturn(Optional.of(existing));
+
+        SubscriptionStatusDto result = subscriptionService.activateSubscription(userId, "token123", "order123", "PRO_MONTHLY");
+
+        assertEquals("PRO_MONTHLY", result.planCode());
+        verify(subscriptionRepository, never()).save(any());
+        verify(planRepository, never()).findByPlanCodeAndIsActiveTrue(any());
+    }
+
+    @Test
+    void activateSubscription_tokenBoundToDifferentUser_throwsIllegalArgument() {
+        UUID otherUserId = UUID.randomUUID();
+        when(paymentEventRepository.existsByPlayPurchaseTokenAndStatus("tokenX", PaymentEvent.EventStatus.PROCESSED))
+                .thenReturn(false);
+        LangSubscription otherSub = LangSubscription.builder()
+                .userId(otherUserId).planCode("PRO_MONTHLY").status(LangSubscription.Status.ACTIVE)
+                .playPurchaseToken("tokenX").build();
+        when(subscriptionRepository.findByPlayPurchaseToken("tokenX")).thenReturn(Optional.of(otherSub));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> subscriptionService.activateSubscription(userId, "tokenX", "orderX", "PRO_MONTHLY"));
+
+        verify(subscriptionRepository, never()).save(any());
+    }
+
+    @Test
+    void restorePurchase_noSubscription_returnsFree() {
+        when(subscriptionRepository.findByUserId(userId)).thenReturn(Optional.empty());
+
+        SubscriptionStatusDto result = subscriptionService.restorePurchase(userId);
+
+        assertEquals("FREE", result.planCode());
+        assertFalse(result.isPro());
+    }
+
+    @Test
+    void restorePurchase_activePro_returnsProStatus() {
+        LangSubscription sub = LangSubscription.builder()
+                .userId(userId).planCode("PRO_MONTHLY").status(LangSubscription.Status.ACTIVE)
+                .currentPeriodEnd(Instant.now().plus(15, ChronoUnit.DAYS)).build();
+        when(subscriptionRepository.findByUserId(userId)).thenReturn(Optional.of(sub));
+
+        SubscriptionStatusDto result = subscriptionService.restorePurchase(userId);
+
+        assertEquals("PRO_MONTHLY", result.planCode());
+        assertTrue(result.isPro());
+    }
+
+    @Test
     void handleWebhookEvent_cancelledEvent_setsStatusCancelled() {
         when(paymentEventRepository.existsByPlayOrderIdAndStatus("order123", PaymentEvent.EventStatus.PROCESSED))
                 .thenReturn(false);

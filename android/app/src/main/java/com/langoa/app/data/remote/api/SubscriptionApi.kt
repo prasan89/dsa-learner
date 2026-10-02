@@ -2,6 +2,7 @@ package com.langoa.app.data.remote.api
 
 import com.langoa.app.data.remote.model.CreateOrderRequest
 import com.langoa.app.data.remote.model.CreateOrderResponse
+import com.langoa.app.data.remote.model.EntitlementsResponse
 import com.langoa.app.data.remote.model.SubscriptionPlanDto
 import com.langoa.app.data.remote.model.SubscriptionStatusDto
 import com.langoa.app.data.remote.model.VerifyPlayRequest
@@ -21,4 +22,10 @@ interface SubscriptionApi {
 
     @POST("api/v1/subscriptions/verify-play")
     suspend fun verifyPlay(@Body request: VerifyPlayRequest): SubscriptionStatusDto
+
+    @POST("api/v1/subscriptions/restore")
+    suspend fun restore(): SubscriptionStatusDto
+
+    @GET("api/v1/subscriptions/entitlements")
+    suspend fun getEntitlements(): EntitlementsResponse
 }

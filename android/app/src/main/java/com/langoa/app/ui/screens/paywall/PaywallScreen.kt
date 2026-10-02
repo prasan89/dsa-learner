@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -100,6 +102,14 @@ fun PaywallScreen(
         }
     }
 
+    LaunchedEffect(uiState.restoreSuccess) {
+        if (uiState.restoreSuccess) {
+            val message = if (uiState.currentStatus.isPro) "Pro subscription restored!" else "No active subscription found"
+            scope.launch { snackbarHostState.showSnackbar(message) }
+            viewModel.clearRestoreSuccess()
+        }
+    }
+
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
             scope.launch { snackbarHostState.showSnackbar(error) }
@@ -116,7 +126,8 @@ fun PaywallScreen(
                         viewModel.onPlayPurchaseSuccess(
                             planCode = planCode,
                             purchaseToken = purchase.purchaseToken,
-                            orderId = purchase.orderId ?: ""
+                            orderId = purchase.orderId ?: "",
+                            billingClient = billingClient
                         )
                     }
                 }
@@ -249,9 +260,14 @@ fun PaywallScreen(
                         Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = LangoaGreenLight, modifier = Modifier.size(24.dp))
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("Pro Active", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = LangoaGreenLight)
-                            uiState.currentStatus.expiresAt?.let {
-                                Text("Renews $it", style = MaterialTheme.typography.bodySmall, color = LangoaOnBackground.copy(alpha = 0.5f))
+                            Text("Langova Pro ✓", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = LangoaGreenLight)
+                            uiState.currentStatus.expiresAt?.let { iso ->
+                                val formatted = try {
+                                    val inst = java.time.Instant.parse(iso)
+                                    val fmt = java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", java.util.Locale.ENGLISH)
+                                    "Active until: ${fmt.format(inst.atZone(java.time.ZoneId.systemDefault()))}"
+                                } catch (e: Exception) { "Pro Active" }
+                                Text(formatted, style = MaterialTheme.typography.bodySmall, color = LangoaOnBackground.copy(alpha = 0.5f))
                             }
                         }
                     }
@@ -345,6 +361,20 @@ fun PaywallScreen(
                             modifier = Modifier.padding(bottom = 12.dp)
                         )
                     }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            TextButton(
+                onClick = { viewModel.restorePurchase() },
+                enabled = !uiState.isRestoring,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (uiState.isRestoring) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = LangoaOnBackground.copy(alpha = 0.5f))
+                } else {
+                    Text("Restore Purchases", color = LangoaOnBackground.copy(alpha = 0.5f))
                 }
             }
 
