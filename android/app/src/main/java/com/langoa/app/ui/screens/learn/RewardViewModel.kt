@@ -1,7 +1,6 @@
 package com.langoa.app.ui.screens.learn
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.langoa.app.domain.model.LessonReward
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,12 +14,16 @@ data class RewardUiState(
 )
 
 @HiltViewModel
-class RewardViewModel @Inject constructor() : ViewModel() {
+class RewardViewModel @Inject constructor(
+    private val rewardResultStore: RewardResultStore
+) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(RewardUiState())
+    private val _uiState = MutableStateFlow(RewardUiState(reward = rewardResultStore.lastReward))
     val uiState: StateFlow<RewardUiState> = _uiState.asStateFlow()
 
     fun setReward(reward: LessonReward) {
+        rewardResultStore.lastReward = reward
         _uiState.value = _uiState.value.copy(reward = reward)
     }
 }
+

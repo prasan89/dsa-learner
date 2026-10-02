@@ -59,14 +59,19 @@ import com.langoa.app.ui.theme.LangoaXP
 
 @Composable
 fun ProfileScreen(
+    languageCode: String = "de",
     onNavigateToPaywall: () -> Unit = {},
-    subscriptionViewModel: SubscriptionViewModel = hiltViewModel()
+    onNavigateToCoinShop: () -> Unit = {},
+    subscriptionViewModel: SubscriptionViewModel = hiltViewModel(),
+    profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     val subState by subscriptionViewModel.uiState.collectAsState()
     val isPro = subState.currentStatus.isPro
+    val profileState by profileViewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
         subscriptionViewModel.load()
+        profileViewModel.load(languageCode)
     }
 
     Scaffold(containerColor = LangoaBackground) { paddingValues ->
@@ -202,11 +207,22 @@ fun ProfileScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        ResourceStatRow("🪙", "Coins", "150", LangoaCoins)
-                        ResourceStatRow("🌾", "Food", "80", LangoaFood)
-                        ResourceStatRow("🧱", "Materials", "45", LangoaMaterials)
-                        ResourceStatRow("🏰", "Civ Power", "22", LangoaCivPower)
+                        ResourceStatRow("🪙", "Coins", profileState.coins.toString(), LangoaCoins)
+                        ResourceStatRow("🌾", "Food", profileState.food.toString(), LangoaFood)
+                        ResourceStatRow("🧱", "Materials", profileState.materials.toString(), LangoaMaterials)
+                        ResourceStatRow("🏰", "Civ Power", "—", LangoaCivPower)
                     }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = onNavigateToCoinShop,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = LangoaAmber),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Buy Coins", fontWeight = FontWeight.Bold, color = Color.White)
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))

@@ -39,6 +39,7 @@ import com.langoa.app.ui.screens.paywall.PaywallScreen
 import com.langoa.app.ui.screens.profile.ProfileScreen
 import com.langoa.app.ui.screens.splash.SplashScreen
 import com.langoa.app.ui.screens.world.WorldScreen
+import com.langoa.app.ui.screens.shop.CoinShopScreen
 
 @Composable
 fun LangoaNavGraph(authEventBus: AuthEventBus) {
@@ -64,7 +65,7 @@ fun LangoaNavGraph(authEventBus: AuthEventBus) {
         "learn/{languageCode}",
         "build/{languageCode}",
         Screen.World.route,
-        Screen.Profile.route
+        "profile/{languageCode}"
     )
 
     val showBottomBar = currentDestination?.route in mainScreenRoutes
@@ -128,7 +129,7 @@ fun LangoaNavGraph(authEventBus: AuthEventBus) {
                         label = { Text("Profile") },
                         selected = currentDestination?.hierarchy?.any { it.route == Screen.Profile.route } == true,
                         onClick = {
-                            navController.navigate(Screen.Profile.route) {
+                            navController.navigate(Screen.Profile.createRoute(languageCode)) {
                                 popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
                                 restoreState = true
@@ -250,7 +251,7 @@ fun LangoaNavGraph(authEventBus: AuthEventBus) {
                 LessonScreen(
                     languageCode = languageCode,
                     lessonId = lessonId,
-                    onLessonComplete = {
+                    onLessonComplete = { _ ->
                         navController.navigate(Screen.Reward.createRoute(languageCode, lessonId)) {
                             popUpTo(Screen.Lesson.route) { inclusive = true }
                         }
@@ -291,12 +292,30 @@ fun LangoaNavGraph(authEventBus: AuthEventBus) {
                 WorldScreen()
             }
 
-            composable(Screen.Profile.route) {
-                val languageCode = navBackStackEntry?.arguments?.getString("languageCode") ?: "de"
+            composable(
+                route = Screen.Profile.route,
+                arguments = listOf(navArgument("languageCode") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val languageCode = backStackEntry.arguments?.getString("languageCode") ?: "de"
                 ProfileScreen(
+                    languageCode = languageCode,
                     onNavigateToPaywall = {
                         navController.navigate(Screen.Paywall.route)
+                    },
+                    onNavigateToCoinShop = {
+                        navController.navigate(Screen.CoinShop.createRoute(languageCode))
                     }
+                )
+            }
+
+            composable(
+                route = Screen.CoinShop.route,
+                arguments = listOf(navArgument("languageCode") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val languageCode = backStackEntry.arguments?.getString("languageCode") ?: "de"
+                CoinShopScreen(
+                    languageCode = languageCode,
+                    onBack = { navController.popBackStack() }
                 )
             }
 

@@ -6,6 +6,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import com.langoa.app.domain.model.Lesson
+import com.langoa.app.domain.model.LessonReward
 import com.langoa.app.domain.usecase.CompleteLessonUseCase
 import com.langoa.app.domain.usecase.GetLessonsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,13 +22,15 @@ data class LearnUiState(
     val isLoading: Boolean = true,
     val isOffline: Boolean = false,
     val isEmpty: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val completedReward: LessonReward? = null
 )
 
 @HiltViewModel
 class LessonViewModel @Inject constructor(
     private val getLessonsUseCase: GetLessonsUseCase,
     private val completeLessonUseCase: CompleteLessonUseCase,
+    private val rewardResultStore: RewardResultStore,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -61,7 +64,7 @@ class LessonViewModel @Inject constructor(
         totalQuestions: Int,
         timeSpentSeconds: Int,
         isPerfect: Boolean,
-        onSuccess: () -> Unit,
+        onSuccess: (LessonReward) -> Unit,
         onError: (String) -> Unit
     ) {
         viewModelScope.launch {
@@ -74,9 +77,14 @@ class LessonViewModel @Inject constructor(
                 isPerfect = isPerfect
             )
             result.fold(
-                onSuccess = { onSuccess() },
+                onSuccess = { reward ->
+                    _uiState.value = _uiState.value.copy(completedReward = reward)
+                    rewardResultStore.lastReward = reward
+                    onSuccess(reward)
+                },
                 onFailure = { e -> onError(e.message ?: "Failed to complete lesson") }
             )
         }
     }
 }
+

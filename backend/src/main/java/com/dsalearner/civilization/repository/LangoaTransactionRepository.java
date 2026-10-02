@@ -11,4 +11,6 @@ public interface LangoaTransactionRepository extends JpaRepository<LangoaTransac
     boolean existsByIdempotencyKey(String idempotencyKey);
 
     List<LangoaTransaction> findByUserIdAndLanguageCodeOrderByCreatedAtDesc(UUID userId, String languageCode);
+
+    List<LangoaTransaction> findTop20ByUserIdAndLanguageCodeOrderByCreatedAtDesc(UUID userId, String languageCode);
 }

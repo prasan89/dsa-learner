@@ -7,6 +7,7 @@ import com.langoa.app.domain.model.LessonReward
 import com.langoa.app.domain.usecase.CompleteLessonUseCase
 import com.langoa.app.domain.usecase.GetLessonsUseCase
 import com.langoa.app.ui.screens.learn.LessonViewModel
+import com.langoa.app.ui.screens.learn.RewardResultStore
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
@@ -35,6 +36,7 @@ class LessonViewModelTest {
     private lateinit var getLessonsUseCase: GetLessonsUseCase
     private lateinit var completeLessonUseCase: CompleteLessonUseCase
     private lateinit var context: Context
+    private lateinit var rewardResultStore: RewardResultStore
     private lateinit var viewModel: LessonViewModel
 
     private val testLessons = listOf(
@@ -69,6 +71,7 @@ class LessonViewModelTest {
         Dispatchers.setMain(testDispatcher)
         getLessonsUseCase = mockk()
         completeLessonUseCase = mockk()
+        rewardResultStore = RewardResultStore()
         // Properly mock ConnectivityManager so isOnline() doesn't ClassCastException
         val network = mockk<Network>()
         val networkCapabilities = mockk<NetworkCapabilities>()
@@ -79,7 +82,7 @@ class LessonViewModelTest {
         every { connectivityManager.getNetworkCapabilities(network) } returns networkCapabilities
         every { networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) } returns true
         every { getLessonsUseCase("de") } returns flowOf(testLessons)
-        viewModel = LessonViewModel(getLessonsUseCase, completeLessonUseCase, context)
+        viewModel = LessonViewModel(getLessonsUseCase, completeLessonUseCase, rewardResultStore, context)
     }
 
     @After
@@ -125,7 +128,7 @@ class LessonViewModelTest {
             totalQuestions = 5,
             timeSpentSeconds = 120,
             isPerfect = true,
-            onSuccess = { successCalled = true },
+            onSuccess = { _ -> successCalled = true },
             onError = {}
         )
         testDispatcher.scheduler.advanceUntilIdle()

@@ -72,6 +72,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.langoa.app.domain.model.Exercise
+import com.langoa.app.domain.model.LessonReward
 import com.langoa.app.ui.components.LoadingScreen
 import com.langoa.app.ui.theme.LangoaAmber
 import com.langoa.app.ui.theme.LangoaBackground
@@ -106,7 +107,7 @@ data class LessonUiState(
 fun LessonScreen(
     languageCode: String,
     lessonId: String,
-    onLessonComplete: () -> Unit,
+    onLessonComplete: (LessonReward?) -> Unit,
     onBack: () -> Unit,
     viewModel: LessonViewModel = hiltViewModel()
 ) {
@@ -141,7 +142,7 @@ fun LessonScreen(
         // Show stub or loading
         if (!lessonUiState.isLoading && currentLesson == null) {
             // No exercises from API — show a simple placeholder
-            LessonPlaceholder(lessonId = lessonId, onComplete = onLessonComplete, onBack = onBack)
+            LessonPlaceholder(lessonId = lessonId, onComplete = { onLessonComplete(null) }, onBack = onBack)
             return
         }
         LoadingScreen()
@@ -165,8 +166,8 @@ fun LessonScreen(
                 totalQuestions = maxOf(localLessonState.totalAnswered, 1),
                 timeSpentSeconds = 60,
                 isPerfect = localLessonState.score == localLessonState.totalAnswered,
-                onSuccess = onLessonComplete,
-                onError = { onLessonComplete() }
+                onSuccess = { reward -> onLessonComplete(reward) },
+                onError = { onLessonComplete(null) }
             )
         }
         return
@@ -174,7 +175,7 @@ fun LessonScreen(
 
     val currentExercise = exercises.getOrNull(localLessonState.currentExerciseIndex)
         ?: run {
-            LaunchedEffect(Unit) { onLessonComplete() }
+            LaunchedEffect(Unit) { onLessonComplete(null) }
             return
         }
 

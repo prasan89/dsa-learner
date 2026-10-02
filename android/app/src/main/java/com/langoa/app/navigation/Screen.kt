@@ -23,6 +23,11 @@ sealed class Screen(val route: String) {
         fun createRoute(languageCode: String) = "build/$languageCode"
     }
     object World : Screen("world")
-    object Profile : Screen("profile")
+    object Profile : Screen("profile/{languageCode}") {
+        fun createRoute(languageCode: String) = "profile/$languageCode"
+    }
     object Paywall : Screen("paywall")
+    object CoinShop : Screen("coin_shop/{languageCode}") {
+        fun createRoute(languageCode: String) = "coin_shop/$languageCode"
+    }
 }

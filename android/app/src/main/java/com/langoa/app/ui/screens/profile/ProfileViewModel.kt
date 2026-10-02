@@ -25,6 +25,10 @@ data class ProfileUiState(
     val totalXp: Long = 0L,
     val tier: String = "VILLAGE",
     val languageProgress: List<LanguageProgressUiModel> = emptyList(),
+    val coins: Long = 0L,
+    val food: Long = 0L,
+    val materials: Long = 0L,
+    val wood: Long = 0L,
     val isLoading: Boolean = true,
     val error: String? = null
 )
@@ -57,6 +61,10 @@ class ProfileViewModel @Inject constructor(
                             progressPercent = (civ.totalXp % 1000).toFloat() / 1000f
                         )
                     ),
+                    coins = civ.coins,
+                    food = civ.food,
+                    materials = civ.materials,
+                    wood = civ.wood,
                     isLoading = false
                 )
             }

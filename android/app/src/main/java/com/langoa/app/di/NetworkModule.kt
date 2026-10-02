@@ -5,6 +5,7 @@ import com.langoa.app.BuildConfig
 import com.langoa.app.data.local.TokenStorage
 import com.langoa.app.data.remote.api.AuthApi
 import com.langoa.app.data.remote.api.CivilizationApi
+import com.langoa.app.data.remote.api.CoinPurchaseApi
 import com.langoa.app.data.remote.api.LearningApi
 import com.langoa.app.data.remote.api.SubscriptionApi
 import com.langoa.app.data.remote.network.TokenAuthenticator
@@ -84,4 +85,8 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideSubscriptionApi(retrofit: Retrofit): SubscriptionApi = retrofit.create(SubscriptionApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideCoinPurchaseApi(retrofit: Retrofit): CoinPurchaseApi = retrofit.create(CoinPurchaseApi::class.java)
 }

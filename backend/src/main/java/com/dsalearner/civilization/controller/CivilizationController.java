@@ -4,6 +4,8 @@ import com.dsalearner.academy.security.CurrentUserProvider;
 import com.dsalearner.civilization.dto.*;
 import com.dsalearner.civilization.repository.LangoaBuildingDefinitionRepository;
 import com.dsalearner.civilization.repository.LangoaBuildingInstanceRepository;
+import com.dsalearner.civilization.repository.LangoaCurrencyBalanceRepository;
+import com.dsalearner.civilization.repository.LangoaTransactionRepository;
 import com.dsalearner.civilization.service.AchievementService;
 import com.dsalearner.civilization.service.CivilizationService;
 import com.dsalearner.civilization.service.QuestService;
@@ -16,6 +18,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -32,6 +35,8 @@ public class CivilizationController {
     private final DomainAuthorizationService domainAuthService;
     private final LangoaBuildingInstanceRepository buildingInstanceRepo;
     private final LangoaBuildingDefinitionRepository buildingDefRepo;
+    private final LangoaCurrencyBalanceRepository balanceRepo;
+    private final LangoaTransactionRepository transactionRepo;
 
     @GetMapping
     public ResponseEntity<CivilizationStateResponse> getCivilizationState(
@@ -169,5 +174,34 @@ public class CivilizationController {
         domainAuthService.requireDomain(authentication, "language");
         UUID userId = currentUserProvider.getUserId(authentication);
         return ResponseEntity.ok(achievementService.getAchievements(userId, language));
+    }
+
+    @GetMapping("/wallet")
+    public ResponseEntity<WalletResponse> getWallet(
+            @PathVariable String language,
+            Authentication authentication) {
+        domainAuthService.requireDomain(authentication, "language");
+        UUID userId = currentUserProvider.getUserId(authentication);
+
+        String resolvedCode = civilizationService.resolveLanguageCode(language);
+
+        Map<String, Long> balances = balanceRepo.findByUserIdAndLanguageCode(userId, resolvedCode)
+                .stream()
+                .collect(Collectors.toMap(
+                        b -> b.getCurrencyType().name(),
+                        b -> b.getBalance()));
+
+        List<WalletResponse.TransactionSummary> recentTxns = transactionRepo
+                .findTop20ByUserIdAndLanguageCodeOrderByCreatedAtDesc(userId, resolvedCode)
+                .stream()
+                .map(t -> new WalletResponse.TransactionSummary(
+                        t.getTransactionType().name(),
+                        t.getCurrencyType().name(),
+                        t.getAmount(),
+                        t.getBalanceAfter(),
+                        t.getCreatedAt()))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(new WalletResponse(balances, recentTxns));
     }
 }
