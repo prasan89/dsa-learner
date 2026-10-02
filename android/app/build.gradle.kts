@@ -10,12 +10,21 @@ android {
     namespace = "com.langoa.app"
     compileSdk = 35
 
+    signingConfigs {
+        create("release") {
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "langova-release.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
+            keyAlias = System.getenv("KEY_ALIAS") ?: "langova"
+            keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+        }
+    }
+
     defaultConfig {
         applicationId = "com.langoa.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0-milestone1"
+        versionCode = 10
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -34,11 +43,17 @@ android {
             dimension = "env"
             buildConfigField("String", "BASE_URL", "\"https://langoa-api-342373291799.us-central1.run.app\"")
         }
+        create("gcpProd") {
+            dimension = "env"
+            applicationIdSuffix = ""
+            buildConfigField("String", "BASE_URL", "\"https://langoa-api-342373291799.us-central1.run.app\"")
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
