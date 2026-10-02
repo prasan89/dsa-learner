@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
@@ -32,10 +31,11 @@ public class LearningRewardService {
     private final LangoaExerciseCompletionRepository exerciseCompletionRepo;
     private final LangoaTransactionRepository transactionRepo;
 
-    // Each public method uses REQUIRES_NEW so a duplicate-key exception inside it
-    // rolls back only its own transaction, not the outer lesson-completion transaction.
+    // Each public method uses default REQUIRED propagation (joins outer transaction).
+    // Sequential duplicates are blocked by the fast-path existsByIdempotencyKey check.
+    // Concurrent duplicates are rare; callers catch DataIntegrityViolationException.
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public long grantPerfectLessonBonus(UUID userId, String languageCode, UUID lessonId) {
         String idemKey = "perfect-" + lessonId + "-" + userId;
         return grantMilestoneBonus(userId, languageCode, "LESSON_PERFECT",
@@ -46,7 +46,7 @@ public class LearningRewardService {
      * Grant a unit-completion bonus when all lessons in a unit are done.
      * Idempotency key: "unit-{unitId}-{userId}"
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public long grantUnitCompletionBonus(UUID userId, String languageCode, UUID unitId) {
         String idemKey = "unit-" + unitId + "-" + userId;
         return grantMilestoneBonus(userId, languageCode, "UNIT_COMPLETED",
@@ -57,7 +57,7 @@ public class LearningRewardService {
      * Grant a level-completion bonus when a full CEFR level is unlocked.
      * Idempotency key: "level-{cefrLevel}-{curriculumId}-{userId}"
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public long grantLevelCompletionBonus(UUID userId, String languageCode,
                                           String cefrLevel, UUID curriculumId) {
         String idemKey = "level-" + cefrLevel + "-" + curriculumId + "-" + userId;
@@ -73,7 +73,7 @@ public class LearningRewardService {
      *
      * @param coinsPerExercise reward amount from the lesson's reward definition
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public long grantExerciseReward(UUID userId, UUID lessonId, String exerciseId,
                                     String languageCode, long coinsPerExercise) {
         if (exerciseCompletionRepo.existsByUserIdAndExerciseIdAndLanguageCode(
