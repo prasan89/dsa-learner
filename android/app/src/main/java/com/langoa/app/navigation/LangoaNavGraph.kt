@@ -276,6 +276,11 @@ fun LangoaNavGraph(authEventBus: AuthEventBus) {
                         navController.navigate(Screen.Learn.createRoute(languageCode)) {
                             popUpTo(Screen.Reward.route) { inclusive = true }
                         }
+                    },
+                    onBuildCity = {
+                        navController.navigate(Screen.Build.createRoute(languageCode)) {
+                            popUpTo(Screen.Reward.route) { inclusive = true }
+                        }
                     }
                 )
             }

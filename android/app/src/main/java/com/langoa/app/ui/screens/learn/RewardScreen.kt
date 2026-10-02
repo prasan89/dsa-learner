@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -83,6 +84,7 @@ fun RewardScreen(
     languageCode: String,
     lessonId: String,
     onContinue: () -> Unit,
+    onBuildCity: () -> Unit = {},
     viewModel: RewardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -98,6 +100,10 @@ fun RewardScreen(
         materialsEarned = 3,
         civilizationPowerEarned = 2
     )
+
+    // Derive before→after coin balance from server-provided newBalances
+    val coinsAfter = reward.newBalances["COINS"] ?: reward.newBalances["coins"]
+    val coinsBefore = if (coinsAfter != null) coinsAfter - reward.coinsEarned else null
 
     var rewardsVisible by remember { mutableStateOf(false) }
     var buttonVisible by remember { mutableStateOf(false) }
@@ -227,8 +233,40 @@ fun RewardScreen(
                             letterSpacing = 2.sp
                         )
 
+                        // Pending banner: shown when lesson was completed offline
+                        if (reward.isPending) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFFFF9800).copy(alpha = 0.15f))
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("📶", fontSize = 14.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Offline — rewards will be confirmed when you reconnect",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color(0xFFFF9800)
+                                    )
+                                }
+                            }
+                        }
+
                         RewardRow(icon = "⭐", label = "Experience", value = "+${reward.xpEarned} XP", color = LangoaXP)
-                        RewardRow(icon = "🪙", label = "Coins", value = "+${reward.coinsEarned}", color = LangoaCoins)
+
+                        // Coins row: show before→after if we have server-confirmed balances
+                        if (coinsBefore != null && coinsAfter != null) {
+                            RewardRow(
+                                icon = "🪙",
+                                label = "Coins",
+                                value = "$coinsBefore → $coinsAfter  (+${reward.coinsEarned})",
+                                color = LangoaCoins
+                            )
+                        } else {
+                            RewardRow(icon = "🪙", label = "Coins", value = "+${reward.coinsEarned}", color = LangoaCoins)
+                        }
                         RewardRow(icon = "🌾", label = "Food", value = "+${reward.foodEarned}", color = LangoaFood)
                         RewardRow(icon = "🧱", label = "Materials", value = "+${reward.materialsEarned}", color = LangoaMaterials)
                         RewardRow(icon = "🏰", label = "Civilization Power", value = "+${reward.civilizationPowerEarned}", color = LangoaCivPower)
@@ -351,28 +389,74 @@ fun RewardScreen(
                 }
             }
 
-            // Continue button
+            // City hint: show cheapest next building cost vs current coins
+            if (coinsAfter != null && coinsAfter > 0) {
+                val libraryHint = 500L  // LIBRARY is 500 coins per V48 migration
+                AnimatedVisibility(
+                    visible = buttonVisible,
+                    enter = fadeIn(tween(900)) + slideInVertically(tween(900)) { 60 }
+                ) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = LangoaCoins.copy(alpha = 0.08f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("🏛", fontSize = 20.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (coinsAfter >= libraryHint)
+                                    "You can afford a Library! (${coinsAfter} coins)"
+                                else
+                                    "Library costs $libraryHint coins — you have $coinsAfter",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = LangoaOnBackground.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // CTAs: "Continue Learning" primary + "Build Your City" secondary
             AnimatedVisibility(
                 visible = buttonVisible,
                 enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { 40 }
             ) {
-                Button(
-                    onClick = onContinue,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(60.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = LangoaGreen,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text(
-                        text = "CONTINUE TO CITY",
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 2.sp,
-                        fontSize = 16.sp
-                    )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = onContinue,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = LangoaGreen,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text(
+                            text = "Continue Learning",
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.sp,
+                            fontSize = 16.sp
+                        )
+                    }
+                    OutlinedButton(
+                        onClick = onBuildCity,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text(
+                            text = "Build Your City",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
                 }
             }
         }

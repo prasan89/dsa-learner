@@ -110,7 +110,8 @@ class LearningRepositoryImpl @Inject constructor(
                 lessonId = lessonId,
                 lessonStatus = "COMPLETED",
                 score = score,
-                nextLevelUnlocked = false
+                nextLevelUnlocked = false,
+                isPending = true
             ))
         }
     }

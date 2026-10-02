@@ -17,6 +17,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.List;
 import java.util.Optional;
@@ -139,6 +140,41 @@ class CivilizationServiceTest {
         // No balances updated and no new transactions persisted
         verify(transactionRepo, never()).save(any());
         verify(balanceRepo, never()).save(any());
+        verify(civilizationRepo, never()).save(any());
+    }
+
+    @Test
+    void test_applyLessonReward_concurrentDuplicate_dbConstraintFired_returnsZeroReward() {
+        // Simulate concurrent duplicate: fast-path check returns false (race condition),
+        // but when the first updateBalance call tries to save the transaction with the
+        // UNIQUE idempotency_key, the DB constraint fires a DataIntegrityViolationException.
+        when(transactionRepo.existsByIdempotencyKey(anyString())).thenReturn(false);
+        when(civilizationRepo.findByUserIdAndLanguageCode(userId, "de"))
+                .thenReturn(Optional.of(civilization));
+        when(rewardDefRepo.findByCefrLevelAndDifficultyTier("A1", DifficultyTier.STANDARD))
+                .thenReturn(Optional.of(rewardA1));
+        when(balanceRepo.findForUpdate(eq(userId), eq("de"), any()))
+                .thenAnswer(inv -> {
+                    CurrencyType ct = inv.getArgument(2);
+                    return Optional.of(LangoaCurrencyBalance.builder()
+                            .userId(userId).languageCode("de")
+                            .currencyType(ct).balance(0L).build());
+                });
+        when(balanceRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        // First transactionRepo.save() throws — simulates the concurrent duplicate losing the DB race
+        when(transactionRepo.save(any()))
+                .thenThrow(new DataIntegrityViolationException("duplicate key: idempotency_key"));
+        when(balanceRepo.findByUserIdAndLanguageCode(userId, "de")).thenReturn(List.of());
+
+        LessonRewardResponse response = service.applyLessonReward(
+                userId, "de", lessonId, "A1", "idem-key-concurrent");
+
+        // The concurrent loser must return zero reward — never double-credit
+        assertThat(response.xpEarned()).isEqualTo(0);
+        assertThat(response.coinsEarned()).isEqualTo(0);
+        assertThat(response.tierUpgraded()).isFalse();
+
+        // Civilization stats must NOT be incremented by the losing request
         verify(civilizationRepo, never()).save(any());
     }
 

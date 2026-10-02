@@ -17,5 +17,7 @@ data class LessonReward(
     val newTier: String? = null,
     val unlockedBuildingTypes: List<String> = emptyList(),
     val completedQuestKeys: List<String> = emptyList(),
-    val unlockedAchievementKeys: List<String> = emptyList()
+    val unlockedAchievementKeys: List<String> = emptyList(),
+    // True when the lesson was completed offline — reward is an estimate pending server confirmation
+    val isPending: Boolean = false
 )
